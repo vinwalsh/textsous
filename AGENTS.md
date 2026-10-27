@@ -1,21 +1,71 @@
-# textsous
+# TextSous open-source tools
 
 ## What this is
-textsous.com is a SMS/MCP-first production web app that helps people manage their
-weekly meal plan - this repo holds the open source tools that are offered by SOUS AI
-including (but not limited to) TypeScript library and CLI that converts any recipe (URL,
-pasted text, cookbook photo) into the Sous Cook Along format: a canonical recipe
+TextSous is a meal-planning platform from SOUS AI LLC. People plan their week by
+texting SOUS, the platform's assistant, or by talking to SOUS from an AI
+assistant over MCP. This repo holds the platform's open-source tools, starting
+with a TypeScript library, CLI and web app that convert any recipe (URL, pasted
+text, cookbook photo) into the TextSous Cook Along format: a canonical recipe
 JSON, a component-lane cooking timeline, and adjustable variants (servings,
-dietary, cuisine infusion, Sous voice). It runs at https://open.textsous.com and
-hands finished recipes to https://textsous.com ("Open with TextSous", "Save to
-Sous"). Built during the Meta Global AI Developer Hackathon on Meta Model API.
-Everything in this repo is new work written during Oct 27 - Nov 4, 2026.
+dietary, cuisine infusion, SOUS voice). The app is meant to run at
+https://open.textsous.com and hand finished recipes to https://textsous.com
+("Open with TextSous", "Save to TextSous"). Started at the Meta Global AI
+Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
+2026 is hackathon work; NEW-WORK.md records it.
+
+## Status (read first)
+- On Oct 27, 2026 this repo holds only LICENSE, README.md and this file.
+  Nothing described below is built yet. The sections below are the rules and
+  the target design. Never assume a module, script, route, env var or deployment
+  exists until you have created it or checked for it.
+- Vercel project `open-textsous` (team Sous) deploys this repo's main branch.
+  Until package.json exists, its ignored-build-step rule skips every build.
+  open.textsous.com is attached but not live until DNS and the first deploy.
+  Env vars set in Vercel: MODEL_BASE_URL, MODEL_ID (muse-spark-1.3),
+  ARTIFACT_SIGNING_SECRET. Not set yet: MODEL_API_KEY, Upstash, the daily cap.
+- The rest of the TextSous platform lives in separate private repos. It already
+  handles accounts, households, weekly meal plans, grocery lists and SOUS over
+  text and MCP. It has no public recipe import: the /open and /import routes in
+  "Handoff" are planned and will be built there separately. Until they exist,
+  test the handoff against a local stub, never against textsous.com.
+- Cuisine infusion doesn't exist anywhere yet, and the format has never been
+  published before.
+- Keep this section current. When something ships, say so here with the date.
+
+## Names (use exactly)
+- TextSous: the public name of the platform and of this project, in UI copy,
+  docs and links ("Open with TextSous", "Save to TextSous").
+- SOUS: the assistant persona that texts people and answers over MCP. Use it
+  only when the assistant itself speaks or acts ("SOUS will text you the
+  steps"). The voice stage writes in SOUS's voice.
+- SOUS AI LLC: the company. Use it only in legal text: license, terms, privacy
+  notice, copyright lines.
+
+## Boundaries
+- Work only inside this repo. Do not read, search, copy or reference any other
+  directory on this machine, especially ~/Documents/sous-app and
+  ~/sous-worktrees. The platform's code is private, and this repo is a
+  clean-room build from the spec below.
+- The textsous.com side of the handoff is built separately, in a private repo
+  you cannot see. Its contract is the "Handoff" section below plus the
+  generated JSON Schemas in docs/schema/. Call out any change to either in
+  your report.
+- Never open, print or commit .env* files or API keys. Refer to variables by
+  name only.
 
 ## Non-negotiables
 - Model access goes through one client (`src/lib/model/`). Config from env:
   MODEL_BASE_URL (default https://api.meta.ai/v1), MODEL_API_KEY, MODEL_ID
-  (default muse-spark-1.3-contributor). A second provider profile targets Baseten with
+  (default muse-spark-1.3). A second provider profile targets Baseten with
   MODEL_ID meta-models/muse-spark-open-1026. Never hardcode keys.
+- Contributor-tier model IDs (ending in `-contributor`) let Meta train on
+  prompts and outputs. They are allowed only for local runs on fixtures we
+  wrote. In production, refuse to run a conversion with one, and make
+  `/api/health` report it as an error.
+- Use the Chat Completions API (`client.chat.completions.create`). Images go
+  only in user-role messages, as `image_url` data URLs. (On the Responses API
+  the structured-output parameter is `text.format`; `response_format` there
+  returns 400.)
 - Every model call asks for JSON. Prefer `response_format: { type: "json_schema",
   json_schema: { name, schema } }`. If a provider rejects json_schema, fall back
   to JSON mode and rely on zod validation. Either way: validate with zod,
@@ -35,7 +85,8 @@ Everything in this repo is new work written during Oct 27 - Nov 4, 2026.
 - Rights and privacy. A converted recipe is private to the person who requested
   it; it is never listed, indexed or shared. Every recipe card shows credit:
   site name, author and a "View original" link for URLs; book title, author and
-  page for photos. Source images are never copied. Fixtures and eval data come
+  page for photos. Source images are never copied. Uploaded photos are
+  processed in memory and never stored or logged. Fixtures and eval data come
   only from recipes we own or that are public domain / CC-licensed with
   attribution; third-party recipes are stored as URLs and fetched at run time.
   Never commit third-party HTML, text or images.
@@ -45,15 +96,22 @@ Everything in this repo is new work written during Oct 27 - Nov 4, 2026.
   env, `/api/health`, structured logs without PII, friendly error states.
 - The voice stage changes wording only; numeric tokens stay unchanged, in order.
 - Stages are pure, versioned functions (JSON in, JSON out).
-- Tests: vitest fixture tests per stage; `npm test`, `npm run typecheck` and
-  `npm run lint` pass before any task is reported done.
-- Dependencies allowed without asking: next, react, openai, zod,
-  zod-to-json-schema, cheerio, commander, vitest, tsx, typescript,
+- Tests: vitest fixture tests per stage. Tests never call a live model; they
+  use recorded responses under eval/recordings/, so CI runs without a key. Live
+  calls happen only through `npm run smoke` and the CLI. `npm test`,
+  `npm run typecheck` and `npm run lint` pass before any task is reported done.
+  Next.js 16 has no `next lint`; `npm run lint` runs `eslint .`.
+- Dependencies allowed without asking: next, react, react-dom, openai, zod,
+  zod-to-json-schema, cheerio, commander, vitest, tsx, typescript, eslint,
+  eslint-config-next, @types/node, @types/react, @types/react-dom,
   @upstash/redis, @upstash/ratelimit. Ask before adding anything else.
 - Do not commit or push. No cookies or tracking in the library; the web app may
   use Plausible via env.
 
 ## The format (spec)
+This repo is where the format is defined publicly. It is a draft (version 1)
+until the first release; build exactly what is written here.
+
 Canonical recipe (`src/lib/schema/canonical.ts`):
   { version: 1, id, title,
     source: { kind: "url"|"text"|"photo", url?, site?, author?, book?, page?,
@@ -78,9 +136,13 @@ Timeline definition (`src/lib/schema/timeline.ts`):
   resources: [] (pans, burners, oven), resourceHolds: [], serveTaskId.
 
 Cook Along artifact (`src/lib/schema/artifact.ts`):
-  { recipe: { title, servings, ingredients, equipment, steps, allergens,
-      originalMethod, methodLabel, methodNotice, credit },
+  { formatVersion: 1, id,
+    recipe: { title, servings, ingredients, equipment, steps, allergens,
+      originalMethod, methodLabel, methodNotice,
+      credit: { kind, site?, author?, url?, book?, page?, license? } },
     timelineDefinition, equipmentProfile, changes: [] }
+  `credit` is copied from the canonical recipe's `source`. A change that would
+  break artifacts already saved on textsous.com bumps formatVersion.
 
 Variant transform (dietary and cuisine share it, `src/lib/schema/variant.ts`):
   { kind: "dietary"|"cuisine", target, titleOverride?,
@@ -105,11 +167,30 @@ source_fidelity, ingredient_coverage, quantities, dietary_conditions,
 method_and_safety, equipment_capacity, task_schedule, source_timing,
 atomic_attention, mise_en_place, source_relationships, tips_and_voice.
 
+## Handoff to textsous.com (the other side is private; this is the contract)
+- Entry links: https://textsous.com/open?url=<recipe page URL> or
+  ?src=<artifact JSON URL>. textsous.com redirects /open to
+  https://open.textsous.com with the query string kept, so this app's home
+  route accepts `url` and `src` and starts a conversion or loads the artifact.
+- "Save to TextSous": store the artifact under a random id for 24 hours, then send
+  the person to https://textsous.com/import?src=<signed artifact URL>.
+- GET /api/artifact/<id>?sig=<signature> returns the artifact JSON. The
+  signature is an HMAC of the id and expiry using ARTIFACT_SIGNING_SECRET. The
+  URL works for 24 hours and may be fetched more than once, because sign-in can
+  interrupt the first attempt. It returns 404 once expired. textsous.com fetches
+  it server to server, so no CORS.
+- `npm run schema` regenerates docs/schema/*.json from the zod schemas. Run it
+  after any schema change and keep the output committed: textsous.com validates
+  against those files.
+
 ## Layout
+Node 24, Next.js 16 App Router, TypeScript, ESM.
 src/lib/ (pure TS, no Next imports: schema, model, intake, stages, scheduler,
 scaling)  src/app/ (Next.js routes and UI)  src/cli.ts  eval/  docs/FORMAT.md
-docs/EMBED.md  NEW-WORK.md
+docs/EMBED.md  docs/schema/  NEW-WORK.md
 
 ## Working style
 Small verifiable tasks. After any stage change, run the CLI on eval/fixtures and
-report what changed, which checks failed, and tokens per call.
+report what changed, which checks failed, and tokens per call. End each task at
+a clean stopping point: tests pass, one dated line appended to NEW-WORK.md
+saying what was built, and a suggested commit message in your report.
