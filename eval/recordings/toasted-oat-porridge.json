@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "fixture": "toasted-oat-porridge.html",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "recordedAt": "2026-10-28T19:52:36.671Z",
+  "usage": {
+    "promptTokens": 1056,
+    "completionTokens": 5524,
+    "totalTokens": 6580
+  },
+  "input": {
+    "source": {
+      "kind": "url",
+      "url": "https://example.com/recipes/toasted-oat-porridge",
+      "site": "TextSous Fixtures",
+      "author": "TextSous Kitchen"
+    },
+    "title": "Toasted Oat Porridge with Brown Butter Apples",
+    "ingredientLines": [
+      "1 cup rolled oats",
+      "2 cups whole milk",
+      "1 tablespoon unsalted butter",
+      "1 medium apple, diced",
+      "2 tablespoons brown sugar",
+      "1/4 teaspoon ground cinnamon",
+      "1 pinch fine sea salt"
+    ],
+    "instructionLines": [
+      "Toast the rolled oats in a dry saucepan over medium heat for 2 minutes, until fragrant.",
+      "[Apples] Melt the butter in a small skillet until it foams and smells nutty.",
+      "[Apples] Add the diced apple, brown sugar, and cinnamon; cook 5 minutes until soft.",
+      "Pour the milk over the oats, add the salt, and simmer 6 minutes, stirring often.",
+      "Spoon into bowls and top with the brown butter apples."
+    ],
+    "servingsRaw": "2 servings",
+    "rawText": "Toasted Oat Porridge with Brown Butter Apples A cozy two-serving breakfast of toasted oats under brown butter apples.",
+    "hasJsonLd": true
+  },
+  "response": "{\"cuisine\": null, \"equipment\": [\"saucepan\", \"small skillet\", \"bowls\"], \"id\": \"toasted-oat-porridge-with-brown-butter-apples\", \"ingredients\": [{\"allergenTraces\": [], \"allergens\": [\"gluten\"], \"id\": \"ing-1\", \"name\": \"rolled oats\", \"note\": null, \"quantity\": \"1\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"cup\"}, {\"allergenTraces\": [], \"allergens\": [\"milk\"], \"id\": \"ing-2\", \"name\": \"whole milk\", \"note\": null, \"quantity\": \"2\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"cups\"}, {\"allergenTraces\": [], \"allergens\": [\"milk\"], \"id\": \"ing-3\", \"name\": \"unsalted butter\", \"note\": null, \"quantity\": \"1\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"tablespoon\"}, {\"allergenTraces\": [], \"allergens\": [], \"id\": \"ing-4\", \"name\": \"apple\", \"note\": \"diced\", \"quantity\": \"1\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"medium\"}, {\"allergenTraces\": [], \"allergens\": [], \"id\": \"ing-5\", \"name\": \"brown sugar\", \"note\": null, \"quantity\": \"2\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"tablespoons\"}, {\"allergenTraces\": [], \"allergens\": [], \"id\": \"ing-6\", \"name\": \"ground cinnamon\", \"note\": null, \"quantity\": \"1/4\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"teaspoon\"}, {\"allergenTraces\": [], \"allergens\": [], \"id\": \"ing-7\", \"name\": \"fine sea salt\", \"note\": null, \"quantity\": \"1\", \"quantity4\": null, \"scaleRule\": null, \"unit\": \"pinch\"}], \"nativeServings\": 2, \"scalingNotes\": null, \"servingsLarge\": null, \"source\": {\"author\": null, \"book\": null, \"kind\": \"text\", \"license\": null, \"page\": null, \"site\": null, \"url\": null}, \"sourceFingerprint\": \"toasted-oat-porridge-with-brown-butter-apples-2\", \"steps\": [{\"id\": \"step-1\", \"kind\": \"active\", \"text\": \"Toast the rolled oats in a dry saucepan over medium heat for 2 minutes, until fragrant.\"}, {\"id\": \"step-2\", \"kind\": \"active\", \"text\": \"Melt the butter in a small skillet until it foams and smells nutty.\"}, {\"id\": \"step-3\", \"kind\": \"active\", \"text\": \"Add the diced apple, brown sugar, and cinnamon; cook 5 minutes until soft.\"}, {\"id\": \"step-4\", \"kind\": \"active\", \"text\": \"Pour the milk over the oats, add the salt, and simmer 6 minutes, stirring often.\"}, {\"id\": \"step-5\", \"kind\": \"active\", \"text\": \"Spoon into bowls and top with the brown butter apples.\"}], \"title\": \"Toasted Oat Porridge with Brown Butter Apples\", \"version\": 1}"
+}

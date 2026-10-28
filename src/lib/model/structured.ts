@@ -21,6 +21,29 @@ export interface StructuredResult<T> {
   provider: ProviderName;
   fallbackUsed: boolean;
   attempts: number;
+  /** Verbatim content of the successful completion (for --record). */
+  rawContent: string;
+}
+
+/** Minimal chat-completions client shape, so tests can inject a fake transport. */
+export interface StructuredChatClient {
+  chat: {
+    completions: {
+      create(params: {
+        model: string;
+        messages: ChatTextMessage[];
+        temperature: number;
+        response_format: ResponseFormat;
+      }): Promise<{
+        choices: Array<{ message: { content: string | null } }>;
+        usage?: {
+          prompt_tokens: number;
+          completion_tokens: number;
+          total_tokens: number;
+        } | null;
+      }>;
+    };
+  };
 }
 
 export interface CallStructuredOptions {
@@ -29,6 +52,8 @@ export interface CallStructuredOptions {
   temperature?: number;
   /** Validation re-prompts after the first attempt. Default 2. */
   maxValidationRetries?: number;
+  /** Fake transport for tests. Defaults to a live OpenAI client. */
+  client?: StructuredChatClient;
 }
 
 type ResponseFormat =
@@ -79,11 +104,13 @@ export async function callStructured<T>(
   const temperature = opts.temperature ?? 0;
 
   // Explicit global fetch: honors proxy env (NODE_USE_ENV_PROXY) everywhere.
-  const client = new OpenAI({
-    baseURL: config.baseUrl,
-    apiKey: config.apiKey,
-    fetch: globalThis.fetch,
-  });
+  const client: StructuredChatClient =
+    opts.client ??
+    new OpenAI({
+      baseURL: config.baseUrl,
+      apiKey: config.apiKey,
+      fetch: globalThis.fetch,
+    });
   const jsonSchema = toResponseJsonSchema(zodSchema as z.ZodTypeAny);
 
   let format: ResponseFormat = {
@@ -149,6 +176,7 @@ export async function callStructured<T>(
         provider: providerName,
         fallbackUsed,
         attempts,
+        rawContent: content,
       };
     }
     if (validationAttempt >= maxValidationRetries) {

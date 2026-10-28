@@ -36,7 +36,11 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   built slice 1: canonical schema, model client, URL/text intake, canonicalize
   stage, CLI, /api/health + /api/convert, 3 original fixtures, offline tests.
   Gates green; live smoke + 3 fixture converts pass (2026-10-27, Development
-  key). Scaffold uses Node 22 per task; Layout still says 24.
+  key). Pinned to Node 22 everywhere (.nvmrc, CI, engines, types).
+- 2026-10-28: M1 items all closed (TASKS.md): fake-transport, fetch-guard,
+  fixture-text and recorded-response tests (40/40 green, key unset), --record
+  flag + 3 recordings + 1 doctored; prod /api/health green (muse-spark-1.3,
+  key + Upstash true). M1.4-M1.7 code not yet pushed.
 - Keep this section current. When something ships, say so here with the date.
 
 ## Names (use exactly)
@@ -193,7 +197,7 @@ atomic_attention, mise_en_place, source_relationships, tips_and_voice.
   against those files.
 
 ## Layout
-Node 24, Next.js 16 App Router, TypeScript, ESM.
+Node 22, Next.js 16 App Router, TypeScript, ESM.
 src/lib/ (pure TS, no Next imports: schema, model, intake, stages, scheduler,
 scaling)  src/app/ (Next.js routes and UI)  src/cli.ts  eval/  docs/FORMAT.md
 docs/EMBED.md  docs/schema/  NEW-WORK.md  TASKS.md

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "fixture": "herby-white-bean-toast.txt",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "recordedAt": "2026-10-28T19:53:13.283Z",
+  "usage": {
+    "promptTokens": 1080,
+    "completionTokens": 6136,
+    "totalTokens": 7216
+  },
+  "input": {
+    "source": {
+      "kind": "text"
+    },
+    "rawText": "Original fixture recipe written for TextSous. CC0-1.0.\n\nHerby White Bean Toast\nServes 2.\n\nIngredients:\n- 1 can (15 oz) white beans, drained and rinsed\n- 2 thick slices sourdough bread\n- 1 small garlic clove, grated\n- 3 tablespoons olive oil, plus more to finish\n- 1 tablespoon lemon juice\n- 2 tablespoons chopped parsley\n- Salt and black pepper to taste\n\nSteps:\n1. Mash half the beans with a fork, then stir in the garlic, olive oil, and lemon juice.\n2. Toast the sourdough until golden at the edges.\n3. Spoon the beans over the toast.\n4. Top with the remaining whole beans, parsley, salt, pepper, and a thread of olive oil.",
+    "ingredientLines": [],
+    "instructionLines": [],
+    "hasJsonLd": false
+  },
+  "response": "{\"cuisine\":null,\"equipment\":[\"fork\"],\"id\":\"herby-white-bean-toast\",\"ingredients\":[{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-1\",\"name\":\"white beans\",\"note\":\"drained and rinsed\",\"quantity\":\"1\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"can (15 oz)\"},{\"allergenTraces\":[],\"allergens\":[\"gluten\"],\"id\":\"ing-2\",\"name\":\"sourdough bread\",\"note\":\"thick\",\"quantity\":\"2\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"slices\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-3\",\"name\":\"garlic\",\"note\":\"small, grated\",\"quantity\":\"1\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"clove\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-4\",\"name\":\"olive oil\",\"note\":\"plus more to finish\",\"quantity\":\"3\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"tablespoons\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-5\",\"name\":\"lemon juice\",\"note\":null,\"quantity\":\"1\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"tablespoon\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-6\",\"name\":\"parsley\",\"note\":\"chopped\",\"quantity\":\"2\",\"quantity4\":null,\"scaleRule\":null,\"unit\":\"tablespoons\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-7\",\"name\":\"Salt\",\"note\":null,\"quantity\":\"\",\"quantity4\":null,\"scaleRule\":\"to-taste\",\"unit\":\"\"},{\"allergenTraces\":[],\"allergens\":[],\"id\":\"ing-8\",\"name\":\"black pepper\",\"note\":null,\"quantity\":\"\",\"quantity4\":null,\"scaleRule\":\"to-taste\",\"unit\":\"\"}],\"nativeServings\":2,\"scalingNotes\":null,\"servingsLarge\":null,\"source\":{\"author\":null,\"book\":null,\"kind\":\"text\",\"license\":\"CC0-1.0\",\"page\":null,\"site\":null,\"url\":null},\"sourceFingerprint\":\"herby-white-bean-toast-cc0-1.0\",\"steps\":[{\"id\":\"step-1\",\"kind\":\"active\",\"text\":\"Mash half the beans with a fork, then stir in the garlic, olive oil, and lemon juice.\"},{\"id\":\"step-2\",\"kind\":\"active\",\"text\":\"Toast the sourdough until golden at the edges.\"},{\"id\":\"step-3\",\"kind\":\"active\",\"text\":\"Spoon the beans over the toast.\"},{\"id\":\"step-4\",\"kind\":\"active\",\"text\":\"Top with the remaining whole beans, parsley, salt, pepper, and a thread of olive oil.\"}],\"title\":\"Herby White Bean Toast\",\"version\":1}"
+}

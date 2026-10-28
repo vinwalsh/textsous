@@ -34,6 +34,21 @@ export interface CanonicalizeResult {
   usage: TokenUsage;
   fallbackUsed: boolean;
   attempts: number;
+  /** Verbatim successful model completion (for --record). */
+  rawResponse: string;
+}
+
+/** Format of eval/recordings/*.json, written by `convert --record`. */
+export interface RecordingFile {
+  version: 1;
+  fixture: string;
+  provider: ProviderName;
+  model: string;
+  recordedAt: string;
+  usage: TokenUsage;
+  input: CanonicalizeInput;
+  /** Verbatim successful model completion. */
+  response: string;
 }
 
 export interface ParsedServings {
@@ -246,5 +261,6 @@ export async function canonicalize(
     usage: result.usage,
     fallbackUsed: result.fallbackUsed,
     attempts: result.attempts,
+    rawResponse: result.rawContent,
   };
 }

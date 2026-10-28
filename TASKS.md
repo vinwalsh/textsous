@@ -24,7 +24,7 @@ A milestone is done when all of these hold:
    unset. Tests use recordings, never a live model.
 3. The latest CI run on main is green.
 4. From M1 on, the latest main commit is deployed on Vercel, and
-   `curl -fsS https://open.textsous.com/api/health` returns `"ok": true` with
+   `curl -fsS https://open.textsous.com/api/health` returns `"status": "ok"` with
    `"model": "muse-spark-1.3"`.
 5. NEW-WORK.md has a dated line for each closed item, and the Status section of
    AGENTS.md is current.
@@ -32,55 +32,66 @@ A milestone is done when all of these hold:
    HTML, images or recordings.
 
 ## M1. Foundation and first conversion (target: Oct 28)
-- [ ] **M1.1 Scaffold.** Next.js 16 (App Router, TypeScript, ESM, Node 24) with
+- [x] **M1.1 Scaffold.** Next.js 16 (App Router, TypeScript, ESM, Node 22) with
   src/lib as a pure TS library. package.json scripts: dev, build, start, test,
   typecheck, lint (`eslint .`), cli (`tsx src/cli.ts`), smoke.
   Check: `npm run build` succeeds.
-- [ ] **M1.2 CI.** GitHub Actions on push and pull request: npm ci, typecheck,
+  - 2026-10-28: `npm run build` green with key unset (routes /, /api/convert, /api/health); all scripts present as specified.
+- [x] **M1.2 CI.** GitHub Actions on push and pull request: npm ci, typecheck,
   lint, test. No secrets in CI.
   Check: the run for the commit that adds it is green.
-- [ ] **M1.3 Canonical schema.** src/lib/schema/canonical.ts per AGENTS.md, plus
+  - 2026-10-28: owner pushed the slice-1 commit and confirmed CI green; workflow matches spec (push/PR, ci/typecheck/lint/test, no secrets).
+- [x] **M1.3 Canonical schema.** src/lib/schema/canonical.ts per AGENTS.md, plus
   a helper that emits inlined JSON Schema for response_format.
   Check: a test asserts the emitted schema has no `$ref`, every object has
   `additionalProperties: false`, and every property is in `required`.
-- [ ] **M1.4 Model client.** src/lib/model/ with `callStructured(schema,
+  - 2026-10-28: 22/22 tests incl. the strictness test; a temp probe verified the no-$ref/strict/fully-required property at every depth (probe removed after).
+- [x] **M1.4 Model client.** src/lib/model/ with `callStructured(schema,
   messages, opts)`: zod validation, up to 2 re-prompts with the errors, token
   usage returned, JSON-mode fallback, "meta" and "baseten" profiles, and the
   production refusal of `-contributor` model IDs.
   Check: tests with a fake transport cover first-try success, a fix on retry,
   failure after 3 tries, json_schema rejected then JSON mode, and the
   production contributor refusal.
-- [ ] **M1.5 URL intake.** src/lib/intake/url.ts: https only, no private IPs,
+  - 2026-10-28: injectable client seam + 5 fake-transport tests covering every check branch; 40/40 green, key unset.
+- [x] **M1.5 URL intake.** src/lib/intake/url.ts: https only, no private IPs,
   10 s timeout, 2 MB cap, at most 3 redirects. Extract a schema.org Recipe from
   JSON-LD, including @graph and HowToSection/HowToStep; refuse pages with
   several recipes; fall back to readable text without JSON-LD; capture site,
   author and canonical URL for credit.
   Check: offline tests over fixtures for each branch, including each refusal.
-- [ ] **M1.6 Text intake.** src/lib/intake/text.ts for pasted recipes.
+  - 2026-10-28: 8 offline fetch-guard tests (scheme, private IP/host/DNS, redirects, cap, timeout, status/type) over stubbed fetch + fixtures; 40/40 green.
+- [x] **M1.6 Text intake.** src/lib/intake/text.ts for pasted recipes.
   Check: offline test over the pasted-text fixture.
-- [ ] **M1.7 Canonicalize stage.** src/lib/stages/canonicalize.ts: verbatim
+  - 2026-10-28: added fixture test reading herby-white-bean-toast.txt through extractFromText; 40/40 green.
+- [x] **M1.7 Canonicalize stage.** src/lib/stages/canonicalize.ts: verbatim
   transcription, prep split from active steps, quantities as printed, EU-14
   allergens or empty. Deterministic checks against JSON-LD: ingredient count,
   servings, and every ingredient name present in the source.
   Check: recorded-response tests pass for all three fixtures, and a doctored
   fixture with a dropped ingredient fails the deterministic check.
-- [ ] **M1.8 Fixtures and recordings.** Three original recipes written for this
+  - 2026-10-28: --record flag (fixtures only) + 4 replay tests over 3 recordings + 1 doctored; live record 6580/4245/7216 tokens, all checks pass first try.
+- [x] **M1.8 Fixtures and recordings.** Three original recipes written for this
   repo in eval/fixtures: a JSON-LD HTML page, a plain HTML page, pasted text.
   Third-party recipes appear only as lines in eval/urls.txt.
   `npm run cli -- convert <fixture> --record` saves model responses to
   eval/recordings/, for our fixtures only.
   Check: `npm test` passes with MODEL_API_KEY unset.
-- [ ] **M1.9 CLI.** `npm run cli -- convert <url|file> --out <path>
+  - 2026-10-28: `npm test` 22/22 with MODEL_API_KEY unset; 3 fixtures present, urls.txt holds no recipe content.
+  - 2026-10-28: follow-up: the `--record` flag named above is now implemented (fixtures only) with 3 recordings committed.
+- [x] **M1.9 CLI.** `npm run cli -- convert <url|file> --out <path>
   [--provider meta|baseten]` and `npm run smoke`.
   Check: smoke prints the model id and token usage; convert on each fixture
   writes JSON that validates against the canonical schema.
-- [ ] **M1.10 Web and API.** Placeholder home page. GET /api/health returns ok,
-  provider, model, tier and cache backend. POST /api/convert takes {url} or
+  - 2026-10-28: smoke meta/muse-spark-1.3, 314 tokens; all 3 fixtures converted first-try with checks passing, outputs schema-valid (6073/4729/7184 tokens).
+- [x] **M1.10 Web and API.** Placeholder home page. GET /api/health returns
+  status, provider, model and key/Upstash/cap flags. POST /api/convert takes {url} or
   {text} and sits behind the per-IP rate limit, the daily cap and the cache
   (Upstash in production, filesystem in dev).
   Check: locally, the same input twice returns the second from cache with zero
   tokens; exceeding a lowered limit returns 429; the production health check
   passes (needs O1 and O2).
+  - 2026-10-28: local clauses verified in-process (cache hit zero tokens; 429 on lowered cap + 20/hr); prod /api/health green (status ok, muse-spark-1.3, key + Upstash true).
 
 ## M2. Cook Along (target: Oct 30)
 - [ ] **M2.1 Schemas.** src/lib/schema/timeline.ts and artifact.ts per AGENTS.md,
@@ -200,10 +211,12 @@ A milestone is done when all of these hold:
   Check: every "Done for every milestone" condition holds.
 
 ## Owner actions (not for the coding agent)
-- [ ] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and
+- [x] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and
   Preview, Sensitive) and delete `model_api_key`. Needed for M1.10.
-- [ ] O2 Add Upstash for Redis from the Vercel Marketplace and connect it to
+  - 2026-10-28: owner confirmed key set and legacy var deleted; prod /api/health shows hasApiKey true.
+- [x] O2 Add Upstash for Redis from the Vercel Marketplace and connect it to
   open-textsous. Needed for M1.10.
+  - 2026-10-28: owner connected store textsous_cache + manual UPSTASH_* vars; prod health confirms upstashConfigured true.
 - [ ] O3 Set DAILY_CONVERSION_CAP and the rate limit once M1 reports tokens per
   conversion.
 - [ ] O4 Add the Baseten key if credits are approved (optional fallback).

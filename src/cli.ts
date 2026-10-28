@@ -10,7 +10,11 @@ import {
 } from "./lib/model";
 import { extractFromHtml, fetchAndExtract, type UrlExtraction } from "./lib/intake/url";
 import { extractFromText } from "./lib/intake/text";
-import { canonicalize, type CanonicalizeInput } from "./lib/stages/canonicalize";
+import {
+  canonicalize,
+  type CanonicalizeInput,
+  type RecordingFile,
+} from "./lib/stages/canonicalize";
 
 function parseProvider(raw: string): ProviderName {
   if (raw === "meta" || raw === "baseten") return raw;
@@ -70,7 +74,8 @@ program
   .argument("<input>", "https URL or path to an .html/.txt file")
   .requiredOption("--out <path>", "write canonical recipe JSON here")
   .option("--provider <name>", "meta|baseten", "meta")
-  .action(async (input: string, options: { out: string; provider: string }) => {
+  .option("--record", "save the raw model response to eval/recordings (fixtures only)")
+  .action(async (input: string, options: { out: string; provider: string; record?: boolean }) => {
     try {
       const provider = parseProvider(options.provider);
       const config = resolveProvider(provider);
@@ -78,6 +83,11 @@ program
         console.error(
           `Refusing: contributor-tier model "${config.model}" may only run locally on fixtures under eval/fixtures.`,
         );
+        process.exitCode = 1;
+        return;
+      }
+      if (options.record && !isFixtureInput(input)) {
+        console.error("Refusing: --record only saves responses for fixtures under eval/fixtures.");
         process.exitCode = 1;
         return;
       }
@@ -90,6 +100,22 @@ program
         options.out,
         `${JSON.stringify({ recipe: result.recipe, checks: result.checks }, null, 2)}\n`,
       );
+      if (options.record) {
+        const name = path.basename(input, path.extname(input));
+        const recordPath = path.join("eval", "recordings", `${name}.json`);
+        const recording: RecordingFile = {
+          version: 1,
+          fixture: path.basename(input),
+          provider,
+          model: config.model,
+          recordedAt: new Date().toISOString(),
+          usage: result.usage,
+          input: data,
+          response: result.rawResponse,
+        };
+        await writeFile(recordPath, `${JSON.stringify(recording, null, 2)}\n`);
+        console.log(`Recorded ${recordPath}`);
+      }
       const failed = result.checks.filter((c) => !c.passed);
       console.log(`Title: ${result.recipe.title}`);
       console.log(
