@@ -14,15 +14,17 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
 2026 is hackathon work; NEW-WORK.md records it.
 
 ## Status (read first)
-- On Oct 27, 2026 this repo holds only LICENSE, README.md and this file.
-  Nothing described below is built yet. The sections below are the rules and
-  the target design. Never assume a module, script, route, env var or deployment
-  exists until you have created it or checked for it.
+- On Oct 27, 2026 this repo holds only LICENSE, README.md, TASKS.md and this
+  file. Nothing described below is built yet. The sections below are the rules
+  and the target design. Never assume a module, script, route, env var or
+  deployment exists until you have created it or checked for it.
 - Vercel project `open-textsous` (team Sous) deploys this repo's main branch.
   Until package.json exists, its ignored-build-step rule skips every build.
-  open.textsous.com is attached but not live until DNS and the first deploy.
+  open.textsous.com is attached and its DNS points to Vercel; it serves
+  nothing until the first deploy.
   Env vars set in Vercel: MODEL_BASE_URL, MODEL_ID (muse-spark-1.3),
-  ARTIFACT_SIGNING_SECRET. Not set yet: MODEL_API_KEY, Upstash, the daily cap.
+  ARTIFACT_SIGNING_SECRET. Not set yet: MODEL_API_KEY (see TASKS.md O1),
+  Upstash, the daily cap.
 - The rest of the TextSous platform lives in separate private repos. It already
   handles accounts, households, weekly meal plans, grocery lists and SOUS over
   text and MCP. It has no public recipe import: the /open and /import routes in
@@ -187,10 +189,14 @@ atomic_attention, mise_en_place, source_relationships, tips_and_voice.
 Node 24, Next.js 16 App Router, TypeScript, ESM.
 src/lib/ (pure TS, no Next imports: schema, model, intake, stages, scheduler,
 scaling)  src/app/ (Next.js routes and UI)  src/cli.ts  eval/  docs/FORMAT.md
-docs/EMBED.md  docs/schema/  NEW-WORK.md
+docs/EMBED.md  docs/schema/  NEW-WORK.md  TASKS.md
 
 ## Working style
-Small verifiable tasks. After any stage change, run the CLI on eval/fixtures and
-report what changed, which checks failed, and tokens per call. End each task at
-a clean stopping point: tests pass, one dated line appended to NEW-WORK.md
-saying what was built, and a suggested commit message in your report.
+TASKS.md is the build plan and the definition of done. Follow the rules at its
+top: one milestone at a time, an item is `[x]` only after its Check passed in
+the session, blocked items are `[!]` with a reason, and every session ends with
+closed, open and blocked items. Keep tasks small and verifiable. After any stage
+change, run the CLI on eval/fixtures and report what changed, which checks
+failed, and tokens per call. End each item at a clean stopping point: tests
+pass, one dated line appended to NEW-WORK.md saying what was built, and a
+suggested commit message in your report.
