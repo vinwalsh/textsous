@@ -22,7 +22,8 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   Until package.json exists, its ignored-build-step rule skips every build.
   open.textsous.com is attached but not live until DNS and the first deploy.
   Env vars set in Vercel: MODEL_BASE_URL, MODEL_ID (muse-spark-1.3),
-  ARTIFACT_SIGNING_SECRET. Not set yet: MODEL_API_KEY, Upstash, the daily cap.
+  ARTIFACT_SIGNING_SECRET, MODEL_API_KEY (per owner 2026-10-27).
+  Not set yet: Upstash, the daily cap.
 - The rest of the TextSous platform lives in separate private repos. It already
   handles accounts, households, weekly meal plans, grocery lists and SOUS over
   text and MCP. It has no public recipe import: the /open and /import routes in
@@ -30,6 +31,11 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   test the handoff against a local stub, never against textsous.com.
 - Cuisine infusion doesn't exist anywhere yet, and the format has never been
   published before.
+- 2026-10-27: scaffolded (package.json, Next.js 16 app, CI, vercel.json) and
+  built slice 1: canonical schema, model client, URL/text intake, canonicalize
+  stage, CLI, /api/health + /api/convert, 3 original fixtures, offline tests.
+  Gates green; live smoke + 3 fixture converts pass (2026-10-27, Development
+  key). Scaffold uses Node 22 per task; Layout still says 24.
 - Keep this section current. When something ships, say so here with the date.
 
 ## Names (use exactly)
@@ -57,7 +63,9 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
 - Model access goes through one client (`src/lib/model/`). Config from env:
   MODEL_BASE_URL (default https://api.meta.ai/v1), MODEL_API_KEY, MODEL_ID
   (default muse-spark-1.3). A second provider profile targets Baseten with
-  MODEL_ID meta-models/muse-spark-open-1026. Never hardcode keys.
+  fixed model meta-models/muse-spark-open-1026, via BASETEN_BASE_URL and
+  BASETEN_API_KEY (falling back to MODEL_BASE_URL and MODEL_API_KEY).
+  Never hardcode keys.
 - Contributor-tier model IDs (ending in `-contributor`) let Meta train on
   prompts and outputs. They are allowed only for local runs on fixtures we
   wrote. In production, refuse to run a conversion with one, and make

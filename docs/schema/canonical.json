@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TextSous canonical recipe v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "enum": [
+        1
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "url",
+            "text",
+            "photo"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "site": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "book": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "license": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "url",
+        "site",
+        "author",
+        "book",
+        "page",
+        "license"
+      ],
+      "additionalProperties": false
+    },
+    "cuisine": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nativeServings": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "servingsLarge": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scalingNotes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "quantity4": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "scaleRule": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "linear",
+                  "sublinear",
+                  "flat",
+                  "superlinear",
+                  "to-taste"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "allergens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "celery",
+                "gluten",
+                "crustaceans",
+                "egg",
+                "fish",
+                "lupin",
+                "milk",
+                "molluscs",
+                "mustard",
+                "nuts",
+                "peanuts",
+                "sesame",
+                "soy",
+                "sulphites"
+              ]
+            }
+          },
+          "allergenTraces": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "celery",
+                "gluten",
+                "crustaceans",
+                "egg",
+                "fish",
+                "lupin",
+                "milk",
+                "molluscs",
+                "mustard",
+                "nuts",
+                "peanuts",
+                "sesame",
+                "soy",
+                "sulphites"
+              ]
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "quantity",
+          "unit",
+          "quantity4",
+          "scaleRule",
+          "allergens",
+          "allergenTraces",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "prep",
+              "active"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "equipment": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sourceFingerprint": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "title",
+    "source",
+    "cuisine",
+    "nativeServings",
+    "servingsLarge",
+    "scalingNotes",
+    "ingredients",
+    "steps",
+    "equipment",
+    "sourceFingerprint"
+  ],
+  "additionalProperties": false
+}

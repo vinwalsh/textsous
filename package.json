@@ -1,0 +1,43 @@
+{
+  "name": "textsous-open",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open-source tools that convert any recipe into the TextSous Cook Along format",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "smoke": "tsx src/cli.ts smoke",
+    "schema": "tsx scripts/generate-schema.ts",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.0",
+    "@upstash/redis": "^1.28.0",
+    "cheerio": "^1.0.0",
+    "commander": "^12.0.0",
+    "next": "^16.0.0",
+    "openai": "^4.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

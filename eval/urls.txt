@@ -1,0 +1,6 @@
+# Third-party recipe URLs live here ONLY, one per line. Tests never fetch these;
+# they are for manual CLI runs (e.g. `npm run cli -- convert <url> --out /tmp/x.json`).
+# Do not commit third-party HTML, text, or images anywhere in this repo.
+#
+# Example (replace with a real recipe page when testing manually):
+# https://www.example.com/recipes/example-recipe
