@@ -94,16 +94,18 @@ A milestone is done when all of these hold:
   - 2026-10-28: local clauses verified in-process (cache hit zero tokens; 429 on lowered cap + 20/hr); prod /api/health green (status ok, muse-spark-1.3, key + Upstash true).
 
 ## M2. Cook Along (target: Oct 30)
-- [ ] **M2.1 Schemas.** src/lib/schema/timeline.ts and artifact.ts per AGENTS.md,
+- [x] **M2.1 Schemas.** src/lib/schema/timeline.ts and artifact.ts per AGENTS.md,
   including formatVersion and credit.
   Check: the same JSON Schema assertions as M1.3.
-- [ ] **M2.2 Procedure stage.** src/lib/stages/procedure.ts: component lanes
+  - 2026-10-28: timeline.ts + artifact.ts with formatVersion/credit; deep strictness assertions on both emitted schemas; timeline.json + artifact.json generated; 44/44 green.
+- [x] **M2.2 Procedure stage.** src/lib/stages/procedure.ts: component lanes
   plus a final kitchen lane; phases prep/cook/finish; hands-on split from
   unattended work; sourceStepIds on every task; one exact quote per "source"
   timing, "estimate" otherwise; resource holds for pans, burners and oven;
   24k output tokens.
   Check: for each fixture, the output validates, every sourceStepId exists, and
   every quote appears verbatim in the source.
+  - 2026-10-28: procedure.ts + 5 coded checks + CLI procedure cmd; all 3 fixtures pass first try (13.5k/13.8k/13.0k tokens); 3 recordings + replay tests; 54/54 green.
 - [ ] **M2.3 Scheduler.** src/lib/scheduler/schedule.ts, deterministic: one cook,
   so hands-on tasks never overlap; unattended tasks overlap freely;
   dependencies and resource holds respected; all prep before the first cook

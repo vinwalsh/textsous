@@ -17,3 +17,7 @@
 2026-10-28: O2 done (Upstash store textsous_cache connected; namespaced KV_* vars copied to manual UPSTASH_* vars for Production/Preview); prod /api/health fully green so M1.10 closed. M1 remaining: M1.4-M1.7 test gaps only. No code changes.
 
 2026-10-28: Closed M1.4-M1.7: injectable model-client seam + 5 fake-transport tests; 8 offline fetch-guard tests; herby fixture-text test; --record flag + rawResponse passthrough + 3 recordings + 1 doctored with 4 replay tests. 40/40 green key-unset, typecheck + lint clean. Live record runs: 6580/4245/7216 tokens, all checks pass first try (herby 8 ingredients this run, salt/pepper split). All 10 M1 items closed; needs push for CI + prod re-verify.
+
+2026-10-28: M2.1 done: timeline + artifact zod schemas (closed enums, nullish optionals, min(1) sourceStepIds), docs/schema/timeline.json + artifact.json generated (canonical.json byte-identical); 4 schema tests incl. deep strictness, 44/44 green key-unset, typecheck + lint clean. No live calls.
+
+2026-10-28: M2.2 done: procedure stage (lanes/phases/hands-on split/sourced timings/holds, 24k cap) + runProcedureChecks (step ids, quotes, references, lanes, timers) + CLI procedure cmd with --record; 6 check unit tests + 3 recording replays. Live: porridge 6 tasks/13.5k, corn 5/13.8k, herby 4/13.0k tokens, all checks pass first try. 54/54 green. Added nullable sourceQuote to the timeline schema (docs regen'd).

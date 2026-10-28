@@ -13,6 +13,7 @@ interface FakeCall {
   messages: ChatTextMessage[];
   temperature: number;
   response_format: { type: string };
+  max_completion_tokens?: number;
 }
 
 interface FakeCompletion {
@@ -125,6 +126,16 @@ describe("callStructured with a fake transport", () => {
       "json_schema",
       "json_object",
     ]);
+  });
+
+  it("passes maxTokens as max_completion_tokens", async () => {
+    const transport = new FakeTransport(() => completion('{"echo":"hi"}'));
+    await callStructured(schema, MESSAGES, {
+      schemaName: "t",
+      client: transport,
+      maxTokens: 24000,
+    });
+    expect(transport.calls[0].max_completion_tokens).toBe(24000);
   });
 
   it("refuses contributor models in production without calling the transport", async () => {

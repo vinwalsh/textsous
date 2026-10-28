@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "fixture": "m19-herby.json",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "recordedAt": "2026-10-28T20:52:47.834Z",
+  "usage": {
+    "promptTokens": 1585,
+    "completionTokens": 11458,
+    "totalTokens": 13043
+  },
+  "recipe": {
+    "version": 1,
+    "id": "rcp-644894f17a68",
+    "title": "Herby White Bean Toast",
+    "source": {
+      "kind": "text",
+      "url": null,
+      "site": null,
+      "author": null,
+      "book": null,
+      "page": null,
+      "license": null
+    },
+    "cuisine": null,
+    "nativeServings": 2,
+    "servingsLarge": null,
+    "scalingNotes": null,
+    "ingredients": [
+      {
+        "id": "ing-1",
+        "name": "white beans",
+        "quantity": "1",
+        "unit": "can (15 oz)",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "drained and rinsed"
+      },
+      {
+        "id": "ing-2",
+        "name": "sourdough bread",
+        "quantity": "2",
+        "unit": "thick slices",
+        "quantity4": 4,
+        "scaleRule": null,
+        "allergens": [
+          "gluten"
+        ],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-3",
+        "name": "small garlic clove",
+        "quantity": "1",
+        "unit": "",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "grated"
+      },
+      {
+        "id": "ing-4",
+        "name": "olive oil",
+        "quantity": "3",
+        "unit": "tablespoons",
+        "quantity4": 6,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "plus more to finish"
+      },
+      {
+        "id": "ing-5",
+        "name": "lemon juice",
+        "quantity": "1",
+        "unit": "tablespoon",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-6",
+        "name": "parsley",
+        "quantity": "2",
+        "unit": "tablespoons",
+        "quantity4": 4,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "chopped"
+      },
+      {
+        "id": "ing-7",
+        "name": "Salt and black pepper",
+        "quantity": "",
+        "unit": "",
+        "quantity4": null,
+        "scaleRule": "to-taste",
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "to taste"
+      }
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "kind": "active",
+        "text": "Mash half the beans with a fork, then stir in the garlic, olive oil, and lemon juice."
+      },
+      {
+        "id": "step-2",
+        "kind": "active",
+        "text": "Toast the sourdough until golden at the edges."
+      },
+      {
+        "id": "step-3",
+        "kind": "active",
+        "text": "Spoon the beans over the toast."
+      },
+      {
+        "id": "step-4",
+        "kind": "active",
+        "text": "Top with the remaining whole beans, parsley, salt, pepper, and a thread of olive oil."
+      }
+    ],
+    "equipment": [
+      "fork"
+    ],
+    "sourceFingerprint": "sha256:f444d818f6981ba6a169a99ac723da08249b534d02efa3e037f1634730d28423"
+  },
+  "response": "{\"lanes\": [{\"color\": \"#E8DCC6\", \"id\": \"lane-protein\", \"kind\": \"component\", \"label\": \"Protein\"}, {\"color\": \"#C89B6A\", \"id\": \"lane-base\", \"kind\": \"component\", \"label\": \"Base\"}, {\"color\": \"#7FB069\", \"id\": \"lane-garnish\", \"kind\": \"component\", \"label\": \"Garnish\"}, {\"color\": \"#999999\", \"id\": \"lane-kitchen\", \"kind\": \"kitchen\", \"label\": \"Kitchen\"}], \"resourceHolds\": [], \"resources\": [], \"serveTaskId\": \"task-serve\", \"tasks\": [{\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Mash\", \"context\": \"with garlic and lemon\", \"subject\": \"white beans\"}, \"checkpoints\": [], \"completionCue\": \"Half the beans coarsely mashed and creamy, mixture evenly combined\", \"dependencies\": [], \"description\": \"Mash half the beans with a fork, then stir in the garlic, olive oil, and lemon juice.\", \"equipmentEvent\": null, \"id\": \"task-mash\", \"label\": \"Mash bean spread\", \"laneIds\": [\"lane-protein\"], \"minutes\": 5, \"phase\": \"prep\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-3\", \"ing-4\", \"ing-5\"], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-1\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Toast\", \"context\": \"until golden\", \"subject\": \"sourdough\"}, \"checkpoints\": [], \"completionCue\": \"Golden at the edges and crisp\", \"dependencies\": [\"task-mash\"], \"description\": \"Toast the sourdough until golden at the edges.\", \"equipmentEvent\": null, \"id\": \"task-toast\", \"label\": \"Toast sourdough\", \"laneIds\": [\"lane-base\"], \"minutes\": 3, \"phase\": \"cook\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-2\"], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-2\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Spoon\", \"context\": \"over toast\", \"subject\": \"beans\"}, \"checkpoints\": [], \"completionCue\": \"Toast evenly covered with bean mixture\", \"dependencies\": [\"task-toast\"], \"description\": \"Spoon the beans over the toast.\", \"equipmentEvent\": null, \"id\": \"task-spoon\", \"label\": \"Spoon beans on toast\", \"laneIds\": [\"lane-base\", \"lane-protein\"], \"minutes\": 2, \"phase\": \"finish\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-2\"], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-3\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Top\", \"context\": \"to serve\", \"subject\": \"toast\"}, \"checkpoints\": [], \"completionCue\": \"Topped with whole beans and parsley, seasoned and oiled, ready to serve\", \"dependencies\": [\"task-spoon\"], \"description\": \"Top with the remaining whole beans, parsley, salt, pepper, and a thread of olive oil.\", \"equipmentEvent\": null, \"id\": \"task-serve\", \"label\": \"Top and serve\", \"laneIds\": [\"lane-base\", \"lane-protein\", \"lane-garnish\"], \"minutes\": 2, \"phase\": \"finish\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-4\", \"ing-6\", \"ing-7\"], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-4\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}]}"
+}

@@ -34,6 +34,7 @@ export interface StructuredChatClient {
         messages: ChatTextMessage[];
         temperature: number;
         response_format: ResponseFormat;
+        max_completion_tokens?: number;
       }): Promise<{
         choices: Array<{ message: { content: string | null } }>;
         usage?: {
@@ -54,6 +55,8 @@ export interface CallStructuredOptions {
   maxValidationRetries?: number;
   /** Fake transport for tests. Defaults to a live OpenAI client. */
   client?: StructuredChatClient;
+  /** Cap on completion tokens (max_completion_tokens). Unset by default. */
+  maxTokens?: number;
 }
 
 type ResponseFormat =
@@ -131,6 +134,7 @@ export async function callStructured<T>(
         messages: transcript,
         temperature,
         response_format: format,
+        ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
       });
       const u = response.usage;
       if (u) {

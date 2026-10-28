@@ -1,5 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { CookAlongArtifactSchema } from "../src/lib/schema/artifact";
 import { CanonicalRecipeSchema } from "../src/lib/schema/canonical";
+import { TimelineDefinitionSchema } from "../src/lib/schema/timeline";
 import { toResponseJsonSchema } from "../src/lib/schema/json";
 
 // Regenerates docs/schema/*.json from the zod schemas. Run after any schema
@@ -11,6 +13,16 @@ const schemas: Record<string, unknown> = {
     $schema: "http://json-schema.org/draft-07/schema#",
     title: "TextSous canonical recipe v1",
     ...toResponseJsonSchema(CanonicalRecipeSchema),
+  },
+  timeline: {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    title: "TextSous timeline definition v1",
+    ...toResponseJsonSchema(TimelineDefinitionSchema),
+  },
+  artifact: {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    title: "TextSous Cook Along artifact v1",
+    ...toResponseJsonSchema(CookAlongArtifactSchema),
   },
 };
 

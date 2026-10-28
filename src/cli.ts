@@ -15,6 +15,8 @@ import {
   type CanonicalizeInput,
   type RecordingFile,
 } from "./lib/stages/canonicalize";
+import { CanonicalRecipeSchema } from "./lib/schema/canonical";
+import { procedure, type ProcedureRecordingFile } from "./lib/stages/procedure";
 
 function parseProvider(raw: string): ProviderName {
   if (raw === "meta" || raw === "baseten") return raw;
@@ -136,6 +138,79 @@ program
       process.exitCode = 1;
     }
   });
+
+program
+  .command("procedure")
+  .description("Build a component-lane timeline from a canonical recipe JSON file")
+  .argument("<input>", "path to a canonical recipe JSON file ({recipe} or bare recipe)")
+  .requiredOption("--out <path>", "write timeline JSON here")
+  .option("--provider <name>", "meta|baseten", "meta")
+  .option("--record [name]", "save the raw model response to eval/recordings")
+  .action(
+    async (input: string, options: { out: string; provider: string; record?: boolean | string }) => {
+      try {
+        const provider = parseProvider(options.provider);
+        const config = resolveProvider(provider);
+        const raw = JSON.parse(
+          await readFile(input, "utf8").catch(() => {
+            throw new Error(`Cannot read file: ${input}`);
+          }),
+        ) as unknown;
+        const recipeRaw = (raw as { recipe?: unknown }).recipe ?? raw;
+        const parsed = CanonicalRecipeSchema.safeParse(recipeRaw);
+        if (!parsed.success) {
+          const issues = parsed.error.issues
+            .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+            .join("; ");
+          throw new Error(`Input is not a canonical recipe: ${issues}`);
+        }
+        console.log(`Building timeline for ${input} (${provider}/${config.model})...`);
+        const started = Date.now();
+        const result = await procedure(parsed.data, { provider });
+        await mkdir(path.dirname(options.out), { recursive: true });
+        await writeFile(
+          options.out,
+          `${JSON.stringify({ timeline: result.timeline, checks: result.checks }, null, 2)}\n`,
+        );
+        if (options.record !== undefined) {
+          const name =
+            typeof options.record === "string" && options.record.length > 0
+              ? options.record
+              : path.basename(input, path.extname(input));
+          const recordPath = path.join("eval", "recordings", `procedure-${name}.json`);
+          const recording: ProcedureRecordingFile = {
+            version: 1,
+            fixture: path.basename(input),
+            provider,
+            model: config.model,
+            recordedAt: new Date().toISOString(),
+            usage: result.usage,
+            recipe: parsed.data,
+            response: result.rawResponse,
+          };
+          await writeFile(recordPath, `${JSON.stringify(recording, null, 2)}\n`);
+          console.log(`Recorded ${recordPath}`);
+        }
+        const failed = result.checks.filter((c) => !c.passed);
+        console.log(
+          `Lanes: ${result.timeline.lanes.length}, tasks: ${result.timeline.tasks.length}, resources: ${result.timeline.resources.length}`,
+        );
+        console.log(
+          `Checks: ${result.checks.map((c) => `${c.name}=${c.passed ? "pass" : "FAIL"}`).join(" ")}`,
+        );
+        for (const c of failed) console.log(`  FAIL ${c.name}: ${c.detail}`);
+        console.log(
+          `Tokens: prompt=${result.usage.promptTokens} completion=${result.usage.completionTokens} total=${result.usage.totalTokens} ` +
+            `(attempts=${result.attempts}, fallback=${result.fallbackUsed ? "json-mode" : "no"})`,
+        );
+        console.log(`Wrote ${options.out} in ${Date.now() - started}ms`);
+        if (failed.length > 0) process.exitCode = 2;
+      } catch (error) {
+        console.error(`procedure failed: ${(error as Error).message}`);
+        process.exitCode = 1;
+      }
+    },
+  );
 
 program
   .command("smoke")

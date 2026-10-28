@@ -1,0 +1,638 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TextSous Cook Along artifact v1",
+  "type": "object",
+  "properties": {
+    "formatVersion": {
+      "type": "number",
+      "enum": [
+        1
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recipe": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "servings": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "quantity": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "quantity4": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "scaleRule": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "linear",
+                      "sublinear",
+                      "flat",
+                      "superlinear",
+                      "to-taste"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "allergens": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "celery",
+                    "gluten",
+                    "crustaceans",
+                    "egg",
+                    "fish",
+                    "lupin",
+                    "milk",
+                    "molluscs",
+                    "mustard",
+                    "nuts",
+                    "peanuts",
+                    "sesame",
+                    "soy",
+                    "sulphites"
+                  ]
+                }
+              },
+              "allergenTraces": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "celery",
+                    "gluten",
+                    "crustaceans",
+                    "egg",
+                    "fish",
+                    "lupin",
+                    "milk",
+                    "molluscs",
+                    "mustard",
+                    "nuts",
+                    "peanuts",
+                    "sesame",
+                    "soy",
+                    "sulphites"
+                  ]
+                }
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "quantity",
+              "unit",
+              "quantity4",
+              "scaleRule",
+              "allergens",
+              "allergenTraces",
+              "note"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "equipment": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "prep",
+                  "active"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "allergens": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "celery",
+              "gluten",
+              "crustaceans",
+              "egg",
+              "fish",
+              "lupin",
+              "milk",
+              "molluscs",
+              "mustard",
+              "nuts",
+              "peanuts",
+              "sesame",
+              "soy",
+              "sulphites"
+            ]
+          }
+        },
+        "originalMethod": {
+          "type": "string"
+        },
+        "methodLabel": {
+          "type": "string"
+        },
+        "methodNotice": {
+          "type": "string"
+        },
+        "credit": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "url",
+                "text",
+                "photo"
+              ]
+            },
+            "site": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "author": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "book": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "page": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "license": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "site",
+            "author",
+            "url",
+            "book",
+            "page",
+            "license"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "title",
+        "servings",
+        "ingredients",
+        "equipment",
+        "steps",
+        "allergens",
+        "originalMethod",
+        "methodLabel",
+        "methodNotice",
+        "credit"
+      ],
+      "additionalProperties": false
+    },
+    "timelineDefinition": {
+      "type": "object",
+      "properties": {
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "color": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "component",
+                  "kitchen"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "color",
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "prep",
+                  "cook",
+                  "finish"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cardTitle": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subject": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "context": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "subject",
+                  "context"
+                ],
+                "additionalProperties": false
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "completionCue": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 180
+              },
+              "range": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "low": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 180
+                      },
+                      "high": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 180
+                      }
+                    },
+                    "required": [
+                      "low",
+                      "high"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "timingBasis": {
+                "type": "string",
+                "enum": [
+                  "source",
+                  "estimate"
+                ]
+              },
+              "attention": {
+                "type": "string",
+                "enum": [
+                  "hands-on",
+                  "unattended"
+                ]
+              },
+              "timerEnabledByDefault": {
+                "type": "boolean"
+              },
+              "laneIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "dependencies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "sourceStepIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "checkpoints": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "tip": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "equipmentEvent": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "oven-on",
+                      "oven-off"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "scheduling": {
+                "type": "object",
+                "properties": {
+                  "waits": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "resourceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "ingredientIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "waits",
+                  "resourceIds",
+                  "ingredientIds"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "phase",
+              "label",
+              "cardTitle",
+              "description",
+              "completionCue",
+              "minutes",
+              "range",
+              "timingBasis",
+              "attention",
+              "timerEnabledByDefault",
+              "laneIds",
+              "dependencies",
+              "sourceStepIds",
+              "checkpoints",
+              "tip",
+              "equipmentEvent",
+              "scheduling"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "resourceHolds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "taskId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "resourceId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "taskId",
+              "resourceId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "serveTaskId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "lanes",
+        "tasks",
+        "resources",
+        "resourceHolds",
+        "serveTaskId"
+      ],
+      "additionalProperties": false
+    },
+    "equipmentProfile": {
+      "type": "object",
+      "properties": {
+        "burners": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "oven": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "burners",
+        "oven"
+      ],
+      "additionalProperties": false
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "merged-steps",
+              "estimate"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "detail"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "formatVersion",
+    "id",
+    "recipe",
+    "timelineDefinition",
+    "equipmentProfile",
+    "changes"
+  ],
+  "additionalProperties": false
+}

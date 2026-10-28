@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "fixture": "m19-corn.json",
+  "provider": "meta",
+  "model": "muse-spark-1.3",
+  "recordedAt": "2026-10-28T20:52:00.748Z",
+  "usage": {
+    "promptTokens": 1553,
+    "completionTokens": 12220,
+    "totalTokens": 13773
+  },
+  "recipe": {
+    "version": 1,
+    "id": "rcp-0f383bc59dcb",
+    "title": "Charred Corn and Lime Salad",
+    "source": {
+      "kind": "url",
+      "url": "https://example.com/recipes/charred-corn-salad",
+      "site": "TextSous Fixtures",
+      "author": "TextSous Kitchen",
+      "book": null,
+      "page": null,
+      "license": null
+    },
+    "cuisine": null,
+    "nativeServings": 4,
+    "servingsLarge": null,
+    "scalingNotes": null,
+    "ingredients": [
+      {
+        "id": "ing-1",
+        "name": "corn",
+        "quantity": "4",
+        "unit": "ears",
+        "quantity4": 4,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "shucked"
+      },
+      {
+        "id": "ing-2",
+        "name": "olive oil",
+        "quantity": "1",
+        "unit": "tablespoon",
+        "quantity4": 1,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-3",
+        "name": "lime",
+        "quantity": "1",
+        "unit": "",
+        "quantity4": 1,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "juiced"
+      },
+      {
+        "id": "ing-4",
+        "name": "cilantro",
+        "quantity": "1/4",
+        "unit": "cup",
+        "quantity4": 0.25,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "chopped"
+      },
+      {
+        "id": "ing-5",
+        "name": "kosher salt",
+        "quantity": "1/2",
+        "unit": "teaspoon",
+        "quantity4": 0.5,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      }
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "kind": "active",
+        "text": "Brush the corn with the olive oil."
+      },
+      {
+        "id": "step-2",
+        "kind": "active",
+        "text": "Char on a hot grill, turning, until blackened in spots, about 8 minutes."
+      },
+      {
+        "id": "step-3",
+        "kind": "active",
+        "text": "Cut the kernels from the cobs into a bowl."
+      },
+      {
+        "id": "step-4",
+        "kind": "active",
+        "text": "Toss with the lime juice, cilantro, and salt."
+      },
+      {
+        "id": "step-5",
+        "kind": "active",
+        "text": "Serve warm."
+      }
+    ],
+    "equipment": [
+      "grill",
+      "bowl"
+    ],
+    "sourceFingerprint": "sha256:0bc794e462389c3c53de7eff13e01e934b4b915747fcb4d8d4d46b24d63f9aa3"
+  },
+  "response": "{\"lanes\": [{\"color\": \"#EAB308\", \"id\": \"lane-corn\", \"kind\": \"component\", \"label\": \"Corn Salad\"}, {\"color\": \"#6B7280\", \"id\": \"lane-kitchen\", \"kind\": \"kitchen\", \"label\": \"Kitchen\"}], \"resourceHolds\": [{\"resourceId\": \"res-grill\", \"taskId\": \"task-char\"}, {\"resourceId\": \"res-bowl\", \"taskId\": \"task-cut\"}, {\"resourceId\": \"res-bowl\", \"taskId\": \"task-toss\"}], \"resources\": [{\"id\": \"res-grill\", \"kind\": \"grill\", \"label\": \"Grill\"}, {\"id\": \"res-bowl\", \"kind\": \"bowl\", \"label\": \"Bowl\"}], \"serveTaskId\": \"task-serve\", \"tasks\": [{\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Brush\", \"context\": \"with oil\", \"subject\": \"corn\"}, \"checkpoints\": [], \"completionCue\": \"Corn evenly coated with a light sheen of oil.\", \"dependencies\": [], \"description\": \"Brush the corn with the olive oil.\", \"equipmentEvent\": null, \"id\": \"task-brush\", \"label\": \"Brush corn with oil\", \"laneIds\": [\"lane-corn\"], \"minutes\": 2, \"phase\": \"prep\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-2\"], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-1\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Char\", \"context\": \"on grill\", \"subject\": \"corn\"}, \"checkpoints\": [\"Some kernels showing black spots\", \"All sides charred in spots\"], \"completionCue\": \"Corn blackened in spots.\", \"dependencies\": [\"task-brush\"], \"description\": \"Char the oiled corn on a hot grill, turning, until blackened in spots.\", \"equipmentEvent\": null, \"id\": \"task-char\", \"label\": \"Char corn on grill\", \"laneIds\": [\"lane-corn\", \"lane-kitchen\"], \"minutes\": 8, \"phase\": \"cook\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-2\"], \"resourceIds\": [\"res-grill\"], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-2\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Cut\", \"context\": \"into bowl\", \"subject\": \"kernels\"}, \"checkpoints\": [], \"completionCue\": \"Kernels collected in bowl, cobs bare.\", \"dependencies\": [\"task-char\"], \"description\": \"Cut the kernels from the cobs into a bowl.\", \"equipmentEvent\": null, \"id\": \"task-cut\", \"label\": \"Cut kernels off\", \"laneIds\": [\"lane-corn\"], \"minutes\": 3, \"phase\": \"finish\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\"], \"resourceIds\": [\"res-bowl\"], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-3\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Toss\", \"context\": \"with lime\", \"subject\": \"corn\"}, \"checkpoints\": [], \"completionCue\": \"Kernels glossy with lime juice, cilantro evenly mixed.\", \"dependencies\": [\"task-cut\"], \"description\": \"Toss the kernels with the lime juice, cilantro, and salt.\", \"equipmentEvent\": null, \"id\": \"task-toss\", \"label\": \"Toss with lime\", \"laneIds\": [\"lane-corn\"], \"minutes\": 2, \"phase\": \"finish\", \"range\": null, \"scheduling\": {\"ingredientIds\": [\"ing-1\", \"ing-3\", \"ing-4\", \"ing-5\"], \"resourceIds\": [\"res-bowl\"], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-4\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}, {\"attention\": \"hands-on\", \"cardTitle\": {\"action\": \"Serve\", \"context\": \"warm\", \"subject\": \"salad\"}, \"checkpoints\": [], \"completionCue\": \"Salad warm and ready to serve.\", \"dependencies\": [\"task-toss\"], \"description\": \"Serve the salad warm.\", \"equipmentEvent\": null, \"id\": \"task-serve\", \"label\": \"Serve warm\", \"laneIds\": [\"lane-corn\"], \"minutes\": 1, \"phase\": \"finish\", \"range\": null, \"scheduling\": {\"ingredientIds\": [], \"resourceIds\": [], \"waits\": []}, \"sourceQuote\": null, \"sourceStepIds\": [\"step-5\"], \"timerEnabledByDefault\": false, \"timingBasis\": \"estimate\", \"tip\": null}]}"
+}
