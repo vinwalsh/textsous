@@ -41,6 +41,9 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   fixture-text and recorded-response tests (40/40 green, key unset), --record
   flag + 3 recordings + 1 doctored; prod /api/health green (muse-spark-1.3,
   key + Upstash true). M1.4-M1.7 code not yet pushed.
+- 2026-10-29: M3 adjustments complete (TASKS.md): amounts/scaling math,
+  dietary + cuisine variants, SOUS voice, composition flags + /api/adjust.
+  180/180 green, key unset. Not yet pushed.
 - Keep this section current. When something ships, say so here with the date.
 
 ## Names (use exactly)

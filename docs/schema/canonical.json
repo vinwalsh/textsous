@@ -150,6 +150,18 @@
               }
             ]
           },
+          "cookQuantity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "buyQuantity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "allergens": {
             "type": "array",
             "items": {
@@ -208,6 +220,8 @@
           "unit",
           "quantity4",
           "scaleRule",
+          "cookQuantity",
+          "buyQuantity",
           "allergens",
           "allergenTraces",
           "note"

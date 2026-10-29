@@ -66,6 +66,18 @@
                   }
                 ]
               },
+              "cookQuantity": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "buyQuantity": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "allergens": {
                 "type": "array",
                 "items": {
@@ -124,6 +136,8 @@
               "unit",
               "quantity4",
               "scaleRule",
+              "cookQuantity",
+              "buyQuantity",
               "allergens",
               "allergenTraces",
               "note"
@@ -406,6 +420,12 @@
                   "estimate"
                 ]
               },
+              "sourceQuote": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "attention": {
                 "type": "string",
                 "enum": [
@@ -509,6 +529,7 @@
               "minutes",
               "range",
               "timingBasis",
+              "sourceQuote",
               "attention",
               "timerEnabledByDefault",
               "laneIds",
@@ -610,7 +631,10 @@
             "type": "string",
             "enum": [
               "merged-steps",
-              "estimate"
+              "estimate",
+              "scale",
+              "swap",
+              "technique"
             ]
           },
           "detail": {

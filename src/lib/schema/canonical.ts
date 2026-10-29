@@ -32,6 +32,8 @@ export const ScaleRuleSchema = z.enum([
   "superlinear",
   "to-taste",
 ]);
+
+export type ScaleRule = z.infer<typeof ScaleRuleSchema>;
 export const StepKindSchema = z.enum(["prep", "active"]);
 export const AllergenSchema = z.enum(EU14_ALLERGENS);
 
@@ -55,6 +57,9 @@ export const CanonicalIngredientSchema = z.strictObject({
   // Normalized quantity for 4 servings; computed by code, not the model.
   quantity4: z.number().nullish(),
   scaleRule: ScaleRuleSchema.nullish(),
+  // Scaled amounts, filled by the scaling stage; null until applied.
+  cookQuantity: z.string().nullish(),
+  buyQuantity: z.string().nullish(),
   allergens: z.array(AllergenSchema),
   allergenTraces: z.array(AllergenSchema),
   note: z.string().nullish(),

@@ -25,7 +25,13 @@ export const EquipmentProfileSchema = z.strictObject({
   oven: z.boolean(),
 });
 
-export const ArtifactChangeKindSchema = z.enum(["merged-steps", "estimate"]);
+export const ArtifactChangeKindSchema = z.enum([
+  "merged-steps",
+  "estimate",
+  "scale",
+  "swap",
+  "technique",
+]);
 
 export const ArtifactChangeSchema = z.strictObject({
   kind: ArtifactChangeKindSchema,

@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TextSous variant transform v1",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": [
+        "dietary",
+        "cuisine"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "titleOverride": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "swaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fromIngredientId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "quantity": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "quantity",
+                  "unit"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "omitReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "packageRequirements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "fromIngredientId",
+          "to",
+          "omitReason",
+          "reason",
+          "packageRequirements"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "stepOverrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "stepId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "stepId",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "techniqueChanges": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "rationale": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "kind",
+    "target",
+    "titleOverride",
+    "swaps",
+    "stepOverrides",
+    "techniqueChanges",
+    "rationale"
+  ],
+  "additionalProperties": false
+}

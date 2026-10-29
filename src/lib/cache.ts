@@ -2,14 +2,38 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Redis } from "@upstash/redis";
-import type { CanonicalRecipe } from "./schema/canonical";
-import { CANONICALIZE_VERSION, type CanonicalizeCheck } from "./stages/canonicalize";
+import type { CookAlongArtifact } from "./schema/artifact";
+import type { ScheduleResult } from "./scheduler/schedule";
+import { CANONICALIZE_VERSION } from "./stages/canonicalize";
+import { COMPILE_VERSION } from "./stages/compile";
+import { PROCEDURE_VERSION } from "./stages/procedure";
+import { REVIEW_VERSION } from "./stages/review";
+import { SCHEDULER_VERSION } from "./scheduler/schedule";
+
+export interface StageVersions {
+  canonicalize: number;
+  procedure: number;
+  scheduler: number;
+  review: number;
+  compile: number;
+}
+
+export function stageVersions(): StageVersions {
+  return {
+    canonicalize: CANONICALIZE_VERSION,
+    procedure: PROCEDURE_VERSION,
+    scheduler: SCHEDULER_VERSION,
+    review: REVIEW_VERSION,
+    compile: COMPILE_VERSION,
+  };
+}
 
 export interface CachedConversion {
-  recipe: CanonicalRecipe;
-  checks: CanonicalizeCheck[];
+  artifact: CookAlongArtifact;
+  schedule: ScheduleResult;
   cachedAt: string;
-  versions: { canonicalize: number };
+  versions: StageVersions;
+  checksPassed: boolean;
 }
 
 export function upstash(): Redis | null {
@@ -21,10 +45,13 @@ export function upstash(): Redis | null {
 
 /** Cache key binds the normalized URL to the stage versions. */
 export function cacheKeyForUrl(normalizedUrl: string): string {
+  const v = stageVersions();
   const hash = createHash("sha256")
-    .update(`canonicalize:v${CANONICALIZE_VERSION}:${normalizedUrl}`)
+    .update(
+      `canonicalize:v${v.canonicalize}:procedure:v${v.procedure}:scheduler:v${v.scheduler}:review:v${v.review}:compile:v${v.compile}:${normalizedUrl}`,
+    )
     .digest("hex");
-  return `textsous:convert:v1:${hash}`;
+  return `textsous:convert:v2:${hash}`;
 }
 
 const DEV_DIR = ".cache/convert";

@@ -1,22 +1,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCachedConversion, setCachedConversion } from "../../../lib/cache";
+import {
+  getCachedConversion,
+  setCachedConversion,
+  stageVersions,
+} from "../../../lib/cache";
+import { convertToArtifact } from "../../../lib/pipeline";
 import { fetchAndExtract, normalizeUrl } from "../../../lib/intake/url";
 import { extractFromText } from "../../../lib/intake/text";
 import { checkDailyCap, checkRateLimit } from "../../../lib/limits";
 import { isContributorModel, resolveProvider } from "../../../lib/model";
-import {
-  CANONICALIZE_VERSION,
-  canonicalize,
-  type CanonicalizeInput,
-} from "../../../lib/stages/canonicalize";
+import type { CanonicalizeInput } from "../../../lib/stages/canonicalize";
 
 const BodySchema = z.strictObject({
   url: z.string().optional(),
   text: z.string().optional(),
 });
 
-function clientIp(request: Request): string {
+export function clientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim() || "unknown";
   return request.headers.get("x-real-ip")?.trim() || "unknown";
@@ -37,7 +38,7 @@ function errorStatus(message: string): number {
     return 400;
   }
   if (/no text provided|too long/i.test(message)) return 400;
-  if (/single-recipe pages only/i.test(message)) return 422;
+  if (/single-recipe pages only|compile blocked/i.test(message)) return 422;
   if (/missing model api key|contributor-tier/i.test(message)) return 500;
   if (/validation|valid json|empty content/i.test(message)) return 502;
   if (/timed out|fetch failed|byte cap|content type|resolve host|redirect|status \d+/i.test(message)) {
@@ -90,9 +91,13 @@ export async function POST(request: Request) {
           cached: true,
           durationMs: Date.now() - started,
           tokensTotal: 0,
-          checksPassed: cached.checks.every((c) => c.passed),
+          checksPassed: cached.checksPassed,
         });
-        return NextResponse.json({ recipe: cached.recipe, checks: cached.checks, cached: true });
+        return NextResponse.json({
+          artifact: cached.artifact,
+          schedule: cached.schedule,
+          cached: true,
+        });
       }
       const cap = await checkDailyCap();
       if (!cap.allowed) {
@@ -113,25 +118,35 @@ export async function POST(request: Request) {
         rawText: extracted.rawText,
         hasJsonLd: extracted.hasJsonLd,
       };
-      const result = await canonicalize(input, { provider: "meta" });
+      const result = await convertToArtifact(input, { provider: "meta" });
+      const checksPassed =
+        result.canonicalize.checks.every((c) => c.passed) &&
+        result.procedure.checks.every((c) => c.passed) &&
+        result.review.checks.every((c) => c.passed);
       await setCachedConversion(normalized, {
-        recipe: result.recipe,
-        checks: result.checks,
+        artifact: result.artifact,
+        schedule: result.schedule,
         cachedAt: new Date().toISOString(),
-        versions: { canonicalize: CANONICALIZE_VERSION },
+        versions: stageVersions(),
+        checksPassed,
       });
       logConvert({
         kind: "url",
         cached: false,
         durationMs: Date.now() - started,
-        tokensTotal: result.usage.totalTokens,
-        checksPassed: result.checks.every((c) => c.passed),
+        tokensTotal: result.usageTotal.totalTokens,
+        checksPassed,
       });
       return NextResponse.json({
-        recipe: result.recipe,
-        checks: result.checks,
+        artifact: result.artifact,
+        schedule: result.schedule,
         cached: false,
-        usage: result.usage,
+        usage: {
+          canonicalize: result.canonicalize.usage,
+          procedure: result.procedure.usage,
+          review: result.review.usage,
+          total: result.usageTotal,
+        },
       });
     }
 
@@ -140,7 +155,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Daily conversion cap reached." }, { status: 429 });
     }
     const extracted = extractFromText(text);
-    const result = await canonicalize(
+    const result = await convertToArtifact(
       {
         source: { kind: "text" },
         rawText: extracted.rawText,
@@ -150,18 +165,27 @@ export async function POST(request: Request) {
       },
       { provider: "meta" },
     );
+    const checksPassed =
+      result.canonicalize.checks.every((c) => c.passed) &&
+      result.procedure.checks.every((c) => c.passed) &&
+      result.review.checks.every((c) => c.passed);
     logConvert({
       kind: "text",
       cached: false,
       durationMs: Date.now() - started,
-      tokensTotal: result.usage.totalTokens,
-      checksPassed: result.checks.every((c) => c.passed),
+      tokensTotal: result.usageTotal.totalTokens,
+      checksPassed,
     });
     return NextResponse.json({
-      recipe: result.recipe,
-      checks: result.checks,
+      artifact: result.artifact,
+      schedule: result.schedule,
       cached: false,
-      usage: result.usage,
+      usage: {
+        canonicalize: result.canonicalize.usage,
+        procedure: result.procedure.usage,
+        review: result.review.usage,
+        total: result.usageTotal,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Conversion failed.";

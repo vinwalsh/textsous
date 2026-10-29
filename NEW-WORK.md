@@ -23,3 +23,16 @@
 2026-10-28: M2.2 done: procedure stage (lanes/phases/hands-on split/sourced timings/holds, 24k cap) + runProcedureChecks (step ids, quotes, references, lanes, timers) + CLI procedure cmd with --record; 6 check unit tests + 3 recording replays. Live: porridge 6 tasks/13.5k, corn 5/13.8k, herby 4/13.0k tokens, all checks pass first try. 54/54 green. Added nullable sourceQuote to the timeline schema (docs regen'd).
 
 2026-10-28: M2.3 done: deterministic scheduler (Kahn topo order, one-cook hands-on serialization, holds union, prep-first, serve-last, CPM critical path); 10 known-answer tests; fixture timelines schedule cleanly (porridge 14m, corn 16m, herby 12m). 64/64 green, no live calls.
+
+2026-10-28: M2.4 done: review stage (5 coded checks incl. full schedule verification, 7 model judgments in one call, blockers gate compile); 14 tests (pass/fail per coded check + mapping). Live review passes 3/3 fixtures (5.3k/3.8k/4.3k tokens). Live validation caught a real bug: dual-channel holds double-counted as self-overlap, fixed + regression test. 78/78 green.
+
+2026-10-28: M2.5 done: compile stage (credit copy, definite-presence allergen roll-up, keyword method derivation, merged-steps/estimate changes, throws on failed review); 7 tests; 3/3 fixture artifacts VALID (methods Toasted/Grilled/Toasted, roll-ups correct). 85/85 green, no live calls.
+
+2026-10-28: M2.6 done (M2 complete): convertToArtifact pipeline, convert writes full artifact + --timeline Gantt + per-call tokens, /api/convert returns artifact with v2 cache (all stage versions) + 422 on compile-blocked; gantt + api route tests. Live: 3/3 artifacts VALID, 0 failed checks (porridge 8t/17m/24.4k, corn 5t/16m/17.3k, herby 4t/12m/22.2k). 91/91 green.
+
+2026-10-29: M3.1 done: amounts parser (fractions/mixed/ranges/vulgar) + unit table + number extractors; 44 table-driven tests.
+2026-10-29: M3.2 done: scaleIngredient cook/buy under 5 rule curves + assignScaleRules + applyScaling (0.5-12 bounds, step rescale + flags); 17 tests.
+2026-10-29: M3.3 done: dietary stage + shared variant applier (swaps/omits, timing + reintroduction guards, method notice); live all 7 targets on porridge, restricted absent (19.2k tokens).
+2026-10-29: M3.4 done: voice stage (per-field numeric guard, selective retry, keep-original fallback); 6 offline tests.
+2026-10-29: M3.5 done: cuisine stage (third-budget enforcement + shared guards); live gf→Italian clean, no gluten back (8.3k tokens).
+2026-10-29: M3.6 done (M3 complete): adjustArtifact fixed-order composition + convert flags + /api/adjust; live 4-flag runs VALID (porridge 43.0k, corn 31.0k). 180/180 green. Schema note: new variant.json, cookQuantity/buyQuantity, scale/swap/technique change kinds.

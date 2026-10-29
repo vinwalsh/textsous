@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { CookAlongArtifactSchema } from "../src/lib/schema/artifact";
 import { CanonicalRecipeSchema } from "../src/lib/schema/canonical";
 import { TimelineDefinitionSchema } from "../src/lib/schema/timeline";
+import { VariantTransformSchema } from "../src/lib/schema/variant";
 import { toResponseJsonSchema } from "../src/lib/schema/json";
 
 // Regenerates docs/schema/*.json from the zod schemas. Run after any schema
@@ -23,6 +24,11 @@ const schemas: Record<string, unknown> = {
     $schema: "http://json-schema.org/draft-07/schema#",
     title: "TextSous Cook Along artifact v1",
     ...toResponseJsonSchema(CookAlongArtifactSchema),
+  },
+  variant: {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    title: "TextSous variant transform v1",
+    ...toResponseJsonSchema(VariantTransformSchema),
   },
 };
 

@@ -113,40 +113,47 @@ A milestone is done when all of these hold:
   total time.
   Check: hand-written cases with known answers pass for each rule.
   - 2026-10-28: deterministic list scheduler + 10 known-answer tests (one per rule + cycle/contract guards); fixtures schedule to 14/16/12m; 64/64 green.
-- [ ] **M2.4 Review.** src/lib/stages/review.ts runs the 12 checks. In code:
+- [x] **M2.4 Review.** src/lib/stages/review.ts runs the 12 checks. In code:
   ingredient_coverage, mise_en_place, task_schedule, source_timing,
   atomic_attention (no hands-on task over 15 minutes without a checkpoint).
   The rest in one model call returning pass/fail and a sentence each. A failed
   check blocks compile with a readable reason.
   Check: each coded check has a passing and a failing test.
-- [ ] **M2.5 Compile.** src/lib/stages/compile.ts assembles the Cook Along
+  - 2026-10-28: review.ts (5 coded + 7 judged, blockers gate compile) + 14 tests incl. mapping; live review passes 3/3 fixtures (5.3k/3.8k/4.3k tokens); 78/78 green.
+- [x] **M2.5 Compile.** src/lib/stages/compile.ts assembles the Cook Along
   artifact; `changes` lists merged steps and estimates.
   Check: the artifact for each fixture validates against the schema.
-- [ ] **M2.6 CLI and API.** `convert` writes the full artifact; `--timeline`
+  - 2026-10-28: compile.ts (credit copy, allergen roll-up, method derivation, changes, review gate) + 7 tests; artifacts VALID for 3/3 fixtures; 85/85 green.
+- [x] **M2.6 CLI and API.** `convert` writes the full artifact; `--timeline`
   prints a text Gantt; /api/convert returns the artifact.
   Check: run on all fixtures and report task count, total time, failed checks
   and tokens per call.
+  - 2026-10-28: pipeline module + convert→artifact + --timeline + /api/convert→artifact (cache v2); 3/3 pass, 0 failed checks (8t/17m/24.4k, 5t/16m/17.3k, 4t/12m/22.2k); 91/91 green.
 
 ## M3. Adjustments (target: Oct 31)
-- [ ] **M3.1 Amounts.** src/lib/scaling/ parses fractions, mixed numbers,
+- [x] **M3.1 Amounts.** src/lib/scaling/ parses fractions, mixed numbers,
   ranges and characters like ½, with a unit table.
   Check: table-driven tests with known answers.
-- [ ] **M3.2 Scaling.** `scaleIngredient(ingredient, factor)` returns cook and
+  - 2026-10-29: amounts.ts (fractions/mixed/ranges/vulgar) + units.ts (~40 aliases); 44 table-driven tests; number extractors for later stages.
+- [x] **M3.2 Scaling.** `scaleIngredient(ingredient, factor)` returns cook and
   buy amounts under the rules linear, sublinear, flat, superlinear and
   to-taste; servings stay between 0.5 and 12. One model call assigns a rule
   and reason per ingredient; code does all the math. Numbers in step text that
   map to a scaled ingredient are rescaled; others are flagged.
   Check: known-answer tests, the bounds, and a step-number rescale test.
-- [ ] **M3.3 Dietary.** src/lib/stages/dietary.ts produces the variant transform
+  - 2026-10-29: scaleIngredient (cook/buy, 5 curves) + assignScaleRules + applyScaling (bounds, rescale+flags); 17 tests.
+- [x] **M3.3 Dietary.** src/lib/stages/dietary.ts produces the variant transform
   for the seven targets. Code applies swaps and step overrides and recomputes
   allergens; unknown stays unknown.
   Check: each target produces a valid transform on at least one fixture, and
   the recomputed allergens drop the restricted ones.
-- [ ] **M3.4 Voice.** src/lib/stages/voice.ts rewrites label, description and
+  - 2026-10-29: dietary.ts (plan+apply, 7 targets) + shared applier; live all 7 on porridge, valid transforms, restricted absent (19.2k tokens).
+- [x] **M3.4 Voice.** src/lib/stages/voice.ts rewrites label, description and
   completionCue in SOUS's voice. Numeric tokens stay unchanged and in order;
   otherwise retry, then keep the original text.
   Check: the numeric-token test and the fallback test pass.
-- [ ] **M3.5 Cuisine infusion.** Cut this first if behind schedule.
+  - 2026-10-29: voice.ts (verify per field, selective retry, keep-original fallback); 6 tests incl. retry-success and omission.
+- [x] **M3.5 Cuisine infusion.** Cut this first if behind schedule.
   src/lib/stages/cuisine.ts uses the shared transform: keep the dish's identity
   and method, swap at most a third of the ingredients, prefer aromatics, fats,
   acids, herbs and finishing touches, list techniqueChanges separately, give a
@@ -154,9 +161,11 @@ A milestone is done when all of these hold:
   and a dietary variant applied earlier still holds.
   Check: gluten-free then Italian never reintroduces a gluten ingredient, and
   a timing-changing transform is refused.
-- [ ] **M3.6 Composition.** CLI flags `--servings`, `--dietary`, `--cuisine` and
+  - 2026-10-29: cuisine.ts (plan+apply, third-budget + timing + reintroduction guards); live gf→Italian clean, no gluten back (8.3k tokens).
+- [x] **M3.6 Composition.** CLI flags `--servings`, `--dietary`, `--cuisine` and
   `--voice sous`, applied in that order; POST /api/adjust does the same.
   Check: all four flags together produce a valid artifact on two fixtures.
+  - 2026-10-29: adjustArtifact (fixed order) + convert flags + /api/adjust; live 4-flag runs VALID on porridge (43.0k) + corn (31.0k); 180/180 green.
 
 ## M4. Photo, web flow and handoff (target: Nov 2)
 - [ ] **M4.1 Photo intake.** src/lib/intake/photo.ts: PNG, JPEG or WebP up to

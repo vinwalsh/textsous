@@ -128,6 +128,12 @@
               "estimate"
             ]
           },
+          "sourceQuote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "attention": {
             "type": "string",
             "enum": [
@@ -231,6 +237,7 @@
           "minutes",
           "range",
           "timingBasis",
+          "sourceQuote",
           "attention",
           "timerEnabledByDefault",
           "laneIds",

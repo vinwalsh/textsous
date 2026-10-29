@@ -10,11 +10,9 @@ import {
 } from "./lib/model";
 import { extractFromHtml, fetchAndExtract, type UrlExtraction } from "./lib/intake/url";
 import { extractFromText } from "./lib/intake/text";
-import {
-  canonicalize,
-  type CanonicalizeInput,
-  type RecordingFile,
-} from "./lib/stages/canonicalize";
+import type { CanonicalizeInput, RecordingFile } from "./lib/stages/canonicalize";
+import { renderGantt } from "./lib/gantt";
+import { adjustArtifact, convertToArtifact } from "./lib/pipeline";
 import { CanonicalRecipeSchema } from "./lib/schema/canonical";
 import { procedure, type ProcedureRecordingFile } from "./lib/stages/procedure";
 
@@ -72,72 +70,190 @@ program.name("textsous").description("TextSous open-source recipe tools").showHe
 
 program
   .command("convert")
-  .description("Convert a recipe URL or file to the canonical recipe JSON")
+  .description("Convert a recipe URL or file to the Cook Along artifact")
   .argument("<input>", "https URL or path to an .html/.txt file")
-  .requiredOption("--out <path>", "write canonical recipe JSON here")
+  .requiredOption("--out <path>", "write Cook Along artifact JSON here")
   .option("--provider <name>", "meta|baseten", "meta")
-  .option("--record", "save the raw model response to eval/recordings (fixtures only)")
-  .action(async (input: string, options: { out: string; provider: string; record?: boolean }) => {
-    try {
-      const provider = parseProvider(options.provider);
-      const config = resolveProvider(provider);
-      if (isContributorModel(config.model) && !isFixtureInput(input)) {
-        console.error(
-          `Refusing: contributor-tier model "${config.model}" may only run locally on fixtures under eval/fixtures.`,
-        );
-        process.exitCode = 1;
-        return;
-      }
-      if (options.record && !isFixtureInput(input)) {
-        console.error("Refusing: --record only saves responses for fixtures under eval/fixtures.");
-        process.exitCode = 1;
-        return;
-      }
-      const data = await buildInput(input);
-      console.log(`Converting ${input} (${provider}/${config.model})...`);
-      const started = Date.now();
-      const result = await canonicalize(data, { provider });
-      await mkdir(path.dirname(options.out), { recursive: true });
-      await writeFile(
-        options.out,
-        `${JSON.stringify({ recipe: result.recipe, checks: result.checks }, null, 2)}\n`,
-      );
-      if (options.record) {
-        const name = path.basename(input, path.extname(input));
-        const recordPath = path.join("eval", "recordings", `${name}.json`);
-        const recording: RecordingFile = {
-          version: 1,
-          fixture: path.basename(input),
-          provider,
-          model: config.model,
-          recordedAt: new Date().toISOString(),
-          usage: result.usage,
-          input: data,
-          response: result.rawResponse,
+  .option("--record", "save the model responses to eval/recordings (fixtures only)")
+  .option("--timeline", "print a text Gantt of the timeline")
+  .option("--servings <n>", "rescale to n servings (0.5-12)")
+  .option("--dietary <target>", "apply a dietary variant")
+  .option("--cuisine <name>", "infuse a cuisine")
+  .option("--voice <name>", 'rewrite in a voice ("sous")')
+  .action(
+    async (
+      input: string,
+      options: {
+        out: string;
+        provider: string;
+        record?: boolean;
+        timeline?: boolean;
+        servings?: string;
+        dietary?: string;
+        cuisine?: string;
+        voice?: string;
+      },
+    ) => {
+      try {
+        const provider = parseProvider(options.provider);
+        const config = resolveProvider(provider);
+        if (isContributorModel(config.model) && !isFixtureInput(input)) {
+          console.error(
+            `Refusing: contributor-tier model "${config.model}" may only run locally on fixtures under eval/fixtures.`,
+          );
+          process.exitCode = 1;
+          return;
+        }
+        if (options.record && !isFixtureInput(input)) {
+          console.error("Refusing: --record only saves responses for fixtures under eval/fixtures.");
+          process.exitCode = 1;
+          return;
+        }
+        const data = await buildInput(input);
+        console.log(`Converting ${input} (${provider}/${config.model})...`);
+        const started = Date.now();
+        const result = await convertToArtifact(data, { provider });
+        const servings =
+          options.servings === undefined ? undefined : Number(options.servings);
+        if (servings !== undefined && !Number.isFinite(servings)) {
+          throw new Error(`invalid servings "${options.servings}": expected a number`);
+        }
+        const adjustments = {
+          ...(servings === undefined ? {} : { servings }),
+          ...(options.dietary === undefined ? {} : { dietary: options.dietary }),
+          ...(options.cuisine === undefined ? {} : { cuisine: options.cuisine }),
+          ...(options.voice === undefined ? {} : { voice: options.voice }),
         };
-        await writeFile(recordPath, `${JSON.stringify(recording, null, 2)}\n`);
-        console.log(`Recorded ${recordPath}`);
+        const adjusted =
+          Object.keys(adjustments).length > 0
+            ? await adjustArtifact(result.artifact, adjustments, { provider })
+            : null;
+        const artifact = adjusted?.artifact ?? result.artifact;
+        await mkdir(path.dirname(options.out), { recursive: true });
+        await writeFile(
+          options.out,
+          `${JSON.stringify(
+            {
+              artifact,
+              schedule: result.schedule,
+              stages: {
+                canonicalize: {
+                  checks: result.canonicalize.checks,
+                  usage: result.canonicalize.usage,
+                },
+                procedure: {
+                  checks: result.procedure.checks,
+                  usage: result.procedure.usage,
+                },
+                review: { checks: result.review.checks, usage: result.review.usage },
+              },
+              usageTotal: result.usageTotal,
+              ...(adjusted
+                ? {
+                    adjustments: {
+                      ...adjustments,
+                      scaleFlags: adjusted.scaleFlags,
+                      usage: adjusted.usage,
+                    },
+                  }
+                : {}),
+            },
+            null,
+            2,
+          )}\n`,
+        );
+        if (options.record) {
+          const name = path.basename(input, path.extname(input));
+          const base = path.basename(input);
+          const stamped = new Date().toISOString();
+          const canonPath = path.join("eval", "recordings", `${name}.json`);
+          const canonRecording: RecordingFile = {
+            version: 1,
+            fixture: base,
+            provider,
+            model: config.model,
+            recordedAt: stamped,
+            usage: result.canonicalize.usage,
+            input: data,
+            response: result.canonicalize.rawResponse,
+          };
+          await writeFile(canonPath, `${JSON.stringify(canonRecording, null, 2)}\n`);
+          console.log(`Recorded ${canonPath}`);
+          const procPath = path.join("eval", "recordings", `procedure-${name}.json`);
+          const procRecording: ProcedureRecordingFile = {
+            version: 1,
+            fixture: base,
+            provider,
+            model: config.model,
+            recordedAt: stamped,
+            usage: result.procedure.usage,
+            recipe: result.recipe,
+            response: result.procedure.rawResponse,
+          };
+          await writeFile(procPath, `${JSON.stringify(procRecording, null, 2)}\n`);
+          console.log(`Recorded ${procPath}`);
+        }
+        const sched = result.schedule;
+        const canonFailed = result.canonicalize.checks.filter((c) => !c.passed);
+        const procFailed = result.procedure.checks.filter((c) => !c.passed);
+        const reviewFailed = result.review.checks.filter((c) => !c.passed);
+        console.log(`Title: ${artifact.recipe.title}`);
+        console.log(
+          `Tasks: ${artifact.timelineDefinition.tasks.length}, total time: ${sched.totalMinutes}m`,
+        );
+        console.log(
+          `canonicalize: ${result.canonicalize.checks.map((c) => `${c.name}=${c.passed ? "pass" : "FAIL"}`).join(" ")}`,
+        );
+        console.log(
+          `procedure: ${result.procedure.checks.map((c) => `${c.name}=${c.passed ? "pass" : "FAIL"}`).join(" ")}`,
+        );
+        console.log(
+          `review: ${result.review.checks.length - reviewFailed.length}/${result.review.checks.length} pass`,
+        );
+        for (const c of [...canonFailed, ...procFailed, ...reviewFailed]) {
+          console.log(`  FAIL ${c.name}: ${c.detail}`);
+        }
+        console.log(
+          `Tokens per call: canonicalize=${result.canonicalize.usage.totalTokens} ` +
+            `procedure=${result.procedure.usage.totalTokens} review=${result.review.usage.totalTokens} ` +
+            `total=${result.usageTotal.totalTokens}`,
+        );
+        if (adjusted) {
+          console.log(
+            `Adjustments: ${Object.entries(adjustments)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(" ")}`,
+          );
+          console.log(
+            `Scale flags: ${
+              adjusted.scaleFlags.length > 0
+                ? adjusted.scaleFlags.map((f) => `"${f.token}" in ${f.stepId}`).join("; ")
+                : "none"
+            }`,
+          );
+          console.log(
+            `Adjust tokens: scaling=${adjusted.usage.scaling.totalTokens} ` +
+              `dietary=${adjusted.usage.dietary.totalTokens} cuisine=${adjusted.usage.cuisine.totalTokens} ` +
+              `voice=${adjusted.usage.voice.totalTokens} total=${adjusted.usage.total.totalTokens}`,
+          );
+        }
+        if (options.timeline) {
+          console.log(renderGantt(artifact.recipe.title, artifact.timelineDefinition, sched));
+        }
+        console.log(`Wrote ${options.out} in ${Date.now() - started}ms`);
+        if (canonFailed.length + procFailed.length + reviewFailed.length > 0) process.exitCode = 2;
+      } catch (error) {
+        const message = (error as Error).message;
+        if (message.startsWith("compile blocked")) {
+          console.error(`convert failed: ${message}`);
+          process.exitCode = 2;
+          return;
+        }
+        console.error(`convert failed: ${message}`);
+        process.exitCode = 1;
       }
-      const failed = result.checks.filter((c) => !c.passed);
-      console.log(`Title: ${result.recipe.title}`);
-      console.log(
-        `Ingredients: ${result.recipe.ingredients.length}, steps: ${result.recipe.steps.length}`,
-      );
-      console.log(
-        `Checks: ${result.checks.map((c) => `${c.name}=${c.passed ? "pass" : "FAIL"}`).join(" ")}`,
-      );
-      for (const c of failed) console.log(`  FAIL ${c.name}: ${c.detail}`);
-      console.log(
-        `Tokens: prompt=${result.usage.promptTokens} completion=${result.usage.completionTokens} total=${result.usage.totalTokens} ` +
-          `(attempts=${result.attempts}, fallback=${result.fallbackUsed ? "json-mode" : "no"})`,
-      );
-      console.log(`Wrote ${options.out} in ${Date.now() - started}ms`);
-      if (failed.length > 0) process.exitCode = 2;
-    } catch (error) {
-      console.error(`convert failed: ${(error as Error).message}`);
-      process.exitCode = 1;
-    }
-  });
+    },
+  );
 
 program
   .command("procedure")
