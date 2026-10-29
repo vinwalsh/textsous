@@ -106,12 +106,13 @@ A milestone is done when all of these hold:
   Check: for each fixture, the output validates, every sourceStepId exists, and
   every quote appears verbatim in the source.
   - 2026-10-28: procedure.ts + 5 coded checks + CLI procedure cmd; all 3 fixtures pass first try (13.5k/13.8k/13.0k tokens); 3 recordings + replay tests; 54/54 green.
-- [ ] **M2.3 Scheduler.** src/lib/scheduler/schedule.ts, deterministic: one cook,
+- [x] **M2.3 Scheduler.** src/lib/scheduler/schedule.ts, deterministic: one cook,
   so hands-on tasks never overlap; unattended tasks overlap freely;
   dependencies and resource holds respected; all prep before the first cook
   task; serve task last. Returns start and end minutes, the critical path and
   total time.
   Check: hand-written cases with known answers pass for each rule.
+  - 2026-10-28: deterministic list scheduler + 10 known-answer tests (one per rule + cycle/contract guards); fixtures schedule to 14/16/12m; 64/64 green.
 - [ ] **M2.4 Review.** src/lib/stages/review.ts runs the 12 checks. In code:
   ingredient_coverage, mise_en_place, task_schedule, source_timing,
   atomic_attention (no hands-on task over 15 minutes without a checkpoint).

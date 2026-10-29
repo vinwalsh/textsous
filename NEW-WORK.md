@@ -21,3 +21,5 @@
 2026-10-28: M2.1 done: timeline + artifact zod schemas (closed enums, nullish optionals, min(1) sourceStepIds), docs/schema/timeline.json + artifact.json generated (canonical.json byte-identical); 4 schema tests incl. deep strictness, 44/44 green key-unset, typecheck + lint clean. No live calls.
 
 2026-10-28: M2.2 done: procedure stage (lanes/phases/hands-on split/sourced timings/holds, 24k cap) + runProcedureChecks (step ids, quotes, references, lanes, timers) + CLI procedure cmd with --record; 6 check unit tests + 3 recording replays. Live: porridge 6 tasks/13.5k, corn 5/13.8k, herby 4/13.0k tokens, all checks pass first try. 54/54 green. Added nullable sourceQuote to the timeline schema (docs regen'd).
+
+2026-10-28: M2.3 done: deterministic scheduler (Kahn topo order, one-cook hands-on serialization, holds union, prep-first, serve-last, CPM critical path); 10 known-answer tests; fixture timelines schedule cleanly (porridge 14m, corn 16m, herby 12m). 64/64 green, no live calls.
