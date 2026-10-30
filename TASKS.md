@@ -213,6 +213,7 @@ A milestone is done when all of these hold:
   scheduled vs source total time, latency, tokens and cost, and writes
   eval/RESULTS.md.
   Check: RESULTS.md has 23 rows and no third-party text.
+  - 2026-10-29: scripts/eval.ts built (fixtures + urls.txt, all 7 scores, RESULTS.md, URL rows URL-only) and fixture-validated live (3/3, 12/12 review, ~70k tokens). Owner added 20 URLs (4 http→https fixed); full 23-row run needs a networked env; set EVAL_USD_PER_MTOK for the cost column.
 - [ ] **M5.2 Demo set.** Pre-warm the production cache with the 20 URLs, and
   list them on a /demo page.
   Check: each returns from cache in production.
@@ -220,10 +221,11 @@ A milestone is done when all of these hold:
   what pre-existed outside this repo, and the exact changes made in the private
   TextSous repo for the handoff.
   Check: owner review.
-- [ ] **M5.4 README.** What it does, a 60-second quickstart, provider setup, the
+- [x] **M5.4 README.** What it does, a 60-second quickstart, provider setup, the
   spec link, the embed snippet, limits, license, and the credit and takedown
   policy.
   Check: a clean clone follows the quickstart to a converted fixture.
+  - 2026-10-29: README rewritten (all 8 sections); clean-clone verified: npm ci + herby convert → VALID artifact (4 tasks, 12/12 review, 21.8k).
 - [ ] **M5.5 Final state.** AGENTS.md Status lists what is built; production
   health reports the Standard tier; HTTPS is valid; CI is green.
   Check: every "Done for every milestone" condition holds.

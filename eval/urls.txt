@@ -4,3 +4,24 @@
 #
 # Example (replace with a real recipe page when testing manually):
 # https://www.example.com/recipes/example-recipe
+
+https://www.foodandwine.com/slow-cooker-white-chicken-chili-recipe-11872138
+https://www.halfbakedharvest.com/baked-cinnamon-apple-butter-french-toast/
+https://cooking.nytimes.com/recipes/1019627-sheet-pan-chicken-with-apple-fennel-and-onion?art=100000008585945
+https://themodernproper.com/braised-chickpeas-with-chard
+https://themodernproper.com/beef-stroganoff
+https://food52.com/recipes/39470-the-silver-palate-s-turkey-hash-salad
+https://foodmeanderings.com/pork-chops-with-apple-sage-sauce/
+https://tasteandsee.com/honey-lime-roasted-sheet-pan-salmon-and-vegetables/
+https://www.bonappetit.com/recipe/miso-mayo-chicken-bowl
+https://www.delish.com/cooking/recipe-ideas/a28845919/beef-bourguignon-recipe/
+https://www.theorganickitchen.org/sweet-potato-and-black-bean-chili/
+https://happykitchen.rocks/healthy-pumpkin-pasta/
+https://www.homemadefoodjunkie.com/purple-potato-chorizo-burrito/
+https://twohealthykitchens.com/easy-black-bean-soup-in-cumin-dusted-bread-bowls/
+https://thestingyvegan.com/autumn-lentil-salad-chickpea-pancakes/
+https://thefitblog.com/smothered-creamy-chicken-skillet/
+https://livingsweetmoments.com/pumpkin-ravioli-recipe-with-a-brown-butter-sage-sauce/
+https://www.thisseasonstable.com/creamy-broccoli-cheese-soup/
+https://www.crumbblog.com/brussels-sprout-and-bacon-pizza/
+https://domesticate-me.com/spicy-chicken-sweet-potato-noodle-bowls/

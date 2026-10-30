@@ -17,6 +17,7 @@
     "smoke": "tsx src/cli.ts smoke",
     "schema": "tsx scripts/generate-schema.ts",
     "docs": "tsx scripts/generate-format.ts",
+    "eval": "tsx scripts/eval.ts",
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {
