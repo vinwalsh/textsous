@@ -214,9 +214,12 @@ A milestone is done when all of these hold:
   eval/RESULTS.md.
   Check: RESULTS.md has 23 rows and no third-party text.
   - 2026-10-29: scripts/eval.ts built (fixtures + urls.txt, all 7 scores, RESULTS.md, URL rows URL-only) and fixture-validated live (3/3, 12/12 review, ~70k tokens). Owner added 20 URLs (4 http→https fixed); full 23-row run needs a networked env; set EVAL_USD_PER_MTOK for the cost column.
-- [ ] **M5.2 Demo set.** Pre-warm the production cache with the 20 URLs, and
+- [x] **M5.2 Demo set.** Pre-warm the production cache with the 20 URLs, and
   list them on a /demo page.
   Check: each returns from cache in production.
+  - 2026-10-30: /demo page built; prod pre-warm 14/20 verified (~456k tokens + partial spend on 7 failed runs). Duds: 3 gated (F&W 402, organickitchen/homemadefoodjunkie 403), food52 persistent 429, 2 review-blocked twice (foodmeanderings, thestingyvegan).
+  - 2026-10-30: pass 2 over the updated list: 19/20 warmed + verified (5/6 replacements fresh-warmed, ~165k tokens). Gochujang noodles review-blocked twice (ingredient_coverage unused).
+  - 2026-10-30: final replacement (Tasty shrimp tacos) converted fresh (20 ings, 11 tasks, 35k) + verified cached in 0.19s. 20/20 CLOSED.
 - [ ] **M5.3 NEW-WORK.md.** What was built Oct 27 to Nov 4 with the commit range,
   what pre-existed outside this repo, and the exact changes made in the private
   TextSous repo for the handoff.

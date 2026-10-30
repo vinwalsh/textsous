@@ -45,6 +45,7 @@ export default function ConverterForm({
     transcription: PhotoTranscription;
   } | null>(null);
   const autoRan = useRef(false);
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   const convert = useCallback(
     async (body: Record<string, unknown>) => {
@@ -156,6 +157,12 @@ export default function ConverterForm({
     window.scrollTo(0, 0);
   }
 
+  function switchToPaste() {
+    setTab("text");
+    setError(null);
+    setTimeout(() => textRef.current?.focus(), 0);
+  }
+
   function retake() {
     if (confirm) URL.revokeObjectURL(confirm.photoUrl);
     setConfirm(null);
@@ -225,7 +232,7 @@ export default function ConverterForm({
               Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)} KB)
             </p>
           ) : null}
-          {error ? <ErrorBox error={error} /> : null}
+          {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
           <div className="btn-row">
             <button
               type="submit"
@@ -253,6 +260,7 @@ export default function ConverterForm({
             <label className="field">
               <span>Recipe text</span>
               <textarea
+                ref={textRef}
                 required
                 placeholder="Paste the ingredients and steps here"
                 value={textValue}
@@ -260,7 +268,7 @@ export default function ConverterForm({
               />
             </label>
           )}
-          {error ? <ErrorBox error={error} /> : null}
+          {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
           <div className="btn-row">
             <button type="submit" className="btn btn-primary" disabled={busy !== null}>
               {busy === "convert" ? "Converting…" : "Convert"}

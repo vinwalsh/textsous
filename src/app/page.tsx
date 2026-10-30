@@ -9,7 +9,9 @@ export default async function Home({
   return (
     <main>
       <h1>TextSous Open</h1>
-      <p>Convert any recipe into the TextSous Cook Along format.</p>
+      <p>
+        Convert any recipe into the TextSous Cook Along format. <a href="/demo">Or try a demo recipe.</a>
+      </p>
       <ConverterForm initialUrl={params.url ?? ""} initialSrc={params.src ?? ""} />
     </main>
   );

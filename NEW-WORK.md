@@ -45,3 +45,7 @@
 2026-10-29: M5.4 done: README rewritten (what/quickstart/providers/spec/embed/limits/license/credit+takedown); clean-clone check passed (npm ci + herby fixture → VALID 4-task artifact, 12/12 review, 21.8k).
 2026-10-29: M5.1 runner built (scripts/eval.ts + npm run eval): fixtures + urls.txt with per-stage timing, all 7 scores, RESULTS.md writer with URL-only rows; fixture-validated live, 3/3 at 12/12 review (~70k). Full run + urls.txt need a networked env.
 2026-10-29: eval/urls.txt populated with 20 recipe URLs (owner; 4 http→https fixed at commit) alongside the M5.4 README + M5.1 runner commit.
+2026-10-30: paste-text fallback for failed URLs: refused-address, roundup and unreachable errors now offer "Paste the recipe text instead" (jumps to the text tab); ErrorBox action support. 240/240 green + build.
+2026-10-30: M5.2 pre-warm pass 1+retry: 14/20 prod URLs warmed + verified (~456k tokens); 3 bot-gated, food52 429 persisting, 2 review-blocked twice. /demo page built, uncommitted. Needs 6 owner replacement URLs + pass 2.
+2026-10-30: M5.2 pass 2: 19/20 verified on the updated list (5/6 replacements fresh-warmed, ~165k). Gochujang noodles fails review twice (ingredient_coverage unused, same signature as foodmeanderings) — 1 replacement to go.
+2026-10-30: M5.2 done: final Tasty replacement converted fresh (20 ingredients, 11 tasks, 35k) + cache-verified in 0.19s. 20/20 demo URLs return from cache in production.

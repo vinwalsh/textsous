@@ -30,6 +30,8 @@ export async function apiFetch(
 export interface FriendlyError {
   title: string;
   detail: string;
+  /** Follow-up the UI can offer, if any. */
+  action?: "paste-text";
 }
 
 /** Map API failures to copy a cook can act on. Pure: fully unit-tested. */
@@ -51,14 +53,17 @@ export function friendlyError(
     if (/only https/i.test(message)) {
       return {
         title: "That address won't work",
-        detail: "Recipe pages must be https addresses. Paste the full https link.",
+        detail:
+          "Recipe pages must be https addresses. Paste the full https link — or paste the recipe text instead.",
+        action: "paste-text",
       };
     }
     if (/private-network|credentials|invalid url/i.test(message)) {
       return {
         title: "That address won't work",
         detail:
-          "Use a public recipe page URL — private addresses and links with passwords are refused.",
+          "Use a public recipe page URL — private addresses and links with passwords are refused. Or paste the recipe text instead.",
+        action: "paste-text",
       };
     }
     if (/exactly one of/i.test(message)) {
@@ -86,7 +91,8 @@ export function friendlyError(
       return {
         title: "One recipe at a time",
         detail:
-          "That page holds several recipes. Open one recipe and convert its address instead.",
+          "That page holds several recipes. Open one recipe and convert its address instead — or paste that one recipe's text.",
+        action: "paste-text",
       };
     }
     return {
@@ -116,7 +122,9 @@ export function friendlyError(
     if (/timed out|fetch failed|resolve host|status \d+|redirect/i.test(message)) {
       return {
         title: "Couldn't reach that page",
-        detail: "The recipe site didn't answer. Check the address and try again.",
+        detail:
+          "The recipe site didn't answer — some sites block recipe readers. Paste the recipe text instead and we'll take it from there.",
+        action: "paste-text",
       };
     }
     return {

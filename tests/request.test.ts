@@ -9,6 +9,7 @@ describe("friendlyError", () => {
     timeout?: boolean;
     title: string;
     detailPart: RegExp;
+    action?: "paste-text";
   }> = [
     {
       name: "client timeout",
@@ -38,6 +39,7 @@ describe("friendlyError", () => {
       message: "Only https URLs are accepted.",
       title: "That address won't work",
       detailPart: /https/,
+      action: "paste-text",
     },
     {
       name: "private URL",
@@ -45,6 +47,7 @@ describe("friendlyError", () => {
       message: "Refused private-network URL.",
       title: "That address won't work",
       detailPart: /public recipe page/,
+      action: "paste-text",
     },
     {
       name: "ambiguous body",
@@ -80,6 +83,7 @@ describe("friendlyError", () => {
       message: "single-recipe pages only",
       title: "One recipe at a time",
       detailPart: /several recipes/,
+      action: "paste-text",
     },
     {
       name: "compile blocked",
@@ -115,6 +119,7 @@ describe("friendlyError", () => {
       message: "fetch failed: timed out",
       title: "Couldn't reach that page",
       detailPart: /didn't answer/,
+      action: "paste-text",
     },
     {
       name: "upstream validation",
@@ -136,6 +141,7 @@ describe("friendlyError", () => {
       const err = friendlyError(c.status, c.message, { timeout: c.timeout });
       expect(err.title).toBe(c.title);
       expect(err.detail).toMatch(c.detailPart);
+      expect(err.action).toBe(c.action ?? undefined);
     });
   }
 });
