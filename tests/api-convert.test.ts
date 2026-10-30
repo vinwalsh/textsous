@@ -21,6 +21,45 @@ beforeEach(() => {
   process.env.DAILY_CONVERSION_CAP = "1000";
 });
 
+function makeRecipe(): Record<string, unknown> {
+  return {
+    version: 1,
+    id: "rcp-probe",
+    title: "Probe Soup",
+    source: {
+      kind: "text",
+      url: null,
+      site: null,
+      author: null,
+      book: null,
+      page: null,
+      license: null,
+    },
+    cuisine: null,
+    nativeServings: 2,
+    servingsLarge: null,
+    scalingNotes: null,
+    ingredients: [
+      {
+        id: "ing-1",
+        name: "stock",
+        quantity: "2",
+        unit: "cups",
+        quantity4: null,
+        scaleRule: null,
+        cookQuantity: null,
+        buyQuantity: null,
+        allergens: [],
+        allergenTraces: [],
+        note: null,
+      },
+    ],
+    steps: [{ id: "step-1", kind: "active", text: "Simmer the stock." }],
+    equipment: [],
+    sourceFingerprint: "sha256:probe",
+  };
+}
+
 describe("POST /api/convert", () => {
   it("returns 429 once the lowered daily cap is exceeded", async () => {
     process.env.DAILY_CONVERSION_CAP = "1";
@@ -58,6 +97,19 @@ describe("POST /api/convert", () => {
 
   it("fails text conversions without a key before any model call", async () => {
     const res = await POST(req({ text: "Probe soup. Serves 2." }, "10.8.8.4"));
+    expect(res.status).toBe(500);
+    expect(((await res.json()) as { error: string }).error).toMatch(/model api key/i);
+  });
+
+  it("rejects invalid and ambiguous recipe bodies with 400", async () => {
+    expect((await POST(req({ recipe: { title: "nope" } }, "10.8.8.5"))).status).toBe(400);
+    expect(
+      (await POST(req({ url: "https://example.com/x", recipe: makeRecipe() }, "10.8.8.5"))).status,
+    ).toBe(400);
+  });
+
+  it("fails recipe conversions without a key before any model call", async () => {
+    const res = await POST(req({ recipe: makeRecipe() }, "10.8.8.6"));
     expect(res.status).toBe(500);
     expect(((await res.json()) as { error: string }).error).toMatch(/model api key/i);
   });

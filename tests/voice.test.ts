@@ -174,11 +174,11 @@ describe("voice", () => {
     ]);
     const result = await voice(timeline, { client });
     expect(seen).toHaveLength(2);
-    const retryPayload = JSON.parse(seen[1][seen[1].length - 1].content) as {
+    const retryPayload = JSON.parse(seen[1][seen[1].length - 1].content as string) as {
       tasks: Array<{ taskId: string }>;
     };
     expect(retryPayload.tasks.map((t) => t.taskId)).toEqual(["a"]);
-    expect(seen[1].map((m) => m.content).join(" ")).toContain("previous rewrite");
+    expect(seen[1].map((m) => m.content as string).join(" ")).toContain("previous rewrite");
     expect(result.stats).toEqual({ rewritten: 2, retried: 1, keptOriginal: 0 });
   });
 

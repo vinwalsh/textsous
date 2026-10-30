@@ -168,37 +168,43 @@ A milestone is done when all of these hold:
   - 2026-10-29: adjustArtifact (fixed order) + convert flags + /api/adjust; live 4-flag runs VALID on porridge (43.0k) + corn (31.0k); 180/180 green.
 
 ## M4. Photo, web flow and handoff (target: Nov 2)
-- [ ] **M4.1 Photo intake.** src/lib/intake/photo.ts: PNG, JPEG or WebP up to
+- [x] **M4.1 Photo intake.** src/lib/intake/photo.ts: PNG, JPEG or WebP up to
   5 MB, sent as an image_url data URL in a user message for a verbatim
   transcription with any visible book title, author and page, then
   canonicalize. Status is always needs_review. The image is never written to
   disk, cache or logs.
   Check: tests for the size and type limits, and a test that nothing stores
   the image bytes.
+  - 2026-10-29: intake/photo.ts + POST /api/photo (multipart "photo"); 18 tests green; live herby PNG: 7/7 ingredients, 4/4 steps, book/author/page captured, needs_review (10.4k tokens).
 - [ ] **M4.2 Flow.** Mobile-first pages: home (paste a URL, paste text, or take
   or upload a photo; accepts ?url= and ?src=), a photo confirm screen beside
   the photo, the viewer (credit card, Mise en Place, lane timeline, step cards
   with completionCue and timers), and an adjust panel with a "what changed"
   list.
   Check: owner completes each path on a phone against production.
-- [ ] **M4.3 Save to TextSous.** Store the artifact for 24 hours. GET
+  - 2026-10-29: UI built (intake + confirm + viewer + adjust) + /api/convert {recipe}; gates green (200/200), live recipe-path VALID (13.2k), render smoke 17/17. Owner phone check pending (needs push + deploy).
+- [x] **M4.3 Save to TextSous.** Store the artifact for 24 hours. GET
   /api/artifact/<id>?sig= checks an HMAC over the id and expiry, can be
   fetched more than once, and returns 404 after expiry. The button redirects
   to https://textsous.com/import?src=<signed URL>.
   Check: tests for valid, tampered and expired signatures and for the
   redirect URL.
-- [ ] **M4.4 Published docs.** `npm run schema` writes docs/schema/*.json;
+  - 2026-10-29: artifact-store (HMAC id+expiry, Upstash/filesystem, 24h TTL) + POST/GET routes + viewer Save button → import redirect; 14 tests (valid/tampered/expired/redirect), 214/214 green.
+- [x] **M4.4 Published docs.** `npm run schema` writes docs/schema/*.json;
   docs/FORMAT.md is generated from the zod schemas; docs/EMBED.md holds the
   "Open with TextSous" snippet with utm_source and utm_medium.
   Check: CI regenerates the files and fails if the committed copies differ.
-- [ ] **M4.5 Hardening.** Friendly pages for refused URLs, timeouts and an
+  - 2026-10-29: scripts/generate-format.ts + npm run docs (173 field lines, deterministic); EMBED.md snippet; CI gate (schema + docs + git diff --exit-code).
+- [x] **M4.5 Hardening.** Friendly pages for refused URLs, timeouts and an
   exhausted cap; health reports provider and cache; logs carry no URLs of
   private recipes; footer with the takedown contact and the privacy note.
   Check: tests for each error path and for log redaction; footer present
   (needs O5).
+  - 2026-10-29: friendly error copy + ErrorBox + apiFetch timeout wired into all flows; redacting logEvent in 3 routes; footer with O5 contact. 26 tests; 240/240 green. Health already reported provider + cache (no change).
 - [ ] **M4.6 Performance.** Measure p50 and p95 latency per stage and tokens per
   conversion over the fixtures and three URLs from eval/urls.txt.
   Check: the numbers are in the session report.
+  - 2026-10-29: fixtures measured (n=3, 0 failed checks): canon p50 30.3s/p95 42.5s, procedure p50 64.0s/p95 80.1s, review p50 17.7s/p95 32.3s, tokens p50 20.1k/p95 24.6k (64.8k total). URL portion BLOCKED: sandbox egress fails environment-wide (3 hosts + 2 channels); needs a networked env. urls.txt still unpopulated (no unverified guesses); M5.1 populates + verifies there.
 
 ## M5. Proof and disclosure (target: Nov 3)
 - [ ] **M5.1 Eval.** `npm run eval` runs the fixtures and the 20 URLs in
@@ -232,7 +238,8 @@ A milestone is done when all of these hold:
 - [ ] O3 Set DAILY_CONVERSION_CAP and the rate limit once M1 reports tokens per
   conversion.
 - [ ] O4 Add the Baseten key if credits are approved (optional fallback).
-- [ ] O5 Choose the takedown and privacy contact address. Needed for M4.5.
+- [x] O5 Choose the takedown and privacy contact address. Needed for M4.5.
+  - 2026-10-29: owner chose privacy@textsous.com; footer shipped in M4.5.
 - [ ] O6 Build /open and /import on textsous.com in the private repo by Nov 1.
 - [ ] O7 Add the imported-recipes line to the textsous.com privacy policy.
 - [ ] O8 Record the three-minute demo video (Nov 3).

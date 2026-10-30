@@ -93,8 +93,8 @@ describe("callStructured with a fake transport", () => {
     expect(retryMessages).toHaveLength(3);
     const reprompt = retryMessages[2];
     expect(reprompt.role).toBe("user");
-    expect(reprompt.content).toContain("failed validation");
-    expect(reprompt.content).toContain("Errors:");
+    expect(reprompt.content as string).toContain("failed validation");
+    expect(reprompt.content as string).toContain("Errors:");
   });
 
   it("fails after 3 attempts", async () => {

@@ -99,6 +99,39 @@ export async function convertToArtifact(
   };
 }
 
+/**
+ * Conversion from an already-canonical recipe (photo confirm screen): skips
+ * canonicalize and runs procedure, schedule, review and compile. The
+ * canonicalize report is empty because that stage did not run.
+ */
+export async function convertRecipeToArtifact(
+  recipe: CanonicalRecipe,
+  opts: PipelineOptions = {},
+): Promise<PipelineResult> {
+  const provider = opts.provider;
+  const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
+  const proc = await procedure(recipe, { provider });
+  const sched = schedule(proc.timeline);
+  const rev = await review(
+    { recipe, timeline: proc.timeline, schedule: sched, equipmentProfile },
+    { provider },
+  );
+  const artifact = compile({ recipe, timeline: proc.timeline, review: rev, equipmentProfile });
+  return {
+    artifact,
+    recipe,
+    schedule: sched,
+    canonicalize: {
+      checks: [],
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      rawResponse: "",
+    },
+    procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
+    review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
+    usageTotal: addUsage(proc.usage, rev.usage),
+  };
+}
+
 export interface Adjustments {
   servings?: number;
   dietary?: string;

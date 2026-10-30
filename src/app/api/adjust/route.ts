@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CookAlongArtifactSchema } from "../../../lib/schema/artifact";
 import { adjustArtifact } from "../../../lib/pipeline";
 import { checkDailyCap, checkRateLimit } from "../../../lib/limits";
+import { logEvent } from "../../../lib/log";
 import { clientIp } from "../convert/route";
 
 const BodySchema = z.strictObject({
@@ -27,7 +28,7 @@ function errorStatus(message: string): number {
 }
 
 function logAdjust(event: { durationMs: number; tokensTotal: number }): void {
-  console.log(JSON.stringify({ event: "adjust", ...event }));
+  logEvent("adjust", event);
 }
 
 /**

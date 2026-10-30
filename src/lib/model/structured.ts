@@ -3,10 +3,39 @@ import { z } from "zod";
 import { toResponseJsonSchema } from "../schema/json";
 import { assertUsableInProduction, resolveProvider, type ProviderName } from "./profiles";
 
-export interface ChatTextMessage {
-  role: "system" | "user" | "assistant";
+export interface ChatTextContentPart {
+  type: "text";
+  text: string;
+}
+
+export interface ChatImageContentPart {
+  type: "image_url";
+  image_url: { url: string };
+}
+
+export type ChatContentPart = ChatTextContentPart | ChatImageContentPart;
+
+export interface ChatSystemMessage {
+  role: "system";
   content: string;
 }
+
+/**
+ * User message. Images go only here, as image_url data URLs (photo intake),
+ * per the non-negotiables; every other stage sends plain strings.
+ */
+export interface ChatUserMessage {
+  role: "user";
+  content: string | ChatContentPart[];
+}
+
+export interface ChatAssistantMessage {
+  role: "assistant";
+  content: string;
+}
+
+/** Chat message: images are only allowed on user messages. */
+export type ChatTextMessage = ChatSystemMessage | ChatUserMessage | ChatAssistantMessage;
 
 export interface TokenUsage {
   promptTokens: number;

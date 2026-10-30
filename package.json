@@ -16,6 +16,7 @@
     "test": "vitest run",
     "smoke": "tsx src/cli.ts smoke",
     "schema": "tsx scripts/generate-schema.ts",
+    "docs": "tsx scripts/generate-format.ts",
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {

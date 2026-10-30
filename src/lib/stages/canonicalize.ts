@@ -6,12 +6,24 @@ import {
   type CanonicalRecipe,
 } from "../schema/canonical";
 import { fingerprintSource } from "../intake/fingerprint";
-import { callStructured, type ProviderName, type TokenUsage } from "../model";
+import {
+  callStructured,
+  type ProviderName,
+  type StructuredChatClient,
+  type TokenUsage,
+} from "../model";
 
 export const CANONICALIZE_VERSION = 1;
 
 export interface CanonicalizeInput {
-  source: { kind: "url" | "text"; url?: string; site?: string; author?: string };
+  source: {
+    kind: "url" | "text" | "photo";
+    url?: string;
+    site?: string;
+    author?: string;
+    book?: string;
+    page?: number;
+  };
   title?: string;
   ingredientLines: string[];
   instructionLines: string[];
@@ -213,7 +225,7 @@ function buildUserPrompt(input: CanonicalizeInput): string {
  */
 export async function canonicalize(
   input: CanonicalizeInput,
-  opts: { provider?: ProviderName } = {},
+  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
 ): Promise<CanonicalizeResult> {
   const result = await callStructured(
     CanonicalRecipeSchema,
@@ -221,7 +233,7 @@ export async function canonicalize(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(input) },
     ],
-    { provider: opts.provider, schemaName: CANONICAL_SCHEMA_NAME },
+    { provider: opts.provider, client: opts.client, schemaName: CANONICAL_SCHEMA_NAME },
   );
 
   const fingerprint = fingerprintSource([
@@ -242,8 +254,8 @@ export async function canonicalize(
       url: input.source.url ?? null,
       site: input.source.site ?? null,
       author: input.source.author ?? null,
-      book: null,
-      page: null,
+      book: input.source.book ?? null,
+      page: input.source.page ?? null,
       license: null,
     },
     sourceFingerprint: fingerprint,

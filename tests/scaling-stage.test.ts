@@ -104,7 +104,7 @@ afterEach(() => {
 
 describe("assignScaleRules", () => {
   it("returns one rule per ingredient from a single call", async () => {
-    const seen: Array<{ messages: Array<{ content: string }> }> = [];
+    const seen: Array<{ messages: Array<{ content: unknown }> }> = [];
     const client: StructuredChatClient = {
       chat: {
         completions: {
@@ -142,7 +142,7 @@ describe("assignScaleRules", () => {
       { client },
     );
     expect(seen).toHaveLength(1);
-    expect(seen[0].messages.map((m) => m.content).join("\n")).toContain("ing-1");
+    expect(seen[0].messages.map((m) => m.content as string).join("\n")).toContain("ing-1");
     expect(result.rules).toHaveLength(2);
     expect(result.usage.totalTokens).toBe(2);
   });

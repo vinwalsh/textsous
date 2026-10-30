@@ -5,16 +5,19 @@ import {
   setCachedConversion,
   stageVersions,
 } from "../../../lib/cache";
-import { convertToArtifact } from "../../../lib/pipeline";
+import { convertRecipeToArtifact, convertToArtifact } from "../../../lib/pipeline";
+import { CanonicalRecipeSchema } from "../../../lib/schema/canonical";
 import { fetchAndExtract, normalizeUrl } from "../../../lib/intake/url";
 import { extractFromText } from "../../../lib/intake/text";
 import { checkDailyCap, checkRateLimit } from "../../../lib/limits";
+import { logEvent } from "../../../lib/log";
 import { isContributorModel, resolveProvider } from "../../../lib/model";
 import type { CanonicalizeInput } from "../../../lib/stages/canonicalize";
 
 const BodySchema = z.strictObject({
   url: z.string().optional(),
   text: z.string().optional(),
+  recipe: z.unknown().optional(),
 });
 
 export function clientIp(request: Request): string {
@@ -24,17 +27,17 @@ export function clientIp(request: Request): string {
 }
 
 function logConvert(fields: {
-  kind: "url" | "text";
+  kind: "url" | "text" | "photo";
   cached: boolean;
   durationMs: number;
   tokensTotal: number;
   checksPassed: boolean;
 }): void {
-  console.log(JSON.stringify({ event: "convert", ...fields }));
+  logEvent("convert", fields);
 }
 
 function errorStatus(message: string): number {
-  if (/exactly one of|invalid url|only https|only public https|private-network|credentials/i.test(message)) {
+  if (/exactly one of|invalid url|invalid recipe|only https|only public https|private-network|credentials/i.test(message)) {
     return 400;
   }
   if (/no text provided|too long/i.test(message)) return 400;
@@ -56,8 +59,14 @@ export async function POST(request: Request) {
   }
   const url = typeof parsed.data.url === "string" ? parsed.data.url.trim() : "";
   const text = typeof parsed.data.text === "string" ? parsed.data.text : "";
-  if (url.length > 0 === text.trim().length > 0) {
-    return NextResponse.json({ error: "Provide exactly one of {url} or {text}." }, { status: 400 });
+  const hasRecipe = parsed.data.recipe !== undefined;
+  const provided =
+    (url.length > 0 ? 1 : 0) + (text.trim().length > 0 ? 1 : 0) + (hasRecipe ? 1 : 0);
+  if (provided !== 1) {
+    return NextResponse.json(
+      { error: "Provide exactly one of {url}, {text} or {recipe}." },
+      { status: 400 },
+    );
   }
 
   const rate = await checkRateLimit(clientIp(request));
@@ -132,6 +141,39 @@ export async function POST(request: Request) {
       });
       logConvert({
         kind: "url",
+        cached: false,
+        durationMs: Date.now() - started,
+        tokensTotal: result.usageTotal.totalTokens,
+        checksPassed,
+      });
+      return NextResponse.json({
+        artifact: result.artifact,
+        schedule: result.schedule,
+        cached: false,
+        usage: {
+          canonicalize: result.canonicalize.usage,
+          procedure: result.procedure.usage,
+          review: result.review.usage,
+          total: result.usageTotal,
+        },
+      });
+    }
+
+    if (hasRecipe) {
+      const valid = CanonicalRecipeSchema.safeParse(parsed.data.recipe);
+      if (!valid.success) {
+        return NextResponse.json({ error: "Invalid recipe." }, { status: 400 });
+      }
+      const cap = await checkDailyCap();
+      if (!cap.allowed) {
+        return NextResponse.json({ error: "Daily conversion cap reached." }, { status: 429 });
+      }
+      const result = await convertRecipeToArtifact(valid.data, { provider: "meta" });
+      const checksPassed =
+        result.procedure.checks.every((c) => c.passed) &&
+        result.review.checks.every((c) => c.passed);
+      logConvert({
+        kind: "photo",
         cached: false,
         durationMs: Date.now() - started,
         tokensTotal: result.usageTotal.totalTokens,

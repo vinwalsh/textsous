@@ -44,6 +44,10 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
 - 2026-10-29: M3 adjustments complete (TASKS.md): amounts/scaling math,
   dietary + cuisine variants, SOUS voice, composition flags + /api/adjust.
   180/180 green, key unset. Not yet pushed.
+- 2026-10-29: M4 built (TASKS.md): photo intake, web flow, artifact handoff,
+  generated docs + CI gate, hardening, fixture perf. 240/240 green, key
+  unset. Not yet pushed. M4.2 owner phone check and M4.6 URL numbers still
+  pending (need push/deploy and a networked env).
 - Keep this section current. When something ships, say so here with the date.
 
 ## Names (use exactly)
