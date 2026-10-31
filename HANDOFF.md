@@ -11,8 +11,10 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 - **M5**: M5.4 (README) and M5.2 (20/20 demo pre-warm) closed. M5.1 runner
   built + fixture-validated; the full 23-row run needs a networked machine.
   M5.3/M5.5 pending (see below).
-- Suite: 240/240 offline green (`MODEL_API_KEY` unset). Prod
-  (open.textsous.com) deploys `main` on push.
+- Suite: 241/241 offline green (`MODEL_API_KEY` unset). Prod
+  (open.textsous.com) deploys `main` on push. Local `main` is ahead of
+  `origin/main` by 1 (demo page commit) plus an uncommitted photo-picker
+  fix — push both together for the M4.2 re-check.
 - Source of truth for status is TASKS.md; NEW-WORK.md is the dated work log;
   AGENTS.md holds the repo rules. README.md is user-facing.
 

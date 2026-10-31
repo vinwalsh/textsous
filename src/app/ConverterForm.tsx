@@ -27,11 +27,13 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export default function ConverterForm({
   initialUrl,
   initialSrc,
+  initialTab = "url",
 }: {
   initialUrl: string;
   initialSrc: string;
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("url");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [urlValue, setUrlValue] = useState(initialUrl);
   const [textValue, setTextValue] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -222,7 +224,6 @@ export default function ConverterForm({
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              capture="environment"
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
             />
           </label>

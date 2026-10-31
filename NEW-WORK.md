@@ -49,3 +49,4 @@
 2026-10-30: M5.2 pre-warm pass 1+retry: 14/20 prod URLs warmed + verified (~456k tokens); 3 bot-gated, food52 429 persisting, 2 review-blocked twice. /demo page built, uncommitted. Needs 6 owner replacement URLs + pass 2.
 2026-10-30: M5.2 pass 2: 19/20 verified on the updated list (5/6 replacements fresh-warmed, ~165k). Gochujang noodles fails review twice (ingredient_coverage unused, same signature as foodmeanderings) — 1 replacement to go.
 2026-10-30: M5.2 done: final Tasty replacement converted fresh (20 ingredients, 11 tasks, 35k) + cache-verified in 0.19s. 20/20 demo URLs return from cache in production.
+2026-10-31: M4.2 phone-check fix: removed capture="environment" from the photo file input (it forced the camera on mobile with no Library/Browse choice) + optional initialTab seam with a render regression test. 241/241 green + typecheck + lint. Uncommitted; ship with the demo commit so the owner re-checks both on prod.
