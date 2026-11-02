@@ -24,10 +24,14 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 
 ## Open loops
 
-- M5.1 full eval: run `npm run eval` on a networked machine (this sandbox
-  cannot fetch external web). Optionally set `EVAL_USD_PER_MTOK` first.
-  Commit the resulting 23-row `eval/RESULTS.md` after skimming it for
-  third-party text (URL rows must show URLs only).
+- M5.1 full eval: Oct 30 run went 0/23 unknown-error (model-API-side
+  failure in that shell; code + key verified healthy 2026-11-01).
+  Re-run `npm run eval` on a networked machine with a working key
+  (optionally set `EVAL_USD_PER_MTOK` first); the runner now prints raw
+  failure messages to console. Commit the 23-row `eval/RESULTS.md` after
+  skimming it for third-party text (URL rows must show URLs only).
+  M6 batch (039384d) + runner fix (fca94ce) committed, awaiting owner
+  `git push` (sandbox push auth fails as usual).
 - M5.3: final NEW-WORK summary once the commit range is settled, plus the
   owner's private-repo handoff notes (not visible from here).
 - M5.5: needs a push/deploy; also unresolved: the item says health "reports
