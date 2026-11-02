@@ -24,14 +24,14 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 
 ## Open loops
 
-- M5.1 full eval: Oct 30 AND Nov 1 runs both 0/23 — raw cause is
-  "Connection error." on every model call while recipe fetches succeed,
-  so the owner shell cannot reach the model API host (sandbox reaches
-  it fine; compare proxy env with the sandbox list in chat 2026-11-01).
-  Fix the shell network, then re-run `npm run eval` (optionally set
-  `EVAL_USD_PER_MTOK` first). Runner prints raw failures to console and
+- M5.1 full eval: Oct 30 AND Nov 1 runs both 0/23 — owner-side route
+  to the model hosts flaps (fail windows alternate with green windows;
+  stale exports, proxies, TLS, code all ruled out). Launch `npm run
+  eval` inside an up-window (duel probe 4/4 green 2026-11-01); per-row
+  catches bank partial scores if it flaps mid-run. Optionally set
+  `EVAL_USD_PER_MTOK` first. Runner prints raw failures to console and
   labels connection/HTTP ones model-error. Skim RESULTS.md for
-  third-party text before committing. Owner `git push` still pending.
+  third-party text before committing. Owner pushed (verified in sync).
 - M5.3: final NEW-WORK summary once the commit range is settled, plus the
   owner's private-repo handoff notes (not visible from here).
 - M5.5: needs a push/deploy; also unresolved: the item says health "reports
