@@ -216,6 +216,7 @@ A milestone is done when all of these hold:
   Check: RESULTS.md has 23 rows and no third-party text.
   - 2026-10-29: scripts/eval.ts built (fixtures + urls.txt, all 7 scores, RESULTS.md, URL rows URL-only) and fixture-validated live (3/3, 12/12 review, ~70k tokens). Owner added 20 URLs (4 http→https fixed); full 23-row run needs a networked env; set EVAL_USD_PER_MTOK for the cost column.
   - 2026-11-01: Oct 30 full run yielded 0/23 unknown-error, 0 tokens (pre-model failure in that shell, not a code bug — runner unchanged since Oct 29 and a fresh canonicalize probe passes, 8.5k). Runner now logs raw failure messages to console. Needs a clean re-run with a working key; RESULTS.md on disk is the stale Oct 30 output.
+  - 2026-11-01: re-run also 0/23, raw cause "Connection error." on every model call while recipe fetches succeed — the owner shell cannot reach the model API host (sandbox reaches it fine and holds proxy vars the owner shell may lack). classifyError moved to src/lib/eval-label.ts with tests; connection/HTTP statuses now label model-error. Needs the shell network fix + another re-run.
 - [x] **M5.2 Demo set.** Pre-warm the production cache with the 20 URLs, and
   list them on a /demo page.
   Check: each returns from cache in production.

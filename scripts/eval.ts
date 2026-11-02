@@ -13,6 +13,7 @@ import {
 } from "../src/lib/intake/url";
 import { extractFromText } from "../src/lib/intake/text";
 import type { ProviderName } from "../src/lib/model";
+import { classifyError } from "../src/lib/eval-label";
 
 // `npm run eval`: convert the fixtures plus the URLs in eval/urls.txt (fetched
 // at run time, never committed), score each run, and write eval/RESULTS.md.
@@ -102,20 +103,6 @@ async function buildInput(
     pool: text.rawText.toLowerCase(),
     fetchMs: 0,
   };
-}
-
-function classifyError(message: string): string {
-  if (
-    /timed out|fetch failed|byte cap|content type|resolve host|redirect|status \d+|only https|private-network|credentials|invalid url/i.test(
-      message,
-    )
-  ) {
-    return "fetch-error";
-  }
-  if (/single-recipe|compile blocked/i.test(message)) return "review-blocked";
-  if (/validation|valid json|empty content/i.test(message)) return "model-error";
-  if (/missing model api key/i.test(message)) return "config-error";
-  return "unknown-error";
 }
 
 function costOf(totalTok: number): string {
