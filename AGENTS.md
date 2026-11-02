@@ -177,7 +177,8 @@ Variant transform (dietary and cuisine share it, `src/lib/schema/variant.ts`):
 - One lane per component (sauce, protein, base, side, garnish) plus a kitchen lane.
 - Split atomic hands-on work from unattended intervals.
 - One cook; shared tasks execute once.
-- Timers default on only for exact source durations.
+- Timers show on every step; estimated timings are labeled as estimates
+  (M6.6 unified the display — `timerEnabledByDefault` stays in the data).
 - Resource holds for pans, burners and the oven; waits in multiples of 60 s.
 - The scheduler (code) turns tasks, dependencies and holds into start and end
   minutes under the one-cook constraint. The model never schedules.

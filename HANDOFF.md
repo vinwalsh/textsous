@@ -5,22 +5,25 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 ## Where things stand
 
 - **M1–M3** closed, pushed, deployed.
-- **M4** built: M4.1 (photo), M4.3 (artifacts), M4.4 (docs), M4.5 (hardening)
-  closed. M4.2 web flow built, owner phone check pending. M4.6 fixture perf
-  measured; URL numbers need a networked env.
+- **M4** built: M4.1 (photo), M4.2 (web flow, owner phone pass
+  2026-10-31), M4.3 (artifacts), M4.4 (docs), M4.5 (hardening) closed.
+  M4.6 fixture perf measured; URL numbers need a networked env.
 - **M5**: M5.4 (README) and M5.2 (20/20 demo pre-warm) closed. M5.1 runner
   built + fixture-validated; the full 23-row run needs a networked machine.
   M5.3/M5.5 pending (see below).
-- Suite: 241/241 offline green (`MODEL_API_KEY` unset). Prod
-  (open.textsous.com) deploys `main` on push. Local `main` is ahead of
-  `origin/main` by 1 (demo page commit) plus an uncommitted photo-picker
-  fix — push both together for the M4.2 re-check.
+- Suite: 275/275 offline green (`MODEL_API_KEY` unset). M6.1 + M6.3 +
+  M6.4 + M6.6 built (owner re-checks pending one push + deploy), M6.2
+  closed, M6.5 blocked (eval 0/23 unknown-error, 0 tokens — owner's run
+  needs a working model setup before it yields fail reasons). Prod
+  (open.textsous.com) deploys `main` on push. Owner pushed 2026-10-31:
+  origin/main has the demo page + photo-picker fix, /demo verified 200.
+  M4.2 re-checks remaining: photo Library choice, Allrecipes paste
+  fallback.
 - Source of truth for status is TASKS.md; NEW-WORK.md is the dated work log;
   AGENTS.md holds the repo rules. README.md is user-facing.
 
 ## Open loops
 
-- M4.2 phone check: owner walks every path on production.
 - M5.1 full eval: run `npm run eval` on a networked machine (this sandbox
   cannot fetch external web). Optionally set `EVAL_USD_PER_MTOK` first.
   Commit the resulting 23-row `eval/RESULTS.md` after skimming it for
@@ -33,6 +36,11 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 - Owner items still open: O3 cap sizing (~20–25k tokens/conversion
   measured), O4 Baseten key, O6 `/open`+`/import` on textsous.com, O7
   privacy line, O8 demo video, O9 submission.
+- M6 (phone-check follow-ups: M6.1 reorder, M6.2 fractions, M6.3
+  progress, M6.4 screenshot paste, M6.5 extractor gains, M6.6 timer
+  unification) approved and in TASKS.md. M6.1 also carries the cuisine
+  placeholder rewording (free-form example). Build starts after M4.2.
+  Attribute tags deferred (owner thinking).
 - Pre-warm evidence lived in `/tmp/prewarm*.log` (scratch, never committed);
   reproduce via the M5.2 procedure if needed.
 

@@ -28,6 +28,27 @@ afterEach(() => {
   mockedLookup.mockReset();
 });
 
+describe("request identity", () => {
+  it("sends the honest TextSousOpen user-agent, never a browser impersonation", async () => {
+    const fetchMock = vi.fn(async (input: string, init?: RequestInit): Promise<Response> => {
+      void input;
+      void init;
+      return new Response("<html><head><title>t</title></head><body>hello</body></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchAndExtract(`${PUBLIC}/r`);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const calls = fetchMock.mock.calls;
+    expect(calls).toHaveLength(1);
+    const init = calls[0]?.[1] as unknown as { headers: Record<string, string> };
+    expect(init.headers["user-agent"]).toBe("TextSousOpen/0.1 (+https://open.textsous.com)");
+    expect(init.headers["user-agent"]).not.toMatch(/mozilla|chrome|safari/i);
+  });
+});
+
 describe("fetchAndExtract guards", () => {
   it("refuses non-https URLs without fetching", async () => {
     const fetchMock = vi.fn();

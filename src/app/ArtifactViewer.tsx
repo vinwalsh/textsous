@@ -148,6 +148,13 @@ export default function ArtifactViewer({
         </p>
       ) : null}
 
+      <AdjustPanel
+        artifact={current}
+        modified={modified}
+        onAdjusted={(next: CookAlongArtifact) => handleAdjusted(next)}
+        onReset={handleReset}
+      />
+
       <h3>Ingredients</h3>
       <ul className="ingredients">
         {recipe.ingredients.map((ing) => (
@@ -224,20 +231,13 @@ export default function ArtifactViewer({
             </ul>
           ) : null}
           {task.tip ? <p>Tip: {task.tip}</p> : null}
-          {task.timerEnabledByDefault ? (
-            <Timer minutes={task.minutes} label={task.label} />
-          ) : (
-            <details>
-              <summary>Timer ({task.minutes} min)</summary>
-              <Timer minutes={task.minutes} label={task.label} />
-            </details>
-          )}
+          <Timer minutes={task.minutes} label={task.label} />
         </div>
       ))}
 
       {current.changes.length > 0 ? (
-        <div>
-          <h3>What changed</h3>
+        <details>
+          <summary>What changed</summary>
           <ul className="changes">
             {current.changes.map((change, i) => (
               <li key={i}>
@@ -245,15 +245,8 @@ export default function ArtifactViewer({
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
-
-      <AdjustPanel
-        artifact={current}
-        modified={modified}
-        onAdjusted={(next: CookAlongArtifact) => handleAdjusted(next)}
-        onReset={handleReset}
-      />
 
       {saveError ? <ErrorBox error={saveError} /> : null}
       <div className="btn-row">

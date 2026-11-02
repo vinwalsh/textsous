@@ -8,7 +8,13 @@ import {
   type TokenUsage,
 } from "../model";
 import { findNumbers, parseAmount } from "../scaling/amounts";
-import { effectiveFactor, formatAmount, round2, scaleIngredient } from "../scaling/scale";
+import {
+  effectiveFactor,
+  formatAmount,
+  formatKitchenAmount,
+  round2,
+  scaleIngredient,
+} from "../scaling/scale";
 
 export const SCALING_VERSION = 1;
 export const MIN_SERVINGS = 0.5;
@@ -127,7 +133,7 @@ function rescaleStepText(
       flags.push({ stepId, token: token.token });
       continue;
     }
-    out = `${out.slice(0, token.start)}${formatAmount(match.scaled)}${out.slice(token.end)}`;
+    out = `${out.slice(0, token.start)}${formatKitchenAmount(match.scaled)}${out.slice(token.end)}`;
   }
   return { text: out, flags: flags.reverse() };
 }

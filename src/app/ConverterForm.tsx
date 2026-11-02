@@ -1,12 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type FormEvent,
+} from "react";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../lib/schema/artifact";
 import type { CanonicalRecipe } from "../lib/schema/canonical";
 import type { PhotoTranscription } from "../lib/intake/photo";
 import ArtifactViewer from "./ArtifactViewer";
 import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
+import ProgressNote from "./ProgressNote";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
 
 type Tab = "url" | "text" | "photo";
@@ -23,6 +31,24 @@ interface PhotoOk {
 }
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+export const PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+
+/** Minimal clipboard-item shape; matches DataTransferItem structurally. */
+export interface PastedItem {
+  type: string;
+  getAsFile: () => File | null;
+}
+
+/** First pasted image file, or null when the paste holds no usable image. Pure. */
+export function firstPastedFile(items: readonly PastedItem[]): File | null {
+  for (const item of items) {
+    if (!item.type.startsWith("image/")) continue;
+    const file = item.getAsFile();
+    if (file) return file;
+  }
+  return null;
+}
 
 export default function ConverterForm({
   initialUrl,
@@ -159,6 +185,29 @@ export default function ConverterForm({
     window.scrollTo(0, 0);
   }
 
+  function onPhotoPaste(event: ClipboardEvent<HTMLFormElement>) {
+    if (busy) return;
+    const items = event.clipboardData ? Array.from(event.clipboardData.items) : [];
+    const file = firstPastedFile(items);
+    if (!file) return;
+    if (!(PHOTO_MIME_TYPES as readonly string[]).includes(file.type)) {
+      setError({
+        title: "That photo won't work",
+        detail: "PNG, JPEG or WebP only — screenshots usually paste as PNG.",
+      });
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError({
+        title: "That photo is too big",
+        detail: "Photos must be under 5 MB. Try a smaller image.",
+      });
+      return;
+    }
+    setPhotoFile(file);
+    setError(null);
+  }
+
   function switchToPaste() {
     setTab("text");
     setError(null);
@@ -218,16 +267,17 @@ export default function ConverterForm({
       </div>
 
       {tab === "photo" ? (
-        <form onSubmit={onTranscribe}>
+        <form onSubmit={onTranscribe} onPaste={onPhotoPaste}>
           <label className="field">
             <span>Take or upload a photo of the recipe</span>
             <input
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept={PHOTO_MIME_TYPES.join(",")}
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
             />
           </label>
           <p className="meta">PNG, JPEG or WebP, up to 5 MB. The photo is read in memory only.</p>
+          <p className="meta">Tip: you can also paste a screenshot straight from your clipboard.</p>
           {photoFile ? (
             <p className="meta">
               Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)} KB)
@@ -243,6 +293,7 @@ export default function ConverterForm({
               {busy === "transcribe" ? "Transcribing…" : "Transcribe photo"}
             </button>
           </div>
+          {busy === "transcribe" ? <ProgressNote kind="transcribe" /> : null}
         </form>
       ) : (
         <form onSubmit={onConvert}>
@@ -275,9 +326,7 @@ export default function ConverterForm({
               {busy === "convert" ? "Converting…" : "Convert"}
             </button>
           </div>
-          {busy === "convert" ? (
-            <p className="meta">This usually takes about a minute.</p>
-          ) : null}
+          {busy === "convert" ? <ProgressNote kind="convert" /> : null}
         </form>
       )}
       {busy === "load" ? <p className="meta">Loading the saved recipe…</p> : null}

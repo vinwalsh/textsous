@@ -3,6 +3,7 @@
 import type { PhotoTranscription } from "../lib/intake/photo";
 import type { CanonicalRecipe } from "../lib/schema/canonical";
 import ErrorBox from "./ErrorBox";
+import ProgressNote from "./ProgressNote";
 import type { FriendlyError } from "./request";
 
 export default function PhotoConfirm({
@@ -49,6 +50,7 @@ export default function PhotoConfirm({
         </p>
       </div>
       {error ? <ErrorBox error={error} /> : null}
+      {busy ? <ProgressNote kind="convert" /> : null}
       <div className="btn-row">
         <button type="button" className="btn btn-primary" onClick={onConfirm} disabled={busy}>
           {busy ? "Converting…" : "Looks right — convert it"}

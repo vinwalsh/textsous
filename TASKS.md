@@ -176,13 +176,14 @@ A milestone is done when all of these hold:
   Check: tests for the size and type limits, and a test that nothing stores
   the image bytes.
   - 2026-10-29: intake/photo.ts + POST /api/photo (multipart "photo"); 18 tests green; live herby PNG: 7/7 ingredients, 4/4 steps, book/author/page captured, needs_review (10.4k tokens).
-- [ ] **M4.2 Flow.** Mobile-first pages: home (paste a URL, paste text, or take
+- [x] **M4.2 Flow.** Mobile-first pages: home (paste a URL, paste text, or take
   or upload a photo; accepts ?url= and ?src=), a photo confirm screen beside
   the photo, the viewer (credit card, Mise en Place, lane timeline, step cards
   with completionCue and timers), and an adjust panel with a "what changed"
   list.
   Check: owner completes each path on a phone against production.
   - 2026-10-29: UI built (intake + confirm + viewer + adjust) + /api/convert {recipe}; gates green (200/200), live recipe-path VALID (13.2k), render smoke 17/17. Owner phone check pending (needs push + deploy).
+  - 2026-10-31: owner phone pass on prod: fresh + cached ?url=, /demo, text, photo→confirm→convert, viewer (attribution verified), vegetarian + cuisine adjust, ?src= load; picker fix + graceful-failure re-checks pass on the fresh deploy.
 - [x] **M4.3 Save to TextSous.** Store the artifact for 24 hours. GET
   /api/artifact/<id>?sig= checks an HMAC over the id and expiry, can be
   fetched more than once, and returns 404 after expiry. The button redirects
@@ -232,6 +233,48 @@ A milestone is done when all of these hold:
 - [ ] **M5.5 Final state.** AGENTS.md Status lists what is built; production
   health reports the Standard tier; HTTPS is valid; CI is green.
   Check: every "Done for every milestone" condition holds.
+
+## M6. Phone-check follow-ups (target: Nov 3)
+- [ ] **M6.1 Viewer reorder.** Move the adjust panel directly under the
+  title/credit; collapse "What changed" into a closed-by-default `details`
+  block.
+  Check: owner re-checks the viewer on a phone; full gates green.
+  - 2026-10-31: built (adjust under credit/allergens, What changed in closed details, free-form cuisine placeholder, above→below copy); 3 render tests, 244/244 + typecheck + lint + build green. Owner re-check pending (needs push + deploy).
+- [x] **M6.2 Kitchen fractions.** New `formatKitchenAmount` in scaling:
+  scaled cook/buy amounts and rescaled step numbers render as nearest 1/8
+  with thirds and mixed numbers ("1 1/2"); original quantities stay
+  verbatim.
+  Check: table-driven tests (halves, thirds, mixed, ranges, buy amounts);
+  CLI diff on fixtures shows fractions only in scaled fields.
+  - 2026-10-31: formatKitchenAmount + ceilKitchenAmount (buy covers cook, countables whole); 20 table tests; 3 decimal expectations updated to the directed contract. Live herby --servings 6: 4t/12m, 12/12 review, sublinear "1 3/4", originals verbatim (20.2k + 2.5k tokens). 264/264 + typecheck + lint green.
+- [ ] **M6.3 Honest progress UX.** Convert, transcribe, and adjust show
+  elapsed time plus a plain-words stage explainer ("usually about 2
+  minutes: reading, planning, checking") — reassurance, not fake
+  percentages, since the client can't see server stages.
+  Check: owner watches a slow convert and sees progress copy throughout;
+  unit test on the stage copy.
+  - 2026-10-31: built (ProgressNote with elapsed ticker + per-kind copy, wired into convert/transcribe/confirm/adjust); 3 tests incl. no-% lock; 267/267 + typecheck + lint + build green. Owner watch pending (needs push + deploy).
+- [ ] **M6.4 Screenshot paste.** The photo tab accepts pasted clipboard
+  images (`onPaste`) into the same transcribe pipeline with the same
+  size/type limits.
+  Check: tests for the paste path and its limits; owner pastes a recipe
+  screenshot on phone and desktop.
+  - 2026-10-31: built (onPaste on photo form → firstPastedFile → same transcribe pipeline; type/size limits shared); 4 tests; 271/271 + typecheck + lint + build green. Caveat: phone browsers (esp. iOS) rarely deliver image pastes to pages, so the picker stays the phone path. Owner check pending (needs push + deploy).
+- [!] **M6.5 Extractor gains.** From the eval fail reasons in `RESULTS.md`,
+  improve the text fallback and schema coverage for the top misses. The
+  honest user-agent stays unchanged (a test asserts it) — no new bypasses.
+  Check: previously-failing sample URLs either convert or degrade to the
+  paste fallback; gates green.
+  - BLOCKED 2026-10-31: owner's eval run produced 0/23 with "unknown-error" and 0 tokens on every row (unclassified failure before any model call, even on fixtures) — there are no per-URL fail reasons to mine. UA lock test added (9/9 fetch tests green). Unblocks when a real eval fail list exists; extractor changes without that data would be guessing.
+  - 2026-10-31: UA assertion test added (exact string + no browser tokens); suite green.
+- [ ] **M6.6 Timer unification.** Every step timer renders visible in one
+  style (no collapsed `details` variant); each timer gets +/− minute
+  adjust. The "estimated time" wording stays, and `timerEnabledByDefault`
+  stays in the data — this amends only the display half of the "timers
+  default on" procedure rule.
+  Check: owner checks timers on a phone (uniform, adjustable); gates
+  green.
+  - 2026-10-31: built (uniform Timer on every step, ±1 min adjust with drift-safe baseline, estimated wording kept; AGENTS display rule amended); 3 tests; 275/275 + typecheck + lint + build green. Owner check pending (needs push + deploy).
 
 ## Owner actions (not for the coding agent)
 - [x] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and

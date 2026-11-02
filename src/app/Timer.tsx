@@ -8,18 +8,24 @@ function format(totalSeconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Shift a countdown by delta seconds, never below zero. Pure. */
+export function adjustRemaining(remaining: number, deltaSeconds: number): number {
+  return Math.max(0, remaining + deltaSeconds);
+}
+
 /** Step countdown. Timestamp-based so a paused tab does not drift. */
 export default function Timer({ minutes, label }: { minutes: number; label: string }) {
   const total = Math.max(1, Math.round(minutes * 60));
   const [remaining, setRemaining] = useState(total);
   const [running, setRunning] = useState(false);
   const remainingRef = useRef(total);
+  const endAtRef = useRef(0);
 
   useEffect(() => {
     if (!running) return;
-    const endAt = Date.now() + remainingRef.current * 1000;
+    endAtRef.current = Date.now() + remainingRef.current * 1000;
     const id = setInterval(() => {
-      const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      const left = Math.max(0, Math.round((endAtRef.current - Date.now()) / 1000));
       remainingRef.current = left;
       setRemaining(left);
       if (left <= 0) setRunning(false);
@@ -31,6 +37,14 @@ export default function Timer({ minutes, label }: { minutes: number; label: stri
     setRunning(false);
     remainingRef.current = total;
     setRemaining(total);
+  }
+
+  function adjust(deltaSeconds: number) {
+    if (running) endAtRef.current += deltaSeconds * 1000;
+    const next = adjustRemaining(remainingRef.current, deltaSeconds);
+    remainingRef.current = next;
+    setRemaining(next);
+    if (next <= 0) setRunning(false);
   }
 
   const done = remaining <= 0;
@@ -46,6 +60,12 @@ export default function Timer({ minutes, label }: { minutes: number; label: stri
           </button>
           <button type="button" className="btn" onClick={reset}>
             Reset
+          </button>
+          <button type="button" className="btn" aria-label="One minute less" onClick={() => adjust(-60)}>
+            −1 min
+          </button>
+          <button type="button" className="btn" aria-label="One minute more" onClick={() => adjust(60)}>
+            +1 min
           </button>
         </>
       ) : (

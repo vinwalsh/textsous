@@ -5,6 +5,7 @@ import type { CookAlongArtifact } from "../lib/schema/artifact";
 import { DIETARY_TARGETS } from "../lib/schema/variant";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
+import ProgressNote from "./ProgressNote";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
 
 interface AdjustOk {
@@ -133,7 +134,7 @@ export default function AdjustPanel({
             <span>Cuisine style</span>
             <input
               type="text"
-              placeholder="e.g. Italian"
+              placeholder="Can you make this dish more Italian-style?"
               value={cuisine}
               disabled={applying}
               onChange={(e) => setCuisine(e.target.value)}
@@ -150,6 +151,7 @@ export default function AdjustPanel({
           </label>
         </div>
         {error ? <ErrorBox error={error} /> : null}
+        {applying ? <ProgressNote kind="adjust" /> : null}
         <div className="btn-row">
           <button type="submit" className="btn btn-primary" disabled={!hasChange || applying}>
             {applying ? "Adjusting…" : "Apply adjustments"}
@@ -175,7 +177,7 @@ export default function AdjustPanel({
               ))}
             </ul>
           ) : null}
-          <p className="meta">Full details are in the What changed list above.</p>
+          <p className="meta">Full details are in the What changed list below.</p>
         </div>
       ) : null}
     </section>
