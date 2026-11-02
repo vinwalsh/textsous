@@ -158,6 +158,9 @@ async function evaluate(
   try {
     built = await buildInput(source);
   } catch (error) {
+    console.error(
+      `--- ${input} intake failed: ${error instanceof Error ? error.message : error}`,
+    );
     return failedRow(input, kind, error);
   }
   const failedNames: string[] = [];
@@ -212,6 +215,9 @@ async function evaluate(
       error: "—",
     };
   } catch (error) {
+    console.error(
+      `--- ${input} conversion failed: ${error instanceof Error ? error.message : error}`,
+    );
     const row = failedRow(input, kind, error);
     row.fetchMs = built.fetchMs;
     return row;
