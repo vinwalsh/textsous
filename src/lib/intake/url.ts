@@ -1,6 +1,8 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import * as cheerio from "cheerio";
+// Slim build: full cheerio pulls in the undici package, whose module load
+// breaks global fetch to the model API in some shells. We only use load().
+import * as cheerio from "cheerio/slim";
 
 export const FETCH_TIMEOUT_MS = 10_000;
 export const MAX_BYTES = 2 * 1024 * 1024;

@@ -24,14 +24,12 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 
 ## Open loops
 
-- M5.1 full eval: Oct 30 AND Nov 1 runs both 0/23 — owner-side route
-  to the model hosts flaps (fail windows alternate with green windows;
-  stale exports, proxies, TLS, code all ruled out). Launch `npm run
-  eval` inside an up-window (duel probe 4/4 green 2026-11-01); per-row
-  catches bank partial scores if it flaps mid-run. Optionally set
-  `EVAL_USD_PER_MTOK` first. Runner prints raw failures to console and
-  labels connection/HTTP ones model-error. Skim RESULTS.md for
-  third-party text before committing. Owner pushed (verified in sync).
+- M5.1 full eval: TRUE root cause found 2026-11-01 — full-cheerio
+  import loads undici@7, breaking model fetch in the owner shell (import
+  ladder: +cheerio fails, slim passes). FIX SHIPPED (cheerio/slim +
+  lock test, 287/287 green, committed). Owner: `npm run smoke`, then
+  full `npm run eval` (optionally set `EVAL_USD_PER_MTOK` first). Skim
+  RESULTS.md for third-party text before committing.
 - M5.3: final NEW-WORK summary once the commit range is settled, plus the
   owner's private-repo handoff notes (not visible from here).
 - M5.5: needs a push/deploy; also unresolved: the item says health "reports
