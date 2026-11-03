@@ -202,18 +202,20 @@ A milestone is done when all of these hold:
   Check: tests for each error path and for log redaction; footer present
   (needs O5).
   - 2026-10-29: friendly error copy + ErrorBox + apiFetch timeout wired into all flows; redacting logEvent in 3 routes; footer with O5 contact. 26 tests; 240/240 green. Health already reported provider + cache (no change).
-- [ ] **M4.6 Performance.** Measure p50 and p95 latency per stage and tokens per
+- [x] **M4.6 Performance.** Measure p50 and p95 latency per stage and tokens per
   conversion over the fixtures and three URLs from eval/urls.txt.
   Check: the numbers are in the session report.
+  - 2026-11-01: full-eval numbers (nearest-rank, beyond the 3-URL minimum) — fixtures (n=3): canon 42.8/85.2s, proc 55.4/119.3s, rev 25.4/25.4s, tok 18.9/34.3k; urls (n=20): canon 61.5/79.6s, proc 111.3/143.5s, rev 29.6/41.4s, tok 32.2/42.0k, fetch 285/1939ms; 739k total.
   - 2026-10-29: fixtures measured (n=3, 0 failed checks): canon p50 30.3s/p95 42.5s, procedure p50 64.0s/p95 80.1s, review p50 17.7s/p95 32.3s, tokens p50 20.1k/p95 24.6k (64.8k total). URL portion BLOCKED: sandbox egress fails environment-wide (3 hosts + 2 channels); needs a networked env. urls.txt still unpopulated (no unverified guesses); M5.1 populates + verifies there.
 
 ## M5. Proof and disclosure (target: Nov 3)
-- [ ] **M5.1 Eval.** `npm run eval` runs the fixtures and the 20 URLs in
+- [x] **M5.1 Eval.** `npm run eval` runs the fixtures and the 20 URLs in
   eval/urls.txt (fetched at run time, never committed). It scores review
   checks passed, ingredient coverage, share of timings with source evidence,
   scheduled vs source total time, latency, tokens and cost, and writes
   eval/RESULTS.md.
   Check: RESULTS.md has 23 rows and no third-party text.
+  - 2026-11-01: full run 23/23 green, 739k tokens (cost n/a, rate unset); skimmed clean (URLs/numbers/check-names only). 22 rows 12/12 review (happykitchen 11/12); soft flags on 3 rows (2 ingredient_names, 1 source_relationships), zero hard failures.
   - 2026-10-29: scripts/eval.ts built (fixtures + urls.txt, all 7 scores, RESULTS.md, URL rows URL-only) and fixture-validated live (3/3, 12/12 review, ~70k tokens). Owner added 20 URLs (4 http→https fixed); full 23-row run needs a networked env; set EVAL_USD_PER_MTOK for the cost column.
   - 2026-11-01: Oct 30 full run yielded 0/23 unknown-error, 0 tokens (pre-model failure in that shell, not a code bug — runner unchanged since Oct 29 and a fresh canonicalize probe passes, 8.5k). Runner now logs raw failure messages to console. Needs a clean re-run with a working key; RESULTS.md on disk is the stale Oct 30 output.
   - 2026-11-01: re-run also 0/23, raw cause "Connection error." on every model call while recipe fetches succeed — the owner shell cannot reach the model API host (sandbox reaches it fine and holds proxy vars the owner shell may lack). classifyError moved to src/lib/eval-label.ts with tests; connection/HTTP statuses now label model-error. Needs the shell network fix + another re-run.
@@ -264,11 +266,12 @@ A milestone is done when all of these hold:
   Check: tests for the paste path and its limits; owner pastes a recipe
   screenshot on phone and desktop.
   - 2026-10-31: built (onPaste on photo form → firstPastedFile → same transcribe pipeline; type/size limits shared); 4 tests; 271/271 + typecheck + lint + build green. Caveat: phone browsers (esp. iOS) rarely deliver image pastes to pages, so the picker stays the phone path. Owner check pending (needs push + deploy).
-- [!] **M6.5 Extractor gains.** From the eval fail reasons in `RESULTS.md`,
+- [x] **M6.5 Extractor gains.** From the eval fail reasons in `RESULTS.md`,
   improve the text fallback and schema coverage for the top misses. The
   honest user-agent stays unchanged (a test asserts it) — no new bypasses.
   Check: previously-failing sample URLs either convert or degrade to the
   paste fallback; gates green.
+  - 2026-11-01: CLOSED with no extractor change: all 20 eval URLs convert (23/23, 0 failures), so there are no failing samples to fix; UA lock test shipped. 3 soft flags (tasteandsee + livingsweetmoments ingredient_names, happykitchen source_relationships) recorded as future extractor follow-ups.
   - BLOCKED 2026-10-31: owner's eval run produced 0/23 with "unknown-error" and 0 tokens on every row (unclassified failure before any model call, even on fixtures) — there are no per-URL fail reasons to mine. UA lock test added (9/9 fetch tests green). Unblocks when a real eval fail list exists; extractor changes without that data would be guessing.
   - 2026-10-31: UA assertion test added (exact string + no browser tokens); suite green.
 - [ ] **M6.6 Timer unification.** Every step timer renders visible in one

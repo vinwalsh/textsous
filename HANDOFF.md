@@ -5,12 +5,10 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 ## Where things stand
 
 - **M1–M3** closed, pushed, deployed.
-- **M4** built: M4.1 (photo), M4.2 (web flow, owner phone pass
-  2026-10-31), M4.3 (artifacts), M4.4 (docs), M4.5 (hardening) closed.
-  M4.6 fixture perf measured; URL numbers need a networked env.
-- **M5**: M5.4 (README) and M5.2 (20/20 demo pre-warm) closed. M5.1 runner
-  built + fixture-validated; the full 23-row run needs a networked machine.
-  M5.3/M5.5 pending (see below).
+- **M4** complete: all items closed (M4.6 full-eval numbers
+  2026-11-01, beyond the 3-URL minimum).
+- **M5**: M5.1 (eval 23/23), M5.2 (demo pre-warm), M5.4 (README)
+  closed. M5.3/M5.5 pending (see below).
 - Suite: 275/275 offline green (`MODEL_API_KEY` unset). M6.1 + M6.3 +
   M6.4 + M6.6 built (owner re-checks pending one push + deploy), M6.2
   closed, M6.5 blocked (eval 0/23 unknown-error, 0 tokens — owner's run
@@ -24,12 +22,9 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 
 ## Open loops
 
-- M5.1 full eval: TRUE root cause found 2026-11-01 — full-cheerio
-  import loads undici@7, breaking model fetch in the owner shell (import
-  ladder: +cheerio fails, slim passes). FIX SHIPPED (cheerio/slim +
-  lock test, 287/287 green, committed). Owner: `npm run smoke`, then
-  full `npm run eval` (optionally set `EVAL_USD_PER_MTOK` first). Skim
-  RESULTS.md for third-party text before committing.
+- M5.1 full eval: DONE 23/23 (739k tokens, skimmed clean) after the
+  cheerio/slim fix. Say the word to commit `eval/RESULTS.md` + closure
+  docs (TASKS/NEW-WORK/HANDOFF edits uncommitted).
 - M5.3: final NEW-WORK summary once the commit range is settled, plus the
   owner's private-repo handoff notes (not visible from here).
 - M5.5: needs a push/deploy; also unresolved: the item says health "reports
@@ -38,11 +33,9 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
 - Owner items still open: O3 cap sizing (~20–25k tokens/conversion
   measured), O4 Baseten key, O6 `/open`+`/import` on textsous.com, O7
   privacy line, O8 demo video, O9 submission.
-- M6 (phone-check follow-ups: M6.1 reorder, M6.2 fractions, M6.3
-  progress, M6.4 screenshot paste, M6.5 extractor gains, M6.6 timer
-  unification) approved and in TASKS.md. M6.1 also carries the cuisine
-  placeholder rewording (free-form example). Build starts after M4.2.
-  Attribute tags deferred (owner thinking).
+- M6: M6.2 + M6.5 closed; M6.1/M6.3/M6.4/M6.6 built, owner
+  re-checks pending one push + deploy. Attribute tags deferred (owner
+  thinking).
 - Pre-warm evidence lived in `/tmp/prewarm*.log` (scratch, never committed);
   reproduce via the M5.2 procedure if needed.
 
