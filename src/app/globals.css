@@ -524,6 +524,40 @@ textarea {
   margin: 0;
 }
 
+/* ---------- /demo ---------- */
+
+.card.demo-list {
+  list-style: none;
+  padding: 4px 16px;
+}
+
+.demo-list li + li {
+  border-top: 1px solid var(--ts-border);
+}
+
+.demo-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+  text-decoration: none;
+}
+
+.demo-host {
+  font-weight: 600;
+}
+
+.demo-slug {
+  min-width: 0;
+  color: var(--ts-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.demo-list a:hover .demo-host {
+  text-decoration: underline;
+}
+
 /* ---------- Converter extras ---------- */
 
 .photo-preview {
@@ -908,6 +942,12 @@ details summary {
 
   .tabs {
     max-width: 480px;
+  }
+
+  .demo-list a {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
   }
 
   .lane-row {

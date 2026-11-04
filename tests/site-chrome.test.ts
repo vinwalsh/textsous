@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import RootLayout from "../src/app/layout";
+import NotFound from "../src/app/not-found";
 import SiteFooter, { LICENSE_URL, PRIVACY_URL } from "../src/app/SiteFooter";
 import SiteHeader, { GITHUB_URL } from "../src/app/SiteHeader";
 
@@ -69,5 +70,14 @@ describe("layout chrome", () => {
     const css = readFileSync("src/app/embed/embed-chrome.css", "utf8");
     expect(css).toContain("body:has(.ts-embed-root) > .site-header");
     expect(css).toContain("body:has(.ts-embed-root) > .site-footer");
+  });
+});
+
+describe("not found page", () => {
+  it("stays light and offers a way back", () => {
+    const html = renderToStaticMarkup(createElement(NotFound));
+    expect(html).toContain("We can&#x27;t find that page");
+    expect(html).toContain('<a class="btn btn-primary" href="/">Convert a recipe</a>');
+    expect(html).toContain('<a class="btn" href="/demo">Try a demo recipe</a>');
   });
 });

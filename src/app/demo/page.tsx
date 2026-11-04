@@ -21,28 +21,43 @@ function hostOf(url: string): string {
   }
 }
 
+/** The page's own address segment, shown as printed so two recipes on one site differ. */
+function pageSlug(url: string): string {
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    return parts.length > 0 ? decodeURIComponent(parts[parts.length - 1]) : "";
+  } catch {
+    return "";
+  }
+}
+
 export default function DemoPage() {
   const urls = readUrls();
   return (
     <main>
       <h1>Demo recipes</h1>
       <p className="tagline">
-        Twenty recipes we test with — pick one to open it in the converter. One that was
-        converted recently opens right away; a fresh conversion takes 3 to 4 minutes.
+        Twenty recipes we test with. Pick one and it opens as a cook along: one converted
+        recently opens right away; a fresh conversion takes 3 to 4 minutes.
       </p>
       {urls.length === 0 ? (
         <p>No demo recipes are listed yet.</p>
       ) : (
-        <ul className="changes">
+        <ul className="card demo-list">
           {urls.map((url) => (
             <li key={url}>
               <Link href={`/?url=${encodeURIComponent(url)}`} title={url}>
-                {hostOf(url)}
+                <span className="demo-host">{hostOf(url)}</span>
+                <span className="demo-slug">{pageSlug(url)}</span>
               </Link>
             </li>
           ))}
         </ul>
       )}
+      <p className="meta">
+        Have a recipe site? See the{" "}
+        <Link href="/embed-demo">Cook Along button on a demo blog post</Link>.
+      </p>
       <p className="meta">
         <Link href="/">Back to the converter</Link>
       </p>

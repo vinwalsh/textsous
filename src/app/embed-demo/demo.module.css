@@ -10,7 +10,7 @@
   padding: 0.6rem 1rem;
   background: var(--ts-accent-soft, #f7e9e1);
   border-bottom: 1px solid var(--ts-border, #e2dbd5);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 0.9rem;
   text-align: center;
 }
@@ -79,7 +79,7 @@
   margin-top: 2rem;
   padding-top: 1rem;
   border-top: 1px solid var(--ts-border, #e2dbd5);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .snippet {
