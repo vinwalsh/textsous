@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
-import type { ArtifactChange, CookAlongArtifact } from "../lib/schema/artifact";
-import type { Lane, TimelineTask } from "../lib/schema/timeline";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
+import type { RecipeOverview } from "../lib/convert-events";
+import type { ArtifactChange, ArtifactCredit, CookAlongArtifact } from "../lib/schema/artifact";
+import type { Lane, TimelineDefinition, TimelineTask } from "../lib/schema/timeline";
 import { buildImportUrl, saveToTextSousEnabled } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
 import { laneDisplayColors, taskLaneColor } from "../lib/lane-palette";
@@ -10,7 +11,7 @@ import { mergeNotes, reviewNoteTexts } from "../lib/review-notes";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
-import AdjustPanel from "./AdjustPanel";
+import AdjustPanel, { type AdjustChoices } from "./AdjustPanel";
 import TimelineView from "./TimelineView";
 import Timer from "./Timer";
 
@@ -22,8 +23,10 @@ const CHANGE_LABELS: Record<ArtifactChange["kind"], string> = {
   technique: "Technique",
 };
 
-function Credit({ artifact }: { artifact: CookAlongArtifact }) {
-  const credit = artifact.recipe.credit;
+type Ingredient = CookAlongArtifact["recipe"]["ingredients"][number];
+
+/** Source credit: site, author and "View original" for URLs; book, author and page for photos. */
+export function Credit({ credit }: { credit: ArtifactCredit }) {
   return (
     <div className="card" aria-label="Recipe credit">
       {credit.kind === "url" ? (
@@ -64,7 +67,7 @@ export function readTipsMode(): TipsMode {
   }
 }
 
-function storeTipsMode(mode: TipsMode): void {
+export function storeTipsMode(mode: TipsMode): void {
   try {
     window.localStorage.setItem(TIPS_MODE_KEY, mode);
   } catch {
@@ -77,25 +80,76 @@ export function handsOnMinutes(tasks: Array<{ attention: string; minutes: number
   return tasks.filter((t) => t.attention === "hands-on").reduce((sum, t) => sum + t.minutes, 0);
 }
 
-function BeforeYouStart({
-  artifact,
+/** A quick read of the recipe: what you'll do, and each component with how it is made. */
+export function OverviewCard({ overview }: { overview: RecipeOverview }) {
+  return (
+    <section className="card overview" aria-label="What you'll do">
+      <h3>What you&apos;ll do</h3>
+      <p>{overview.summary}</p>
+      {overview.components.length > 0 ? (
+        <>
+          <h4>Components</h4>
+          <ul className="overview-parts">
+            {overview.components.map((part, i) => (
+              <li key={`${part.name}-${i}`}>
+                <strong>{part.name}</strong>
+                <span>{part.how}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
+export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredient[] }) {
+  return (
+    <section className="card">
+      <h3>Ingredients</h3>
+      <ul className="ingredients">
+        {ingredients.map((ing) => (
+          <li key={ing.id}>
+            <strong>{formatAmount(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
+            {ing.buyQuantity ? <span className="meta"> · buy {ing.buyQuantity}</span> : null}
+            {ing.note ? <span> — {ing.note}</span> : null}
+            {ing.allergens.length > 0 ? (
+              <span className="meta"> · contains {ing.allergens.join(", ")}</span>
+            ) : null}
+            {ing.allergenTraces.length > 0 ? (
+              <span className="meta"> · traces of {ing.allergenTraces.join(", ")}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Time to serve, hands-on minutes, the components and the equipment. Before
+ * the steps are laid out (timeline null) it shows the equipment only.
+ */
+export function BeforeYouStart({
+  equipment,
+  timeline,
   totalMinutes,
 }: {
-  artifact: CookAlongArtifact;
+  equipment: readonly string[];
+  timeline: TimelineDefinition | null;
   totalMinutes: number | null;
 }) {
-  const timeline = artifact.timelineDefinition;
-  const components = timeline.lanes.filter((lane) => lane.kind === "component");
-  const colors = laneDisplayColors(timeline.lanes);
-  const busy = handsOnMinutes(timeline.tasks);
-  const equipment = artifact.recipe.equipment;
+  const components = timeline ? timeline.lanes.filter((lane) => lane.kind === "component") : [];
+  const colors = laneDisplayColors(timeline?.lanes ?? []);
   return (
     <section className="card before-start" aria-label="Before you start">
       <h3>Before you start</h3>
-      <p className="before-start-summary">
-        {totalMinutes !== null ? `About ${totalMinutes} min to serve · ` : ""}
-        {busy} min hands-on · One cook
-      </p>
+      {timeline ? (
+        <p className="before-start-summary">
+          {totalMinutes !== null ? `About ${totalMinutes} min to serve · ` : ""}
+          {handsOnMinutes(timeline.tasks)} min hands-on · One cook
+        </p>
+      ) : null}
       {components.length > 0 ? (
         <>
           <h4>What you are cooking</h4>
@@ -123,7 +177,7 @@ function BeforeYouStart({
   );
 }
 
-function TipsToggle({ mode, onChange }: { mode: TipsMode; onChange: (mode: TipsMode) => void }) {
+export function TipsToggle({ mode, onChange }: { mode: TipsMode; onChange: (mode: TipsMode) => void }) {
   return (
     <div className="mode-toggle" role="group" aria-label="How much detail to show">
       <button
@@ -210,6 +264,141 @@ export function phaseRuns<T extends { phase: TimelineTask["phase"] }>(
   return runs;
 }
 
+/** Whether any task carries a tip or a why line (the "With tips" choice is worth offering). */
+export function hasTaskNotes(tasks: ReadonlyArray<{ tip?: string | null; why?: string | null }>): boolean {
+  return tasks.some((task) => Boolean(task.tip) || Boolean(task.why));
+}
+
+/**
+ * "Prep (Mise en Place style)": every prep task before the first cook step.
+ * With `onToggle` each card has a checkbox.
+ */
+export function PrepSection({
+  timeline,
+  tipsMode,
+  done,
+  onToggle,
+}: {
+  timeline: TimelineDefinition;
+  tipsMode: TipsMode;
+  done?: ReadonlySet<string>;
+  onToggle?: (id: string) => void;
+}) {
+  const prepTasks = timeline.tasks.filter((t) => t.phase === "prep");
+  // Lanes are colored by position, not by the color the artifact stored.
+  const colors = laneDisplayColors(timeline.lanes);
+  return (
+    <>
+      <h3>Prep (Mise en Place style)</h3>
+      {prepTasks.length > 0 ? (
+        <>
+          <PhaseBand phase="prep" count={prepTasks.length} noun="task" />
+          <ul className="prep-list">
+            {prepTasks.map((task) => {
+              const color = taskLaneColor(colors, task.laneIds);
+              const text = (
+                <span className={done?.has(task.id) ? "prep-done" : ""}>
+                  <strong>{task.label}</strong> <span className="meta">· {task.minutes} min</span>
+                  <br />
+                  {task.description}
+                  <TaskNotes task={task} mode={tipsMode} />
+                </span>
+              );
+              return (
+                <li
+                  key={task.id}
+                  className={task.attention === "unattended" ? "task-card unattended" : "task-card"}
+                  style={{ borderLeftColor: color }}
+                >
+                  <TaskLane color={color} name={taskLaneNames(task, timeline.lanes)} />
+                  {onToggle ? (
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={done?.has(task.id) ?? false}
+                        onChange={() => onToggle(task.id)}
+                      />
+                      {text}
+                    </label>
+                  ) : (
+                    text
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <p className="meta">No prep tasks — everything happens at the stove.</p>
+      )}
+    </>
+  );
+}
+
+/** The cook and finish steps as numbered cards. `status` shows under the heading. */
+export function StepsSection({
+  timeline,
+  tipsMode,
+  timers = true,
+  status,
+}: {
+  timeline: TimelineDefinition;
+  tipsMode: TipsMode;
+  timers?: boolean;
+  status?: ReactNode;
+}) {
+  const stepRuns = phaseRuns(timeline.tasks.filter((t) => t.phase !== "prep"));
+  const colors = laneDisplayColors(timeline.lanes);
+  return (
+    <>
+      <h3>Steps</h3>
+      {status}
+      {stepRuns.map((run, r) => (
+        <Fragment key={`${run.phase}-${r}`}>
+          <PhaseBand phase={run.phase} count={run.items.length} noun="step" />
+          {run.items.map(({ task, number }) => {
+            const color = taskLaneColor(colors, task.laneIds);
+            return (
+              <div
+                key={task.id}
+                className={task.attention === "unattended" ? "task-card step unattended" : "task-card step"}
+                style={{ borderLeftColor: color }}
+              >
+                <TaskLane color={color} name={taskLaneNames(task, timeline.lanes)} />
+                <h4>
+                  {number}. {task.cardTitle.action} — {task.cardTitle.subject}
+                  {task.cardTitle.context ? ` (${task.cardTitle.context})` : ""}
+                </h4>
+                <p>{task.description}</p>
+                <p className="cue">Done when: {task.completionCue}</p>
+                <p className="meta">
+                  {task.minutes} min
+                  {task.range ? ` (${task.range.low}–${task.range.high})` : ""} · {task.attention} ·{" "}
+                  {task.phase} · {task.timingBasis === "source" ? "timed by the recipe" : "estimated time"}
+                  {task.equipmentEvent === "oven-on"
+                    ? " · turn the oven on"
+                    : task.equipmentEvent === "oven-off"
+                      ? " · turn the oven off"
+                      : ""}
+                </p>
+                {task.checkpoints.length > 0 ? (
+                  <ul className="changes">
+                    {task.checkpoints.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <TaskNotes task={task} mode={tipsMode} />
+                {timers ? <Timer minutes={task.minutes} label={task.label} /> : null}
+              </div>
+            );
+          })}
+        </Fragment>
+      ))}
+    </>
+  );
+}
+
 /**
  * Conversion notes: the server's (text cut, timings relabeled) and the
  * advisory review notes the artifact carries, so they show on cache hits,
@@ -229,6 +418,11 @@ export function ConversionNotes({ notes }: { notes: readonly string[] }) {
   );
 }
 
+/**
+ * The finished cook along, in the order the progressive view fills in:
+ * title, credit and allergens, the overview, adjustments, ingredients,
+ * before you start, prep, steps, notes, then the timeline graphic last.
+ */
 export default function ArtifactViewer({
   artifact,
   onStartOver,
@@ -236,16 +430,22 @@ export default function ArtifactViewer({
   embedded = false,
   onClose,
   saveEnabled = saveToTextSousEnabled(),
+  overview = null,
+  queuedAdjustments = null,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
-  /** Warnings the convert call returned, shown above Before you start. */
+  /** Warnings the convert call returned, shown with Notes on this conversion. */
   notices?: readonly string[];
   /** Inside the /embed overlay: save opens a new tab, Close replaces "Convert another recipe". */
   embedded?: boolean;
   onClose?: () => void;
   /** "Save to TextSous" shows unless the deploy turned it off (NEXT_PUBLIC_SAVE_TO_TEXTSOUS). */
   saveEnabled?: boolean;
+  /** The quick read from a streamed conversion, when there was one. */
+  overview?: RecipeOverview | null;
+  /** Adjustments chosen while the cook along was being written: applied as it opens. */
+  queuedAdjustments?: AdjustChoices | null;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -273,13 +473,8 @@ export default function ArtifactViewer({
 
   const recipe = current.recipe;
   const timeline = current.timelineDefinition;
-  const prepTasks = timeline.tasks.filter((t) => t.phase === "prep");
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
-  const cookTasks = timeline.tasks.filter((t) => t.phase !== "prep");
-  const stepRuns = phaseRuns(cookTasks);
-  // Lanes are colored by position, not by the color the artifact stored.
-  const colors = laneDisplayColors(timeline.lanes);
 
   function togglePrep(id: string) {
     setPrepDone((prev) => {
@@ -340,7 +535,7 @@ export default function ArtifactViewer({
         </p>
       </div>
 
-      <Credit artifact={current} />
+      <Credit credit={recipe.credit} />
 
       {recipe.allergens.length > 0 ? (
         <div className="allergens" aria-label="Allergens">
@@ -363,116 +558,25 @@ export default function ArtifactViewer({
         </p>
       ) : null}
 
+      {overview ? <OverviewCard overview={overview} /> : null}
+
       <AdjustPanel
         artifact={current}
         modified={modified}
         onAdjusted={(next: CookAlongArtifact) => handleAdjusted(next)}
         onReset={handleReset}
+        autoApply={queuedAdjustments}
       />
 
-      <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
+      <IngredientsCard ingredients={recipe.ingredients} />
 
-      <BeforeYouStart artifact={current} totalMinutes={totalMinutes} />
+      <BeforeYouStart equipment={recipe.equipment} timeline={timeline} totalMinutes={totalMinutes} />
 
-      <section className="card">
-        <h3>Ingredients</h3>
-        <ul className="ingredients">
-          {recipe.ingredients.map((ing) => (
-            <li key={ing.id}>
-              <strong>{formatAmount(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
-              {ing.buyQuantity ? <span className="meta"> · buy {ing.buyQuantity}</span> : null}
-              {ing.note ? <span> — {ing.note}</span> : null}
-              {ing.allergens.length > 0 ? (
-                <span className="meta"> · contains {ing.allergens.join(", ")}</span>
-              ) : null}
-              {ing.allergenTraces.length > 0 ? (
-                <span className="meta"> · traces of {ing.allergenTraces.join(", ")}</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
       <TipsToggle mode={tipsMode} onChange={chooseTipsMode} />
 
-      <h3>Mise en Place</h3>
-      {prepTasks.length > 0 ? (
-        <>
-          <PhaseBand phase="prep" count={prepTasks.length} noun="task" />
-          <ul className="prep-list">
-            {prepTasks.map((task) => (
-              <li
-                key={task.id}
-                className={task.attention === "unattended" ? "task-card unattended" : "task-card"}
-                style={{ borderLeftColor: taskLaneColor(colors, task.laneIds) }}
-              >
-                <TaskLane color={taskLaneColor(colors, task.laneIds)} name={taskLaneNames(task, timeline.lanes)} />
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={prepDone.has(task.id)}
-                    onChange={() => togglePrep(task.id)}
-                  />
-                  <span className={prepDone.has(task.id) ? "prep-done" : ""}>
-                    <strong>{task.label}</strong> <span className="meta">· {task.minutes} min</span>
-                    <br />
-                    {task.description}
-                    <TaskNotes task={task} mode={tipsMode} />
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : (
-        <p className="meta">No prep tasks — everything happens at the stove.</p>
-      )}
+      <PrepSection timeline={timeline} tipsMode={tipsMode} done={prepDone} onToggle={togglePrep} />
 
-      <h3>Timeline</h3>
-      <TimelineView timeline={timeline} />
-
-      <h3>Steps</h3>
-      {stepRuns.map((run, r) => (
-        <Fragment key={`${run.phase}-${r}`}>
-          <PhaseBand phase={run.phase} count={run.items.length} noun="step" />
-          {run.items.map(({ task, number }) => {
-            const color = taskLaneColor(colors, task.laneIds);
-            return (
-              <div
-                key={task.id}
-                className={task.attention === "unattended" ? "task-card step unattended" : "task-card step"}
-                style={{ borderLeftColor: color }}
-              >
-                <TaskLane color={color} name={taskLaneNames(task, timeline.lanes)} />
-                <h4>
-                  {number}. {task.cardTitle.action} — {task.cardTitle.subject}
-                  {task.cardTitle.context ? ` (${task.cardTitle.context})` : ""}
-                </h4>
-                <p>{task.description}</p>
-                <p className="cue">Done when: {task.completionCue}</p>
-                <p className="meta">
-                  {task.minutes} min
-                  {task.range ? ` (${task.range.low}–${task.range.high})` : ""} · {task.attention} ·{" "}
-                  {task.phase} · {task.timingBasis === "source" ? "timed by the recipe" : "estimated time"}
-                  {task.equipmentEvent === "oven-on"
-                    ? " · turn the oven on"
-                    : task.equipmentEvent === "oven-off"
-                      ? " · turn the oven off"
-                      : ""}
-                </p>
-                {task.checkpoints.length > 0 ? (
-                  <ul className="changes">
-                    {task.checkpoints.map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                <TaskNotes task={task} mode={tipsMode} />
-                <Timer minutes={task.minutes} label={task.label} />
-              </div>
-            );
-          })}
-        </Fragment>
-      ))}
+      <StepsSection timeline={timeline} tipsMode={tipsMode} />
 
       {current.changes.length > 0 ? (
         <details>
@@ -486,6 +590,11 @@ export default function ArtifactViewer({
           </ul>
         </details>
       ) : null}
+
+      <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
+
+      <h3>Timeline</h3>
+      <TimelineView timeline={timeline} />
 
       {saveError ? <ErrorBox error={saveError} /> : null}
       <div className="btn-row save-row">

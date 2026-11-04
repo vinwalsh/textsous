@@ -124,7 +124,8 @@ describe("Before you start", () => {
     expect(html).not.toMatch(/component-list[^]*Kitchen[^]*<\/ul>[^]*Equipment/);
     expect(html).toContain("<li>large pot</li>");
     expect(html).toContain("<li>wooden spoon</li>");
-    expect(html.indexOf("Before you start")).toBeLessThan(html.indexOf(">Ingredients<"));
+    // Ingredients first, then Before you start (the order the progressive view fills in).
+    expect(html.indexOf(">Ingredients<")).toBeLessThan(html.indexOf("Before you start"));
   });
 
   it("counts hands-on minutes only", () => {
