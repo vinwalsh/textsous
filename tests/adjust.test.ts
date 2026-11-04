@@ -192,6 +192,9 @@ describe("adjustArtifact", () => {
       adjustArtifact(makeArtifact(), { servings: 99 }, { clients }),
     ).rejects.toThrow(/out of range/);
     await expect(
+      adjustArtifact(makeArtifact(), { servings: 37 }, { clients }),
+    ).rejects.toThrow(/out of range \(0.5-36\)/);
+    await expect(
       adjustArtifact(makeArtifact(), { cuisine: "  " }, { clients }),
     ).rejects.toThrow(/must not be empty/);
     expect(order).toEqual([]);

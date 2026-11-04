@@ -20,12 +20,43 @@ describe("site header", () => {
     );
   });
 
-  it("links Demo, Use in your assistant and GitHub", () => {
-    expect(html).toContain('<a href="/demo">Demo</a>');
-    expect(html).toContain('<a href="/assistants">Use in your assistant</a>');
+  it("links Demo, Use in your assistant and GitHub as buttons", () => {
+    expect(html).toContain('<a class="btn" href="/demo">Demo</a>');
+    expect(html).toContain('<a class="btn" href="/assistants">Use in your assistant</a>');
     expect(GITHUB_URL).toBe("https://github.com/vinwalsh/textsous");
-    expect(html).toContain(`<a href="${GITHUB_URL}">GitHub</a>`);
+    expect(html).toMatch(
+      new RegExp(`<a href="${GITHUB_URL}" class="btn"><svg class="nav-icon"[^>]*aria-hidden="true"[^>]*>.*</svg>GitHub</a>`),
+    );
     expect(html).toContain('<nav class="site-nav" aria-label="Site">');
+    const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
+    expect(nav.match(/<a /g)?.length).toBe(3);
+    expect(nav.match(/<a [^>]*class="btn"/g)?.length).toBe(3);
+  });
+
+  it("styles the header links as 44 px secondary buttons that wrap on phones", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const rule = (selector: string): string => {
+      const at = css.indexOf(`\n${selector} {`);
+      expect(at, selector).toBeGreaterThan(-1);
+      return css.slice(at, css.indexOf("}", at));
+    };
+    // .btn: white fill, the --ts-border outline, 8 px radius, 44 px tall.
+    const btn = rule(".btn");
+    for (const part of [
+      "min-height: 44px",
+      "border: 1px solid var(--ts-border)",
+      "border-radius: 8px",
+      "background: var(--ts-card)",
+      "color: var(--ts-ink)",
+    ]) {
+      expect(btn, part).toContain(part);
+    }
+    expect(rule(".btn:hover:not([disabled])")).toContain("background: var(--ts-secondary)");
+    expect(rule(".site-nav")).toContain("flex-wrap: wrap");
+    expect(rule(".site-nav a")).toContain("min-height: 44px");
+    expect(rule(".site-nav a")).toContain("white-space: nowrap");
+    expect(rule(".site-nav a:hover")).toContain("border-color: #958C85");
+    expect(rule(":focus-visible")).toContain("outline: 2px solid var(--ts-accent)");
   });
 
   it("has one warm line of intro and no hype", () => {

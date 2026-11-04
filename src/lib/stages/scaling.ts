@@ -10,11 +10,11 @@ import {
 import { parseAmount } from "../scaling/amounts";
 import { effectiveFactor, formatAmount, round2, scaleIngredient } from "../scaling/scale";
 import { nativeServingsOf } from "../scaling/native";
+import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../scaling/servings";
 import { rescaleText, type AmountMapping } from "../scaling/text";
 
-export const SCALING_VERSION = 2;
-export const MIN_SERVINGS = 0.5;
-export const MAX_SERVINGS = 12;
+export const SCALING_VERSION = 3;
+export { MAX_SERVINGS, MIN_SERVINGS };
 
 export const ScaleRuleAssignmentSchema = z.strictObject({
   ingredientId: z.string().min(1),
@@ -46,10 +46,11 @@ export interface AssignedRules {
 
 const SYSTEM_PROMPT = `You assign a scaling rule to every ingredient in a recipe. Rules:
 - linear: the default; amount grows with servings (mains, grains, most vegetables).
-- sublinear: strong flavors that grow slower than servings (spices, salt that cooks in, leaveners).
+- sublinear: strong flavors in savory cooking that grow slower than servings (spices, chili, salt that cooks in).
 - flat: amounts independent of servings (oil for the pan, water for boiling).
 - superlinear: amounts that grow faster than servings (large-batch cooking liquid).
 - to-taste: seasoned at the table (salt and pepper to taste, garnishes to liking).
+Baked goods (muffins, cakes, breads, cookies, pastry) keep their ratios: every ingredient in a batter or dough is linear, leaveners and salt included.
 Assign exactly one rule per ingredient id, with a short reason each. Reply with only JSON matching the schema, no prose.`;
 
 function buildUserPrompt(recipe: ScalableRecipe): string {
@@ -97,7 +98,7 @@ export interface ApplyScalingResult {
 
 /**
  * Rescale an artifact to a target servings count. Servings must stay within
- * 0.5-12. Amounts always scale from the printed quantity at nativeServings
+ * 0.5-36. Amounts always scale from the printed quantity at nativeServings
  * (factor = target / nativeServings), so 2 -> 4 -> 6 equals 2 -> 6. Numbers
  * in step and task text that read as an ingredient's current amount (the
  * number directly followed by its unit or name) are rescaled; times,
@@ -109,7 +110,7 @@ export function applyScaling(
   targetServings: number,
   rules: ScaleRuleAssignment[],
 ): ApplyScalingResult {
-  if (!(targetServings >= MIN_SERVINGS && targetServings <= MAX_SERVINGS)) {
+  if (!servingsInRange(targetServings)) {
     throw new Error(`servings ${targetServings} out of range (${MIN_SERVINGS}-${MAX_SERVINGS})`);
   }
   const recipe = artifact.recipe;

@@ -170,7 +170,7 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px 20px;
+  gap: 8px 20px;
 }
 
 .brand {
@@ -207,29 +207,34 @@ a:hover {
   letter-spacing: 0.02em;
 }
 
+/* Demo, Use in your assistant and GitHub are secondary buttons: .btn gives
+   the white fill, the outline and the 8 px radius. Beside the wordmark on
+   wide screens; on phones they wrap under it, never past the edge. */
 .site-nav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 18px;
-  font-size: 14px;
-  font-weight: 550;
+  gap: 8px;
 }
 
 .site-nav a {
-  display: inline-flex;
-  align-items: center;
   min-height: 44px;
-  padding: 0 3px;
-  text-decoration: none;
+  padding: 0 14px;
+  font-size: 14px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(34, 32, 28, 0.08);
 }
 
 .site-nav a:hover {
-  text-decoration: underline;
+  border-color: #958C85;
+}
+
+.nav-icon {
+  flex-shrink: 0;
 }
 
 .site-intro {
-  margin: 6px 0 0;
+  margin: 12px 0 0;
   font-size: 17px;
   line-height: 1.45;
   color: var(--ts-ink);
@@ -949,8 +954,30 @@ details summary {
   font-size: 14px;
 }
 
+/* Save to TextSous and Convert another recipe (Close in the /embed
+   overlay): two equal buttons side by side, down to a 320 px phone. A long
+   label wraps inside its button, both keep the same height, and the row
+   stacks only when it is narrower than two 8.5rem buttons. A lone button
+   keeps its own width. */
 .save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  max-width: 32rem;
   margin-top: 24px;
+}
+
+.save-row > .btn {
+  flex: 1 1 8.5rem;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.save-row > .btn:only-child {
+  flex: 0 1 auto;
+  padding-left: 18px;
+  padding-right: 18px;
 }
 
 @media (min-width: 40rem) {

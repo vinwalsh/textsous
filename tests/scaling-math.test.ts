@@ -29,7 +29,11 @@ describe("effectiveFactor", () => {
     ["linear", 3, 3],
     ["sublinear", 4, 2],
     ["flat", 4, 1],
-    ["superlinear", 4, 8],
+    ["superlinear", 2, 2 ** 1.5],
+    ["superlinear", 2.25, 3.375],
+    ["superlinear", 4, 6],
+    ["superlinear", 18, 27],
+    ["superlinear", 0.5, 0.5 ** 1.5],
     ["to-taste", 4, 1],
   ];
   for (const [rule, factor, expected] of cases) {
@@ -55,8 +59,20 @@ describe("scaleIngredient", () => {
       scaleIngredient(ingredient({ quantity: "2", unit: "tsp", scaleRule: "sublinear" }), 4).cook,
     ).toEqual({ quantity: "4", unit: "tsp" });
     expect(
+      scaleIngredient(ingredient({ quantity: "1", unit: "cup", scaleRule: "superlinear" }), 2).cook,
+    ).toEqual({ quantity: "2 7/8", unit: "cup" });
+    expect(
       scaleIngredient(ingredient({ quantity: "1", unit: "cup", scaleRule: "superlinear" }), 4).cook,
-    ).toEqual({ quantity: "8", unit: "cup" });
+    ).toEqual({ quantity: "6", unit: "cup" });
+  });
+
+  it("keeps big batches sensible: x18 is x18 linear, x4 1/4 sublinear, x27 superlinear", () => {
+    const at18 = (rule: ScaleRule) =>
+      scaleIngredient(ingredient({ quantity: "1", unit: "cup", scaleRule: rule }), 18).cook.quantity;
+    expect(at18("linear")).toBe("18");
+    expect(at18("sublinear")).toBe("4 1/4");
+    expect(at18("superlinear")).toBe("27");
+    expect(at18("flat")).toBe("1");
   });
 
   it("keeps flat quantities unchanged", () => {
