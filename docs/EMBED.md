@@ -183,9 +183,12 @@ link.
   `Access-Control-Allow-Origin: *`.
 - `/api/convert`, `/api/adjust`, `/api/photo` and `/api/artifact` refuse a
   POST that the browser marks `Sec-Fetch-Site: cross-site` (403), so another
-  site cannot spend conversions through its readers' browsers. The overlay's
-  own requests come from the `/embed` page and are same-origin; scripts and
-  servers send no such header and are not affected.
+  site cannot call them directly from its readers' browsers (a hidden form
+  or a no-cors fetch). The overlay's own requests come from the `/embed`
+  page and are same-origin, so a page that frames `/embed` can still start
+  conversions of recipes on its own site; the per-IP hourly limit and the
+  daily cap bound that. Scripts and servers send no such header and are not
+  affected.
 - "Save to TextSous" opens textsous.com/import. A deploy built with
   `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off` hides the button (on the site and in the
   overlay) until that page is live.

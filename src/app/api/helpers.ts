@@ -97,9 +97,11 @@ export function fail(
 /**
  * Browsers label every request with Sec-Fetch-Site. A POST that another
  * site's page starts (a hidden form, a no-cors fetch) says "cross-site" and is
- * refused before any work, so other sites cannot spend the daily cap through
- * their visitors' browsers. The app's own pages and the /embed iframe send
- * "same-origin"; curl, scripts and servers send no header and pass.
+ * refused before any work, so other sites cannot post to these routes
+ * directly. The app's own pages and the /embed iframe send "same-origin", so
+ * a page that frames /embed still can start conversions of its own recipes,
+ * bounded by the per-IP limit and the daily cap. curl, scripts and servers
+ * send no header and pass.
  */
 export function refuseCrossSite(route: string, req: Request): NextResponse | null {
   if (req.headers.get("sec-fetch-site")?.trim().toLowerCase() !== "cross-site") return null;
