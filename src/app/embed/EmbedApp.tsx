@@ -100,7 +100,7 @@ export function EmbedStatus({
             Site owners: point <code>data-recipe-url</code> at a recipe on your own site.
           </p>
           <div className="btn-row">
-            <a className="btn" href={openSiteHref(state.url)} target="_blank" rel="noopener">
+            <a className={`btn ${styles.linkButton}`} href={openSiteHref(state.url)} target="_blank" rel="noopener">
               Open it on TextSous Open
             </a>
             {closeButton}
@@ -112,7 +112,7 @@ export function EmbedStatus({
         <section className={styles.status}>
           <ErrorBox error={state.error} />
           <div className="btn-row">
-            <a className="btn" href={openSiteHref(state.url)} target="_blank" rel="noopener">
+            <a className={`btn ${styles.linkButton}`} href={openSiteHref(state.url)} target="_blank" rel="noopener">
               Try on TextSous Open
             </a>
             {closeButton}

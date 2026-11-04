@@ -30,3 +30,12 @@
   color: var(--ts-muted, #726a65);
   font-size: 0.85rem;
 }
+
+.linkButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ts-ink, #22201c);
+  text-decoration: none;
+  line-height: 1.4;
+}
