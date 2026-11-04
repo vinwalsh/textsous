@@ -13,6 +13,8 @@ import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
 import AdjustPanel, { type AdjustChoices } from "./AdjustPanel";
+import CookAlongView from "./CookAlongView";
+import { cookingPilotInput } from "../lib/cooking-pilot/from-artifact";
 import TimelineView from "./TimelineView";
 import Timer from "./Timer";
 
@@ -432,6 +434,7 @@ export default function ArtifactViewer({
   overview = null,
   queuedAdjustments = null,
   onQueuedApplied,
+  cookAlongView = true,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -448,6 +451,8 @@ export default function ArtifactViewer({
   queuedAdjustments?: AdjustChoices | null;
   /** Called once the queued adjustments were applied, or failed to apply. */
   onQueuedApplied?: () => void;
+  /** false keeps the open sections in place of the Cook Along view (their tests). */
+  cookAlongView?: boolean;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -475,6 +480,9 @@ export default function ArtifactViewer({
 
   const recipe = current.recipe;
   const timeline = current.timelineDefinition;
+  // Cook Along body: the ported TextSous Cook Along view when the artifact
+  // adapts and schedules for it; else the open sections below (fallback).
+  const pilotInput = useMemo(() => (cookAlongView ? cookingPilotInput(current) : null), [current, cookAlongView]);
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
 
@@ -571,6 +579,7 @@ export default function ArtifactViewer({
         onAutoApplied={onQueuedApplied}
       />
 
+      {pilotInput ? null : (<>
       <IngredientsCard ingredients={recipe.ingredients} />
 
       <BeforeYouStart equipment={recipe.equipment} timeline={timeline} totalMinutes={totalMinutes} />
@@ -580,6 +589,7 @@ export default function ArtifactViewer({
       <PrepSection timeline={timeline} tipsMode={tipsMode} done={prepDone} onToggle={togglePrep} />
 
       <StepsSection timeline={timeline} tipsMode={tipsMode} />
+      </>)}
 
       {current.changes.length > 0 ? (
         <details>
@@ -596,8 +606,10 @@ export default function ArtifactViewer({
 
       <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
 
+      {pilotInput ? <CookAlongView input={pilotInput} /> : (<>
       <h3>Timeline</h3>
       <TimelineView timeline={timeline} />
+      </>)}
 
       {saveError ? <ErrorBox error={saveError} /> : null}
       <div className="btn-row save-row">

@@ -1,0 +1,12 @@
+/* On the site's own pages the Cook Along body is wider than the 720 px text
+   column, so its lanes have room (the view's own layout keys off the
+   viewport). Inside the /embed overlay it keeps the overlay's width. */
+.body {
+  margin: 28px 0 8px;
+}
+
+:global(body > main) .body {
+  --cook-along-width: min(1180px, calc(100vw - 32px));
+  width: var(--cook-along-width);
+  margin-left: calc(50% - var(--cook-along-width) / 2);
+}

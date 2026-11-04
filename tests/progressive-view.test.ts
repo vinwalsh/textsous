@@ -232,6 +232,7 @@ describe("finished page order", () => {
         onStartOver: () => {},
         overview: OVERVIEW,
         notices: ["The page text was cut."],
+        cookAlongView: false,
       }),
     ).replace(/<!-- -->/g, "");
     expect(html).toContain("<h3>Prep (Mise en Place style)</h3>");

@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import ArtifactViewer from "../src/app/ArtifactViewer";
 import { MAX_TASK_MINUTES as OPEN_MAX_TASK_MINUTES } from "../src/lib/schema/timeline";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../src/lib/schema/artifact";
 import { LANE_PALETTE, KITCHEN_LANE_COLOR } from "../src/lib/lane-palette";
@@ -205,5 +208,54 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     scaled.recipe.servings = 4;
     expect(artifactFingerprint(scaled)).not.toBe(artifactFingerprint(base));
     expect(adaptArtifactForCookingPilot(scaled).timelineDefinition.servings).toBe(4);
+  });
+});
+
+describe("the finished page's Cook Along body", () => {
+  const noop = () => undefined;
+
+  it("shows the Cook Along view in place of the open sections", () => {
+    const html = renderToStaticMarkup(
+      createElement(ArtifactViewer, { artifact: fixtureArtifact("toasted-oat-porridge"), onStartOver: noop }),
+    );
+    expect(html).toContain('aria-label="Cook Along"');
+    expect(html).toContain("Read this First");
+    expect(html).toContain("Your kitchen, ready.");
+    expect(html).not.toContain("<h3>Timeline</h3>");
+    // The header parts and the action row stay.
+    expect(html).toContain("Toasted Oat Porridge with Brown Butter Apples");
+    expect(html).toContain("Convert another recipe");
+  });
+
+  it("keeps the header parts and notes above the Cook Along view, and Save below it", () => {
+    const html = renderToStaticMarkup(
+      createElement(ArtifactViewer, {
+        artifact: fixtureArtifact("toasted-oat-porridge"),
+        onStartOver: noop,
+        notices: ["The page text was cut."],
+      }),
+    );
+    const order = [
+      'class="recipe-title"',
+      'aria-label="Recipe credit"',
+      "Adjust this recipe",
+      "Notes on this conversion",
+      'aria-label="Cook Along"',
+      'class="btn-row save-row"',
+    ].map((marker) => html.indexOf(marker));
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(html).not.toContain('aria-label="Before you start"');
+  });
+
+  it("falls back to the open sections when the view cannot show the artifact", () => {
+    const artifact = clone(fixtureArtifact("toasted-oat-porridge"));
+    // A dependency cycle: the open schedule and the view both refuse it.
+    const [first, second] = artifact.timelineDefinition.tasks;
+    first.dependencies = [second.id];
+    second.dependencies = [first.id];
+    const html = renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
+    expect(html).not.toContain('aria-label="Cook Along"');
+    expect(html).toContain("<h3>Timeline</h3>");
   });
 });
