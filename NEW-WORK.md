@@ -41,7 +41,7 @@ owner.) No recipe format, converter, or handoff code existed anywhere
 before Oct 27.
 
 Private-repo handoff changes (the TextSous app; its code stays private).
-Neither change is merged or deployed yet (TASKS.md O11):
+Both are merged and deployed on textsous.com as of Nov 4 (TASKS.md O11):
 - Cookbook import PR (O6, Nov 3): a Cookbook in the TextSous app where
   imported recipes live and can be added to the week's plan;
   `textsous.com/open?url=` (or `?src=`) redirects to https://open.textsous.com
