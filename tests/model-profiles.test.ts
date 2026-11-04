@@ -71,3 +71,20 @@ describe("resolveProvider", () => {
     });
   });
 });
+
+describe("contributor guard (case-insensitive)", () => {
+  it("treats any casing of -contributor as contributor tier", async () => {
+    const { isContributorModel } = await import("../src/lib/model/profiles");
+    expect(isContributorModel("muse-spark-1.3-contributor")).toBe(true);
+    expect(isContributorModel("Muse-Spark-1.3-Contributor")).toBe(true);
+    expect(isContributorModel(" muse-spark-1.3-CONTRIBUTOR ")).toBe(true);
+    expect(isContributorModel("muse-spark-1.3")).toBe(false);
+  });
+
+  it("refuses eval runs that would send URLs to a contributor model", async () => {
+    const { contributorRefusal } = await import("../src/lib/model/profiles");
+    expect(contributorRefusal("muse-spark-1.3-Contributor", 3)).toMatch(/fixtures-only/);
+    expect(contributorRefusal("muse-spark-1.3-contributor", 0)).toBeNull();
+    expect(contributorRefusal("muse-spark-1.3", 3)).toBeNull();
+  });
+});

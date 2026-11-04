@@ -15,7 +15,20 @@ export const META_DEFAULT_MODEL = "muse-spark-1.3";
 export const BASETEN_MODEL = "meta-models/muse-spark-open-1026";
 
 export function isContributorModel(modelId: string): boolean {
-  return modelId.trim().endsWith("-contributor");
+  return modelId.trim().toLowerCase().endsWith("-contributor");
+}
+
+/**
+ * Contributor-tier models let Meta train on prompts and outputs, so they may
+ * only run locally on fixtures we wrote. Returns the refusal message when a
+ * run would send anything else (third-party URLs) to one, else null.
+ */
+export function contributorRefusal(modelId: string, nonFixtureInputs: number): string | null {
+  if (!isContributorModel(modelId) || nonFixtureInputs === 0) return null;
+  return (
+    `Refusing: contributor-tier model "${modelId}" may only run locally on fixtures under ` +
+    "eval/fixtures. Rerun with --fixtures-only or a non-contributor MODEL_ID."
+  );
 }
 
 export function resolveProvider(name: ProviderName = "meta"): ProviderConfig {

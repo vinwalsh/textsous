@@ -12,7 +12,7 @@ import {
   type UrlExtraction,
 } from "../src/lib/intake/url";
 import { extractFromText } from "../src/lib/intake/text";
-import type { ProviderName } from "../src/lib/model";
+import { contributorRefusal, resolveProvider, type ProviderName } from "../src/lib/model";
 import { classifyError } from "../src/lib/eval-label";
 
 // `npm run eval`: convert the fixtures plus the URLs in eval/urls.txt (fetched
@@ -292,6 +292,12 @@ async function main(): Promise<void> {
     console.log("No URLs in eval/urls.txt; running fixtures only.");
   }
   urls = urls.slice(0, limit);
+  const refusal = contributorRefusal(resolveProvider(provider).model, urls.length);
+  if (refusal) {
+    console.error(refusal);
+    process.exitCode = 1;
+    return;
+  }
 
   const rows: EvalRow[] = [];
   for (const file of FIXTURES) {
