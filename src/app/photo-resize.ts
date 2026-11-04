@@ -1,87 +1,95 @@
 /**
- * Shrink a photo in the browser before upload so phone photos fit under the
- * hosting platform's 4.5 MB request limit (server validation still applies).
- * Long edge at most 2048 px, JPEG around quality 0.85, aiming under 3.5 MB.
- * Small images that already fit are sent untouched (screenshots stay PNG).
+ * Shrink the photo pages in the browser before upload: each page is decoded
+ * upright (EXIF orientation applied), drawn at most 1600 px on the long edge
+ * and exported as JPEG quality 0.82, which also drops the photo's metadata.
+ * When the pages together pass the 4 MB budget, the largest page steps down
+ * in quality until they fit. A page the browser cannot decode is sent as it
+ * is when it fits. The rules live in photo-pages.ts; this is the DOM part.
  */
 
-export const MAX_EDGE_PX = 2048;
-export const TARGET_BYTES = 3.5 * 1024 * 1024;
-/** Largest original we try to shrink; bigger files are refused up front. */
-export const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024;
+import {
+  ENCODE_STEPS,
+  jpegName,
+  nextPageToShrink,
+  planResize,
+  totalBytes,
+  UPLOAD_BUDGET_BYTES,
+} from "./photo-pages";
 
-/** Target size for a long edge cap. Pure. */
-export function planResize(
-  width: number,
-  height: number,
-  maxEdge = MAX_EDGE_PX,
-): { width: number; height: number; scale: number } {
-  const longEdge = Math.max(width, height);
-  if (!(longEdge > maxEdge)) return { width, height, scale: 1 };
-  const scale = maxEdge / longEdge;
-  return {
-    width: Math.max(1, Math.round(width * scale)),
-    height: Math.max(1, Math.round(height * scale)),
-    scale,
-  };
+export type PreparedPhotos = { ok: true; files: File[] } | { ok: false };
+
+async function decode(file: File): Promise<ImageBitmap | null> {
+  if (typeof createImageBitmap !== "function") return null;
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    // Older engines reject the option; they apply EXIF orientation anyway.
+  }
+  try {
+    return await createImageBitmap(file);
+  } catch {
+    return null;
+  }
 }
 
-/** Encoding attempts, best quality first. Pure. */
-export const ENCODE_STEPS: Array<{ maxEdge: number; quality: number }> = [
-  { maxEdge: 2048, quality: 0.85 },
-  { maxEdge: 2048, quality: 0.75 },
-  { maxEdge: 1600, quality: 0.75 },
-  { maxEdge: 1280, quality: 0.7 },
-];
-
-function jpegName(name: string): string {
-  const base = name.replace(/\.[a-z0-9]+$/i, "") || "photo";
-  return `${base}.jpg`;
-}
-
-async function encode(
-  bitmap: ImageBitmap,
-  maxEdge: number,
-  quality: number,
-): Promise<Blob | null> {
-  const size = planResize(bitmap.width, bitmap.height, maxEdge);
+/** One page as JPEG at an encode step, or null when the browser cannot. */
+async function encode(file: File, step: number): Promise<Blob | null> {
+  if (typeof document === "undefined") return null;
+  const bitmap = await decode(file);
+  if (!bitmap) return null;
   const canvas = document.createElement("canvas");
-  canvas.width = size.width;
-  canvas.height = size.height;
-  const context = canvas.getContext("2d");
-  if (!context) return null;
-  context.drawImage(bitmap, 0, 0, size.width, size.height);
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  try {
+    const { maxEdge, quality } = ENCODE_STEPS[step];
+    const size = planResize(bitmap.width, bitmap.height, maxEdge);
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    // JPEG has no transparency: a transparent screenshot gets a white page.
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, size.width, size.height);
+    context.drawImage(bitmap, 0, 0, size.width, size.height);
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  } catch {
+    return null;
+  } finally {
+    bitmap.close();
+    // Phones keep canvas memory until it is shrunk.
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }
 
 /**
- * Return a file ready to upload: the original when it already fits (long
- * edge <= 2048 px and <= 3.5 MB), else an upright JPEG re-encode (EXIF
- * orientation applied, metadata dropped). Falls back to the original when
- * the browser cannot decode or encode it.
+ * The files to upload, in page order, or { ok: false } when they cannot fit
+ * the 4 MB budget even after shrinking.
  */
-export async function prepareUploadPhoto(file: File): Promise<File> {
-  if (typeof createImageBitmap !== "function" || typeof document === "undefined") return file;
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    return file;
+export async function preparePhotoPages(files: readonly File[]): Promise<PreparedPhotos> {
+  const lastStep = ENCODE_STEPS.length - 1;
+  const pages: Array<{ blob: Blob; size: number; step: number; encoded: boolean }> = [];
+  // One page at a time: a decoded phone photo holds tens of MB.
+  for (const file of files) {
+    const blob = await encode(file, 0);
+    pages.push(
+      blob
+        ? { blob, size: blob.size, step: 0, encoded: true }
+        : { blob: file, size: file.size, step: lastStep, encoded: false },
+    );
   }
-  try {
-    const fits =
-      Math.max(bitmap.width, bitmap.height) <= MAX_EDGE_PX && file.size <= TARGET_BYTES;
-    if (fits) return file;
-    let smallest: Blob | null = null;
-    for (const step of ENCODE_STEPS) {
-      const blob = await encode(bitmap, step.maxEdge, step.quality);
-      if (!blob) break;
-      if (!smallest || blob.size < smallest.size) smallest = blob;
-      if (blob.size <= TARGET_BYTES) break;
+  for (let i = nextPageToShrink(pages); i !== null; i = nextPageToShrink(pages)) {
+    const page = pages[i];
+    page.step += 1;
+    const blob = await encode(files[i], page.step);
+    if (blob && blob.size < page.size) {
+      page.blob = blob;
+      page.size = blob.size;
     }
-    if (!smallest) return file;
-    return new File([smallest], jpegName(file.name), { type: "image/jpeg" });
-  } finally {
-    bitmap.close();
   }
+  if (totalBytes(pages) > UPLOAD_BUDGET_BYTES) return { ok: false };
+  return {
+    ok: true,
+    files: pages.map((page, i) =>
+      page.encoded ? new File([page.blob], jpegName(files[i].name), { type: "image/jpeg" }) : files[i],
+    ),
+  };
 }
