@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { bookmarkletCode, bookmarkletHref, bookmarkletScriptUrl } from "../src/app/embed-demo/Bookmarklet";
 import DemoPost, { EMBED_SNIPPET, demoSrc } from "../src/app/embed-demo/DemoPost";
 import { DEMO_FIXTURE, DEMO_RECIPE, demoJsonLd } from "../src/app/embed-demo/recipe";
 
@@ -77,5 +79,59 @@ describe("embed demo page", () => {
     expect(demoSrc("https://evil.test/api/artifact/abc", origin)).toBeNull();
     expect(demoSrc(`${origin}/elsewhere.json`, origin)).toBeNull();
     expect(demoSrc(undefined, origin)).toBeNull();
+  });
+});
+
+describe("embed demo bookmarklet", () => {
+  const scriptUrl = "https://open.textsous.com/embed.js";
+
+  /** Runs the bookmarklet against a stand-in document and returns the scripts it added. */
+  function run(code: string, floating = false) {
+    const added: Array<{ src?: string; async?: boolean; attrs: Record<string, string> }> = [];
+    const document = {
+      querySelector: (selector: string) => (selector === "[data-textsous-floating]" && floating ? {} : null),
+      createElement: () => {
+        const el = { attrs: {} as Record<string, string>, setAttribute: (k: string, v: string) => (el.attrs[k] = v) };
+        return el;
+      },
+      body: { appendChild: (el: { attrs: Record<string, string> }) => added.push(el) },
+      documentElement: {},
+    };
+    runInNewContext(code, { document });
+    return added;
+  }
+
+  it("has its own section on the demo post, with no javascript: address in the server HTML", () => {
+    const html = renderToString(
+      createElement(DemoPost, { origin: "https://open.textsous.com", src: null, autoOpen: false }),
+    );
+    expect(html).toContain("Try it on any recipe page");
+    expect(html).toContain("data-bookmarklet-section");
+    expect(html).toContain("bookmarks bar");
+    expect(html).toContain("Some sites block outside scripts");
+    expect(html).not.toContain("javascript:");
+  });
+
+  it("loads this site's own embed.js", () => {
+    expect(bookmarkletScriptUrl("https://open.textsous.com")).toBe(scriptUrl);
+    expect(bookmarkletScriptUrl("https://open-textsous-git-x.vercel.app/")).toBe(
+      "https://open-textsous-git-x.vercel.app/embed.js",
+    );
+  });
+
+  it("adds embed.js with data-floating and data-mode=adjust, once", () => {
+    const added = run(bookmarkletCode(scriptUrl));
+    expect(added).toHaveLength(1);
+    expect(added[0].src).toBe(scriptUrl);
+    expect(added[0].async).toBe(true);
+    expect(added[0].attrs).toEqual({ "data-floating": "", "data-mode": "adjust" });
+    expect(run(bookmarkletCode(scriptUrl), true)).toHaveLength(0);
+  });
+
+  it("is a percent-encoded javascript: link that decodes to that code", () => {
+    const href = bookmarkletHref(scriptUrl);
+    expect(href.startsWith("javascript:")).toBe(true);
+    expect(href).not.toMatch(/[\s"#{}]/);
+    expect(decodeURIComponent(href.slice("javascript:".length))).toBe(bookmarkletCode(scriptUrl));
   });
 });
