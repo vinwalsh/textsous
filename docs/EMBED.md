@@ -178,6 +178,11 @@ link.
   `X-Frame-Options: SAMEORIGIN`; `/embed.js` sends
   `Cache-Control: public, max-age=300, s-maxage=3600` and
   `Access-Control-Allow-Origin: *`.
+- `/api/convert`, `/api/adjust`, `/api/photo` and `/api/artifact` refuse a
+  POST that the browser marks `Sec-Fetch-Site: cross-site` (403), so another
+  site cannot spend conversions through its readers' browsers. The overlay's
+  own requests come from the `/embed` page and are same-origin; scripts and
+  servers send no such header and are not affected.
 - `src/app/embed-demo/`: the demo post, built from the original CC0 fixture
   `eval/fixtures/toasted-oat-porridge.html`.
   `/embed-demo?src=<this site's /api/artifact link>&autoopen=1` opens the

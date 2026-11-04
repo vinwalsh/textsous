@@ -5,7 +5,15 @@ import { adjustArtifact } from "../../../lib/pipeline";
 import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
 import { logEvent } from "../../../lib/log";
 import { reviewNoteTexts } from "../../../lib/review-notes";
-import { clientIp, fail, limited, readJsonBody, runLive, TOO_LARGE_MESSAGE } from "../helpers";
+import {
+  clientIp,
+  fail,
+  limited,
+  readJsonBody,
+  refuseCrossSite,
+  runLive,
+  TOO_LARGE_MESSAGE,
+} from "../helpers";
 
 // Variants make up to four model calls; the pipeline stops itself at ~280 s.
 export const maxDuration = 300;
@@ -46,6 +54,8 @@ function logAdjust(event: { durationMs: number; tokensTotal: number }): void {
  */
 export async function POST(req: Request) {
   const started = Date.now();
+  const crossSite = refuseCrossSite(ROUTE, req);
+  if (crossSite) return crossSite;
   try {
     const body = await readJsonBody(req);
     if (!body.ok) return fail(ROUTE, 413, { error: TOO_LARGE_MESSAGE });

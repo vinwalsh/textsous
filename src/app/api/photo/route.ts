@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { photoToCanonical, PhotoError, validatePhoto } from "../../../lib/intake/photo";
 import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
 import { logEvent } from "../../../lib/log";
-import { clientIp, fail, limited, runLive } from "../helpers";
+import { clientIp, fail, limited, refuseCrossSite, runLive } from "../helpers";
 
 // Transcribe + canonicalize can take two minutes; the pipeline stops itself
 // at about 280 s.
@@ -33,6 +33,8 @@ function logPhoto(event: { durationMs: number; tokensTotal: number }): void {
  */
 export async function POST(req: Request) {
   const started = Date.now();
+  const crossSite = refuseCrossSite(ROUTE, req);
+  if (crossSite) return crossSite;
   try {
     const length = req.headers.get("content-length");
     if (length !== null && Number(length) > MAX_BODY_BYTES) {

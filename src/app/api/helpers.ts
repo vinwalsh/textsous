@@ -94,6 +94,18 @@ export function fail(
   return NextResponse.json(body, { status });
 }
 
+/**
+ * Browsers label every request with Sec-Fetch-Site. A POST that another
+ * site's page starts (a hidden form, a no-cors fetch) says "cross-site" and is
+ * refused before any work, so other sites cannot spend the daily cap through
+ * their visitors' browsers. The app's own pages and the /embed iframe send
+ * "same-origin"; curl, scripts and servers send no header and pass.
+ */
+export function refuseCrossSite(route: string, req: Request): NextResponse | null {
+  if (req.headers.get("sec-fetch-site")?.trim().toLowerCase() !== "cross-site") return null;
+  return fail(route, 403, { error: "Requests from other websites are not accepted." });
+}
+
 /** 429 per contract C2. */
 export function limited(route: string, reason: LimitReason): NextResponse {
   return fail(route, 429, limitBody(reason));

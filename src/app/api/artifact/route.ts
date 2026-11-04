@@ -8,7 +8,7 @@ import {
 } from "../../../lib/artifact-store";
 import { buildSignedArtifactUrl } from "../../../lib/handoff";
 import { checkRateLimit } from "../../../lib/limits";
-import { clientIp, fail, limited, readJsonBody, TOO_LARGE_MESSAGE } from "../helpers";
+import { clientIp, fail, limited, readJsonBody, refuseCrossSite, TOO_LARGE_MESSAGE } from "../helpers";
 
 export const maxDuration = 30;
 
@@ -21,6 +21,8 @@ const BodySchema = z.strictObject({ artifact: z.unknown() });
  * fetch URL. No daily cap: storing spends no model calls.
  */
 export async function POST(req: Request) {
+  const crossSite = refuseCrossSite(ROUTE, req);
+  if (crossSite) return crossSite;
   const body = await readJsonBody(req);
   if (!body.ok) return fail(ROUTE, 413, { error: TOO_LARGE_MESSAGE });
   const rate = await checkRateLimit(`artifact:${clientIp(req)}`);

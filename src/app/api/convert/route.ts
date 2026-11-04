@@ -21,6 +21,7 @@ import {
   fail,
   limited,
   readJsonBody,
+  refuseCrossSite,
   runLive,
   TOO_LARGE_MESSAGE,
 } from "../helpers";
@@ -104,6 +105,8 @@ async function liveGate(request: Request): Promise<NextResponse | null> {
  */
 export async function POST(request: Request) {
   const started = Date.now();
+  const crossSite = refuseCrossSite(ROUTE, request);
+  if (crossSite) return crossSite;
   const body = await readJsonBody(request);
   if (!body.ok) return fail(ROUTE, 413, { error: TOO_LARGE_MESSAGE });
   const parsed = BodySchema.safeParse(body.value);
