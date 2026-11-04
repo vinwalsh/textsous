@@ -2,7 +2,14 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
-import EmbedApp, { EmbedStatus, initialEmbedState, readyFromConvert } from "../src/app/embed/EmbedApp";
+import EmbedApp, {
+  EmbedStatus,
+  embedStage,
+  initialEmbedState,
+  readyFromConvert,
+  requestedChoices,
+  workingLine,
+} from "../src/app/embed/EmbedApp";
 import { saveToTextSousEnabled } from "../src/lib/handoff";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
 
@@ -147,5 +154,76 @@ describe("embedded artifact viewer", () => {
     );
     expect(html).toContain("Notes on this conversion");
     expect(html).toContain("only the first 60,000 were read");
+  });
+});
+
+describe("/embed with an adjustment from the Adjust with SOUS menu", () => {
+  const artifact = fixtureArtifact();
+  const base = artifact.recipe.servings;
+  const url = "https://example.com/soup";
+
+  it("shows the calm line from the first render", () => {
+    const html = renderToString(
+      createElement(EmbedApp, { request: { kind: "url", url, adjust: { servings: 18 } } }),
+    );
+    expect(html).toContain("Scaling to 18 servings\u2026");
+    expect(html).toContain('role="status"');
+    expect(html).toContain("Getting your Cook Along ready");
+    const plain = renderToString(createElement(EmbedApp, { request: { kind: "url", url } }));
+    expect(plain).not.toContain("Scaling to");
+  });
+
+  it("turns the address's adjustment into the panel's queued choices once the servings are known", () => {
+    expect(requestedChoices({ servings: 18 }, null)).toBeNull();
+    expect(requestedChoices(null, 4)).toBeNull();
+    expect(requestedChoices({ servings: 18 }, 12)).toEqual({ servings: 18, dietary: "", cuisine: "", sousVoice: false });
+    expect(requestedChoices({ dietary: "vegan" }, 12)).toEqual({ servings: 12, dietary: "vegan", cuisine: "", sousVoice: false });
+    expect(requestedChoices({ cuisine: "Italian" }, 4)?.cuisine).toBe("Italian");
+  });
+
+  it("applies the adjustment as soon as the cook along opens, cached or fresh (one /api/adjust call)", () => {
+    const html = renderToString(
+      createElement(ArtifactViewer, {
+        artifact,
+        onStartOver: noop,
+        embedded: true,
+        onClose: noop,
+        queuedAdjustments: requestedChoices({ dietary: "vegan" }, base),
+      }),
+    );
+    expect(html).toContain("Adjusting\u2026");
+    expect(html).toMatch(/<option value="vegan" selected="">/);
+    // Nothing to change: the panel waits for the cook as before.
+    const same = renderToString(
+      createElement(ArtifactViewer, {
+        artifact,
+        onStartOver: noop,
+        queuedAdjustments: requestedChoices({ servings: base }, base),
+      }),
+    );
+    expect(same).not.toContain("Adjusting\u2026");
+  });
+
+  it("keeps the line only while the adjustment is on its way", () => {
+    const adjust = { servings: 18 };
+    const line = (over: Partial<Parameters<typeof workingLine>[0]>) =>
+      workingLine({ adjust, stage: "working", base: null, ownQueue: false, settled: false, ...over });
+    expect(line({})).toBe("Scaling to 18 servings\u2026");
+    expect(line({ base: 12 })).toBe("Scaling to 18 servings\u2026");
+    expect(line({ stage: "ready", base: 12 })).toBe("Scaling to 18 servings\u2026");
+    expect(line({ stage: "ready", base: 12, settled: true })).toBeNull();
+    expect(line({ stage: "ready", base: 18 })).toBeNull();
+    expect(line({ stage: "stopped" })).toBeNull();
+    expect(line({ ownQueue: true })).toBeNull();
+    expect(line({ adjust: null })).toBeNull();
+    expect(line({ adjust: { servings: 4, dietary: "vegan" }, stage: "ready", base: 4 })).toBe("Making it vegan\u2026");
+  });
+
+  it("names the overlay's stage", () => {
+    expect(embedStage({ kind: "converting", url })).toBe("working");
+    expect(embedStage({ kind: "loading" })).toBe("working");
+    expect(embedStage({ kind: "ready", artifact, notices: [] })).toBe("ready");
+    expect(embedStage({ kind: "mismatch", recipeHost: "a", pageHost: "b", url })).toBe("stopped");
+    expect(embedStage({ kind: "none" })).toBe("stopped");
   });
 });

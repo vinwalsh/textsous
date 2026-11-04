@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  adjustLine,
   buildEmbedUrl,
   embeddingOrigin,
   hostOf,
@@ -7,6 +8,7 @@ import {
   isMessageOfType,
   isSameOrigin,
   isTrustedMessage,
+  parseEmbedAdjust,
   parseEmbedRequest,
   samePageCheck,
 } from "../src/lib/embed";
@@ -118,5 +120,69 @@ describe("embed URLs and params", () => {
   it("detects same-origin artifact links", () => {
     expect(isSameOrigin("/api/artifact/x", "https://open.textsous.com/embed")).toBe(true);
     expect(isSameOrigin("https://blog.test/a.json", "https://open.textsous.com/embed")).toBe(false);
+  });
+});
+
+describe("embed adjustments (?servings=, ?dietary=, ?cuisine=)", () => {
+  const url = "https://x.test/r";
+
+  it("attaches a valid adjustment to a url or src request", () => {
+    expect(parseEmbedRequest({ url, servings: "18" })).toEqual({ kind: "url", url, adjust: { servings: 18 } });
+    expect(parseEmbedRequest({ src: "https://x.test/a.json", dietary: "vegan" })).toEqual({
+      kind: "src",
+      src: "https://x.test/a.json",
+      adjust: { dietary: "vegan" },
+    });
+    expect(parseEmbedRequest({ url, cuisine: "  Italian  " })).toEqual({ kind: "url", url, adjust: { cuisine: "Italian" } });
+    expect(parseEmbedRequest({ servings: "18" })).toEqual({ kind: "none" });
+  });
+
+  it("keeps servings inside the adjust range (0.5-36)", () => {
+    expect(parseEmbedAdjust({ servings: "0.5" })).toEqual({ servings: 0.5 });
+    expect(parseEmbedAdjust({ servings: "36" })).toEqual({ servings: 36 });
+    expect(parseEmbedAdjust({ servings: [" 4 ", "9"] })).toEqual({ servings: 4 });
+    for (const bad of ["0", "37", "0.25", "-3", "1e1", "0x10", "18abc", "", "Infinity"]) {
+      expect(parseEmbedAdjust({ servings: bad })).toBeNull();
+    }
+  });
+
+  it("takes only the seven diets, in any case", () => {
+    expect(parseEmbedAdjust({ dietary: "Gluten-Free" })).toEqual({ dietary: "gluten-free" });
+    for (const bad of ["keto", "vegan,dairy-free", "", "paleo"]) expect(parseEmbedAdjust({ dietary: bad })).toBeNull();
+  });
+
+  it("takes a style of 1-80 characters once trimmed, tidying control characters and spaces", () => {
+    expect(parseEmbedAdjust({ cuisine: "Thai\n\tstreet   food" })).toEqual({ cuisine: "Thai street food" });
+    expect(parseEmbedAdjust({ cuisine: "x".repeat(80) })).toEqual({ cuisine: "x".repeat(80) });
+    expect(parseEmbedAdjust({ cuisine: "x".repeat(81) })).toBeNull();
+    expect(parseEmbedAdjust({ cuisine: "   " })).toBeNull();
+  });
+
+  it("ignores invalid values without dropping valid ones", () => {
+    expect(parseEmbedAdjust({ servings: "99", dietary: "vegan", cuisine: "" })).toEqual({ dietary: "vegan" });
+    expect(parseEmbedRequest({ url, servings: "nope", dietary: "keto" })).toEqual({ kind: "url", url });
+  });
+
+  it("says what is happening in one calm line", () => {
+    expect(adjustLine({ servings: 18 })).toBe("Scaling to 18 servings\u2026");
+    expect(adjustLine({ servings: 1 })).toBe("Scaling to 1 serving\u2026");
+    expect(adjustLine({ dietary: "vegan" })).toBe("Making it vegan\u2026");
+    expect(adjustLine({ cuisine: "Italian" })).toBe("Making it more Italian\u2026");
+    expect(adjustLine({ servings: 18, dietary: "vegan" })).toBe("Scaling to 18 servings and making it vegan\u2026");
+    expect(adjustLine({ servings: 2, dietary: "vegan", cuisine: "Thai" })).toBe(
+      "Scaling to 2 servings, making it vegan and making it more Thai\u2026",
+    );
+    expect(adjustLine({})).toBe("");
+  });
+
+  it("adds the adjustment to the /embed URL between the recipe and the utm tags", () => {
+    const built = buildEmbedUrl("https://open.textsous.com", { url, host: "x.test", adjust: { servings: 18 } });
+    expect(built).toBe("https://open.textsous.com/embed?url=https%3A%2F%2Fx.test%2Fr&servings=18&utm_source=x.test&utm_medium=embed");
+    const parsed = new URL(buildEmbedUrl("https://open.textsous.com", { url, adjust: { cuisine: "Thai street food" } }));
+    expect(parseEmbedRequest(Object.fromEntries(parsed.searchParams))).toEqual({
+      kind: "url",
+      url,
+      adjust: { cuisine: "Thai street food" },
+    });
   });
 });

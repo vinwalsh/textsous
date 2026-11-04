@@ -92,3 +92,27 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* The bookmarklet: looks like the Adjust with SOUS button it adds. */
+.bookmarklet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.7em 1.2em;
+  border-radius: var(--ts-pill, 30px);
+  background: var(--ts-action, #b74725);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: grab;
+}
+
+.bookmarklet:hover {
+  background: var(--ts-action-hover, #9d3d20);
+  color: #fff;
+}
+
+.bookmarklet:focus-visible {
+  outline: 2px solid var(--ts-accent, #d45a35);
+  outline-offset: 2px;
+}

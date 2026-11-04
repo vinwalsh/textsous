@@ -431,6 +431,7 @@ export default function ArtifactViewer({
   saveEnabled = saveToTextSousEnabled(),
   overview = null,
   queuedAdjustments = null,
+  onQueuedApplied,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -445,6 +446,8 @@ export default function ArtifactViewer({
   overview?: RecipeOverview | null;
   /** Adjustments chosen while the cook along was being written: applied as it opens. */
   queuedAdjustments?: AdjustChoices | null;
+  /** Called once the queued adjustments were applied, or failed to apply. */
+  onQueuedApplied?: () => void;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -565,6 +568,7 @@ export default function ArtifactViewer({
         onAdjusted={(next: CookAlongArtifact) => handleAdjusted(next)}
         onReset={handleReset}
         autoApply={queuedAdjustments}
+        onAutoApplied={onQueuedApplied}
       />
 
       <IngredientsCard ingredients={recipe.ingredients} />

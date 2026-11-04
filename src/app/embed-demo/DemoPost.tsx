@@ -1,3 +1,4 @@
+import Bookmarklet from "./Bookmarklet";
 import { DEMO_RECIPE, demoJsonLd } from "./recipe";
 import styles from "./demo.module.css";
 
@@ -117,6 +118,7 @@ export default function DemoPost({
           for the options.
         </p>
       </section>
+      <Bookmarklet />
       <script src="/embed.js" async />
     </div>
   );

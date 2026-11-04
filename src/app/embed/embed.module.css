@@ -42,3 +42,16 @@
   color: var(--ts-ink, #22201c);
   text-decoration: none;
 }
+
+/* "Scaling to 18 servings…": one calm line at the top while an adjustment
+   chosen in the Adjust with SOUS menu is on its way. */
+.workingLine {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--ts-radius, 10px);
+  background: var(--ts-accent-soft, #f7e9e1);
+  color: var(--ts-ink, #22201c);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
