@@ -149,6 +149,22 @@ describe("friendlyError", () => {
       action: "paste-text",
     },
     {
+      name: "a link to a PDF or an image is refused every time",
+      status: 502,
+      message: "Unsupported content type: application/pdf.",
+      title: "We can't read that link",
+      detailPart: /isn't a recipe web page.*Paste the recipe text instead/,
+      action: "paste-text",
+    },
+    {
+      name: "a page over the size cap is refused every time",
+      status: 502,
+      message: "Page exceeds the 2097152 byte cap.",
+      title: "We can't read that link",
+      detailPart: /over 2 MB/,
+      action: "paste-text",
+    },
+    {
       name: "a model timeout is never read as the recipe site",
       status: 502,
       message: "Request timed out.",

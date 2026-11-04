@@ -204,6 +204,16 @@ export function friendlyError(
         action: "paste-text",
       };
     }
+    // The page answered, but with something intake refuses every time:
+    // "Page exceeds the ... byte cap.", "Unsupported content type: ...".
+    if (/byte cap|content type/i.test(message)) {
+      return {
+        title: "We can't read that link",
+        detail:
+          "It isn't a recipe web page we can open (a PDF, an image or a page over 2 MB). Paste the recipe text instead.",
+        action: "paste-text",
+      };
+    }
     return {
       title: "The recipe service stumbled",
       detail: "The conversion failed upstream. Try again in a bit.",
