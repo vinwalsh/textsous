@@ -16,9 +16,9 @@ function GitHubMark() {
 
 /**
  * Wordmark, the "Open" pill and three links styled as secondary buttons
- * (.btn .nav-btn), then one line of intro. Rendered as a direct child of
- * <body> with the class `site-header`: /embed hides it with
- * body:has(.ts-embed-root) > .site-header (embed-chrome.css).
+ * (.btn, sized by .site-nav a), then one line of intro. Rendered as a
+ * direct child of <body> with the class `site-header`: /embed hides it
+ * with body:has(.ts-embed-root) > .site-header (embed-chrome.css).
  */
 export default function SiteHeader() {
   return (
@@ -30,13 +30,13 @@ export default function SiteHeader() {
             <span className="open-pill">Open</span>
           </Link>
           <nav className="site-nav" aria-label="Site">
-            <Link href="/demo" className="btn nav-btn">
+            <Link href="/demo" className="btn">
               Demo
             </Link>
-            <Link href="/assistants" className="btn nav-btn">
+            <Link href="/assistants" className="btn">
               Use in your assistant
             </Link>
-            <a href={GITHUB_URL} className="btn nav-btn">
+            <a href={GITHUB_URL} className="btn">
               <GitHubMark />
               GitHub
             </a>

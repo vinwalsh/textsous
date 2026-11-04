@@ -21,16 +21,16 @@ describe("site header", () => {
   });
 
   it("links Demo, Use in your assistant and GitHub as buttons", () => {
-    expect(html).toContain('<a class="btn nav-btn" href="/demo">Demo</a>');
-    expect(html).toContain('<a class="btn nav-btn" href="/assistants">Use in your assistant</a>');
+    expect(html).toContain('<a class="btn" href="/demo">Demo</a>');
+    expect(html).toContain('<a class="btn" href="/assistants">Use in your assistant</a>');
     expect(GITHUB_URL).toBe("https://github.com/vinwalsh/textsous");
     expect(html).toMatch(
-      new RegExp(`<a href="${GITHUB_URL}" class="btn nav-btn"><svg class="nav-icon"[^>]*aria-hidden="true"[^>]*>.*</svg>GitHub</a>`),
+      new RegExp(`<a href="${GITHUB_URL}" class="btn"><svg class="nav-icon"[^>]*aria-hidden="true"[^>]*>.*</svg>GitHub</a>`),
     );
     expect(html).toContain('<nav class="site-nav" aria-label="Site">');
     const nav = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
     expect(nav.match(/<a /g)?.length).toBe(3);
-    expect(nav.match(/class="btn nav-btn"/g)?.length).toBe(3);
+    expect(nav.match(/<a [^>]*class="btn"/g)?.length).toBe(3);
   });
 
   it("styles the header links as 44 px secondary buttons that wrap on phones", () => {
