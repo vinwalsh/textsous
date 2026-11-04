@@ -411,4 +411,12 @@ describe("auth, size and rate limits", () => {
     const other = await sourcePOST(post("/api/skills/source", { nope: true }, { "x-textsous-account": "acct-hash-2" }));
     expect(other.status).toBe(422);
   });
+
+  it("does not spend the shared secret budget on requests an account limit refuses", async () => {
+    const headers = { "x-textsous-account": "acct-hash-noisy" };
+    // 60 allowed + 600 refused by the account limit: well past the 600 secret limit.
+    for (let i = 0; i < 660; i += 1) await sourcePOST(post("/api/skills/source", { nope: true }, headers));
+    const other = await sourcePOST(post("/api/skills/source", { nope: true }, { "x-textsous-account": "acct-hash-quiet" }));
+    expect(other.status).toBe(422);
+  });
 });

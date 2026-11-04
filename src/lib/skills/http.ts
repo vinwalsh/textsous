@@ -114,17 +114,19 @@ async function hit(key: string, limit: number): Promise<boolean> {
  * site's conversion limits and daily cap: skills calls spend no model tokens.
  */
 export async function checkSkillsRateLimit(req: Request): Promise<Response | null> {
-  const secret = process.env.SKILLS_API_SECRET?.trim() ?? "";
-  const secretKey = `secret:${sha256(secret).toString("hex").slice(0, 16)}`;
-  if (!(await hit(secretKey, SECRET_LIMIT_PER_HOUR))) {
-    return failure(429, "rate_limited", "Too many skills requests this hour. Try again later.");
-  }
+  // Account first: a request the account limit refuses must not spend the
+  // shared secret budget that every other account relies on.
   const account = (req.headers.get("x-textsous-account") ?? "").trim();
   if (account) {
     const accountKey = `account:${sha256(account.slice(0, 256)).toString("hex").slice(0, 32)}`;
     if (!(await hit(accountKey, ACCOUNT_LIMIT_PER_HOUR))) {
       return failure(429, "rate_limited", "This account made too many cook along requests this hour. Try again later.");
     }
+  }
+  const secret = process.env.SKILLS_API_SECRET?.trim() ?? "";
+  const secretKey = `secret:${sha256(secret).toString("hex").slice(0, 16)}`;
+  if (!(await hit(secretKey, SECRET_LIMIT_PER_HOUR))) {
+    return failure(429, "rate_limited", "Too many skills requests this hour. Try again later.");
   }
   return null;
 }
