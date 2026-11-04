@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { setCachedConversion, stageVersions } from "../src/lib/cache";
 import { POST as convertPOST } from "../src/app/api/convert/route";
 import { POST as adjustPOST } from "../src/app/api/adjust/route";
+import { friendlyError } from "../src/app/request";
 import { buildReviewNote, mergeNotes, readableReviewDetail, reviewNoteTexts } from "../src/lib/review-notes";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../src/lib/schema/artifact";
 import { compile } from "../src/lib/stages/compile";
@@ -203,6 +204,25 @@ describe("routes: advisory failures convert, blocking failures do not", () => {
     replies.judgments = judgments({ source_fidelity: null });
     const missing = await convertPOST(req("/api/convert", { recipe: recording.recipe }, "10.40.0.2"));
     expect(missing.status).toBe(422);
+  });
+
+  it("answers 422 with the calm copy whatever words the blocking reason uses", async () => {
+    // A model-written reason with "too long" or "credentials" used to match
+    // the 400 patterns for pasted text and URLs first (fix-pass review).
+    const reasons = {
+      method_and_safety: "The cooked porridge is held at room temperature too long before serving.",
+      source_fidelity: "the step about credentials is invented",
+    };
+    for (const [check, detail] of Object.entries(reasons)) {
+      replies.judgments = judgments({ [check]: { passed: false, detail } });
+      const res = await convertPOST(req("/api/convert", { recipe: recording.recipe }, "10.40.0.5"));
+      expect(res.status).toBe(422);
+      const { error } = (await res.json()) as { error: string };
+      expect(error).toBe(`compile blocked: ${check}: ${detail}`);
+      const copy = friendlyError(res.status, error);
+      expect(copy.title).toBe("We couldn't double-check this one");
+      expect(copy.more).toBe(`${check}: ${detail}`);
+    }
   });
 
   it("returns the artifact's notes as warnings on a cache hit", async () => {

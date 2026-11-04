@@ -57,7 +57,11 @@ function logConvert(fields: {
 }
 
 function errorStatus(message: string): number {
-  // First: "took too long to convert" (deadline, model timeout) also
+  // A blocked review first: its reasons are the model's own words ("held
+  // too long", "credentials"), which the patterns below would misread.
+  // compile() always starts the message with "compile blocked:".
+  if (/^compile blocked:/i.test(message)) return 422;
+  // Then "took too long to convert" (deadline, model timeout): it also
   // contains "too long", which below means pasted text over the limit.
   if (/took too long to convert/i.test(message)) return 503;
   if (/exactly one of|invalid url|invalid recipe|only https|only public https|private-network|credentials|default port/i.test(message)) {
