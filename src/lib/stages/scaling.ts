@@ -7,16 +7,12 @@ import {
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
-import { findNumbers, parseAmount } from "../scaling/amounts";
-import {
-  effectiveFactor,
-  formatAmount,
-  formatKitchenAmount,
-  round2,
-  scaleIngredient,
-} from "../scaling/scale";
+import { parseAmount } from "../scaling/amounts";
+import { effectiveFactor, formatAmount, round2, scaleIngredient } from "../scaling/scale";
+import { nativeServingsOf } from "../scaling/native";
+import { rescaleText, type AmountMapping } from "../scaling/text";
 
-export const SCALING_VERSION = 1;
+export const SCALING_VERSION = 2;
 export const MIN_SERVINGS = 0.5;
 export const MAX_SERVINGS = 12;
 
@@ -96,53 +92,14 @@ export interface ApplyScalingResult {
   flags: ScaleFlag[];
 }
 
-interface MappedValue {
-  scaled: number;
-  unit: string;
-  name: string;
-}
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** Unit matches as a whole word, tolerating a plural s ("cup" in "2 cups"). */
-function unitMentioned(stepLower: string, unit: string): boolean {
-  if (!unit) return false;
-  return new RegExp(`\\b${escapeRegExp(unit.toLowerCase())}s?\\b`).test(stepLower);
-}
-
-function rescaleStepText(
-  stepId: string,
-  text: string,
-  candidatesOf: (value: number) => MappedValue[],
-): { text: string; flags: ScaleFlag[] } {
-  const found = findNumbers(text);
-  const flags: ScaleFlag[] = [];
-  let out = text;
-  const lowered = text.toLowerCase();
-  for (let i = found.length - 1; i >= 0; i -= 1) {
-    const token = found[i];
-    const match =
-      token.value === null
-        ? undefined
-        : candidatesOf(token.value).find(
-            (c) => unitMentioned(lowered, c.unit) || lowered.includes(c.name.toLowerCase()),
-          );
-    if (token.value === null || match === undefined) {
-      flags.push({ stepId, token: token.token });
-      continue;
-    }
-    out = `${out.slice(0, token.start)}${formatKitchenAmount(match.scaled)}${out.slice(token.end)}`;
-  }
-  return { text: out, flags: flags.reverse() };
-}
-
 /**
  * Rescale an artifact to a target servings count. Servings must stay within
- * 0.5-12. Step numbers matching a scaled ingredient quantity (with its unit
- * or name in the step) are rescaled; every other number is flagged for the
- * cook to verify. Pure.
+ * 0.5-12. Amounts always scale from the printed quantity at nativeServings
+ * (factor = target / nativeServings), so 2 -> 4 -> 6 equals 2 -> 6. Numbers
+ * in step and task text that read as an ingredient's current amount (the
+ * number directly followed by its unit or name) are rescaled; times,
+ * temperatures and pan sizes never are. Other amount-like numbers in steps
+ * are flagged for the cook to verify. Pure.
  */
 export function applyScaling(
   artifact: CookAlongArtifact,
@@ -153,27 +110,35 @@ export function applyScaling(
     throw new Error(`servings ${targetServings} out of range (${MIN_SERVINGS}-${MAX_SERVINGS})`);
   }
   const recipe = artifact.recipe;
-  const factor = targetServings / recipe.servings;
+  const native = nativeServingsOf(recipe, artifact.changes);
+  const factor = targetServings / native;
   const byId = new Map(rules.map((r) => [r.ingredientId, r.rule] as const));
   const missing = recipe.ingredients.map((i) => i.id).filter((id) => !byId.has(id));
   if (missing.length > 0) {
     throw new Error(`missing scale rule for ${missing.join(", ")}`);
   }
-  const candidatesOf = new Map<number, MappedValue[]>();
+  const mappings: AmountMapping[] = [];
   const ingredients = recipe.ingredients.map((ingredient) => {
     const rule = byId.get(ingredient.id) ?? "linear";
     const scaled = scaleIngredient({ ...ingredient, scaleRule: rule }, factor);
-    const parsed = parseAmount(ingredient.quantity);
-    if (parsed !== null) {
+    const original = parseAmount(ingredient.quantity);
+    const current = parseAmount(ingredient.cookQuantity ?? ingredient.quantity);
+    if (scaled.scaled && original !== null && current !== null) {
       const eff = effectiveFactor(rule, factor);
-      for (const end of parsed.low === parsed.high ? [parsed.low] : [parsed.low, parsed.high]) {
-        const list = candidatesOf.get(end) ?? [];
-        list.push({
-          scaled: round2(end * eff),
+      const ends: Array<[number, number]> =
+        original.low === original.high
+          ? [[current.low, original.low]]
+          : [
+              [current.low, original.low],
+              [current.high, original.high],
+            ];
+      for (const [now, base] of ends) {
+        mappings.push({
+          current: now,
+          next: round2(base * eff),
           unit: ingredient.unit,
           name: ingredient.name,
         });
-        candidatesOf.set(end, list);
       }
     }
     return {
@@ -185,19 +150,36 @@ export function applyScaling(
   });
   const flags: ScaleFlag[] = [];
   const steps = recipe.steps.map((step) => {
-    const rescaled = rescaleStepText(step.id, step.text, (value) => candidatesOf.get(value) ?? []);
-    flags.push(...rescaled.flags);
+    const rescaled = rescaleText(step.text, mappings);
+    flags.push(...rescaled.unmatched.map((token) => ({ stepId: step.id, token })));
     return { ...step, text: rescaled.text };
   });
+  // Step cards render task text, so amounts there scale too (no flags:
+  // the steps already report anything left unscaled).
+  const rescale = (text: string): string => rescaleText(text, mappings).text;
+  const tasks = artifact.timelineDefinition.tasks.map((task) => ({
+    ...task,
+    label: rescale(task.label),
+    description: rescale(task.description),
+    completionCue: rescale(task.completionCue),
+    checkpoints: task.checkpoints.map(rescale),
+  }));
   return {
     artifact: {
       ...artifact,
-      recipe: { ...recipe, servings: targetServings, ingredients, steps },
+      recipe: {
+        ...recipe,
+        servings: targetServings,
+        nativeServings: native,
+        ingredients,
+        steps,
+      },
+      timelineDefinition: { ...artifact.timelineDefinition, tasks },
       changes: [
         ...artifact.changes,
         {
           kind: "scale" as const,
-          detail: `rescaled ${recipe.servings} → ${targetServings} servings (×${formatAmount(factor)})`,
+          detail: `rescaled ${recipe.servings} → ${targetServings} servings (×${formatAmount(targetServings / recipe.servings)})`,
         },
         ...flags.map((flag) => ({
           kind: "scale" as const,

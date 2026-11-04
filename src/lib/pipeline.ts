@@ -21,6 +21,7 @@ import {
 import { applyDietary } from "./stages/dietary";
 import { applyCuisine } from "./stages/cuisine";
 import { voice } from "./stages/voice";
+import { nativeServingsOf } from "./scaling/native";
 
 /** Kitchen capacity assumed when the caller provides none. */
 export const DEFAULT_EQUIPMENT_PROFILE: EquipmentProfile = { burners: 4, oven: true };
@@ -202,10 +203,12 @@ export async function adjustArtifact(
   };
   if (servings !== undefined) {
     const recipe = current.recipe;
+    // Rules are judged on the printed quantities at native servings, the
+    // same base applyScaling scales from.
     const assigned = await assignScaleRules(
       {
         title: recipe.title,
-        servings: recipe.servings,
+        servings: nativeServingsOf(recipe, current.changes),
         ingredients: recipe.ingredients.map((i) => ({
           id: i.id,
           name: i.name,

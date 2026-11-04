@@ -180,7 +180,7 @@ describe("applyScaling", () => {
     );
   });
 
-  it("rescales mapped step numbers and flags the rest", () => {
+  it("rescales mapped step numbers and leaves timings unflagged", () => {
     const { artifact, flags } = applyScaling(makeArtifact(), 4, RULES);
     expect(artifact.recipe.servings).toBe(4);
     expect(artifact.recipe.ingredients[0].cookQuantity).toBe("4");
@@ -188,14 +188,25 @@ describe("applyScaling", () => {
     expect(artifact.recipe.ingredients[0].scaleRule).toBe("linear");
     expect(artifact.recipe.ingredients[1].cookQuantity).toBe("");
     expect(artifact.recipe.steps[0].text).toBe("Add 4 cups stock and simmer 20 minutes.");
-    expect(flags).toEqual([{ stepId: "step-1", token: "20" }]);
+    // "20 minutes" is a time, never an amount: unchanged and not flagged.
+    expect(flags).toEqual([]);
     expect(artifact.changes[0]).toEqual({
       kind: "scale",
       detail: "rescaled 2 → 4 servings (×2)",
     });
+  });
+
+  it("flags amount-like numbers that match no ingredient", () => {
+    const base = makeArtifact();
+    base.recipe.steps = [
+      { id: "step-1", kind: "active", text: "Add 2 cups stock and 3 bay leaves." },
+    ];
+    const { artifact, flags } = applyScaling(base, 4, RULES);
+    expect(artifact.recipe.steps[0].text).toBe("Add 4 cups stock and 3 bay leaves.");
+    expect(flags).toEqual([{ stepId: "step-1", token: "3" }]);
     expect(artifact.changes).toContainEqual({
       kind: "scale",
-      detail: 'verify "20" in step step-1 (not rescaled)',
+      detail: 'verify "3" in step step-1 (not rescaled)',
     });
   });
 });

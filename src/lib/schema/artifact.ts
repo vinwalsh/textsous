@@ -41,6 +41,10 @@ export const ArtifactChangeSchema = z.strictObject({
 export const ArtifactRecipeSchema = z.strictObject({
   title: z.string().min(1),
   servings: z.number().positive(),
+  // Servings the printed ingredient quantities are written for. Scaling
+  // always starts from here, so 2 -> 4 -> 6 equals 2 -> 6. Optional for
+  // artifacts compiled before it existed.
+  nativeServings: z.number().positive().nullish(),
   ingredients: z.array(CanonicalIngredientSchema).min(1),
   equipment: z.array(z.string()),
   steps: z.array(CanonicalStepSchema).min(1),

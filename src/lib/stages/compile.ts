@@ -100,6 +100,7 @@ export function compile(input: CompileInput): CookAlongArtifact {
     recipe: {
       title: recipe.title,
       servings: recipe.nativeServings,
+      nativeServings: recipe.nativeServings,
       ingredients,
       equipment: recipe.equipment,
       steps: recipe.steps,
