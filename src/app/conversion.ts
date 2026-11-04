@@ -179,12 +179,16 @@ export function reduceConversion(state: ConversionState, action: ConversionActio
   }
 }
 
-/** The cooking line's live status, by the furthest part that has arrived. */
+/**
+ * The cooking line's live status, by the furthest part that has arrived. The
+ * summary usually lands while the ingredients are still being read, and one
+ * model call writes the prep and the steps together.
+ */
 export const CONVERSION_STAGES = [
   "Reading the recipe",
   "Summarizing",
-  "Laying out the prep",
-  "Writing the steps",
+  "Reading the ingredients",
+  "Laying out the prep and steps",
   "Checking against the original",
   "Building your cook along",
 ] as const;

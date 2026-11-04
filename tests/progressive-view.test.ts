@@ -101,7 +101,7 @@ describe("progressive view, part by part", () => {
 
   it("adds the overview: what you'll do and each component with how it is made", () => {
     const html = render(withOverview);
-    expect(html).toContain("Laying out the prep…");
+    expect(html).toContain("Reading the ingredients…");
     expect(html).toContain("What you&#x27;ll do");
     expect(html).toContain(OVERVIEW.summary);
     expect(html).toContain("<strong>Porridge</strong><span>Toast the oats, then simmer in milk until thick.</span>");
@@ -110,7 +110,7 @@ describe("progressive view, part by part", () => {
 
   it("adds adjustments (queued until ready), ingredients and before you start with the recipe", () => {
     const html = render(withRecipe);
-    expect(html).toContain("Writing the steps…");
+    expect(html).toContain("Laying out the prep and steps…");
     expect(html).toContain("Adjust this recipe");
     expect(html).toContain("still being written");
     // Choosing alone queues nothing: the copy names the button that does.

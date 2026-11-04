@@ -163,9 +163,9 @@ describe("reduceConversion", () => {
     const withFacts = reduceAll([{ type: "facts", facts: facts() }], working);
     expect(conversionStage(withFacts)).toBe("Summarizing");
     const withOverview = reduceAll([{ type: "overview", overview: { summary: "s", components: [] } }], withFacts);
-    expect(conversionStage(withOverview)).toBe("Laying out the prep");
+    expect(conversionStage(withOverview)).toBe("Reading the ingredients");
     const withRecipe = reduceAll([{ type: "recipe", recipe: RECIPE, facts: facts() }], withFacts);
-    expect(conversionStage(withRecipe)).toBe("Writing the steps");
+    expect(conversionStage(withRecipe)).toBe("Laying out the prep and steps");
     const withTimeline = reduceAll([{ type: "procedure", timeline: TIMELINE }], withRecipe);
     expect(conversionStage(withTimeline)).toBe("Checking against the original");
     expect(conversionStage({ ...withTimeline, status: "done" })).toBe("Building your cook along");
