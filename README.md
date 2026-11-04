@@ -96,8 +96,9 @@ included (`/glasses?src=<signed link>`, good for 24 hours); `/glasses?url=`
 converts a recipe page, and plain `/glasses` lists the demo recipes. On a
 phone or computer the page shows the Meta AI app link that puts it on your
 glasses (`fb-viewapp://web_app_deep_link?...`): turn on Developer Mode in the
-Meta AI app and open the link on the paired phone, or scan the View on
-Glasses QR code in Meta's simulator.
+Meta AI app (Settings, App Info, tap the version number five times) and open
+the link on the paired phone, or scan the View on Glasses QR code in Meta's
+Web App Simulator for Chrome.
 
 ## Use TextSous from your AI assistant
 

@@ -262,8 +262,15 @@ body:has(.ts-glasses-root) > main {
   line-height: 1.4;
 }
 
+/* Back stays in view while a long task scrolls. */
 .g-details-bar {
+  position: sticky;
+  top: -14px;
+  z-index: 1;
   align-items: center;
+  margin: -14px 0 0;
+  padding: 14px 0 8px;
+  background: #000;
 }
 
 .g-details-bar .g-btn {

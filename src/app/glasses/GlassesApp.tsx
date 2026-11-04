@@ -832,8 +832,9 @@ export function InstallPanel({ pageUrl: given }: { pageUrl?: string }) {
     <aside className="g-install" aria-label="Put this on your glasses">
       <h2 className="g-install-title">Put this on your glasses</h2>
       <p className="g-muted">
-        Turn on Developer Mode in the Meta AI app, then open this link on the phone paired with your
-        Meta Ray-Ban Display. In Meta&apos;s simulator, scan its View on Glasses QR code instead.
+        Turn on Developer Mode in the Meta AI app (Settings, App Info, tap the version number five
+        times), then open this link on the phone paired with your Meta Ray-Ban Display, or scan the
+        View on Glasses QR code in Meta&apos;s Web App Simulator.
       </p>
       <code className="g-install-link">{link}</code>
       <div className="g-row">
