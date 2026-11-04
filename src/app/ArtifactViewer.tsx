@@ -708,7 +708,9 @@ export default function ArtifactViewer({
 
       <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
 
-      {pilotInput ? <CookAlongView input={pilotInput} /> : (<>
+      {pilotInput ? (
+        <CookAlongView input={pilotInput} adjusting={rewriting.has("timeline") ? adjustingText : null} />
+      ) : (<>
       <h3>Timeline</h3>
       {before("timeline")}
       <TimelineView timeline={timeline} />

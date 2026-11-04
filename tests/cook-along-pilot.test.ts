@@ -332,6 +332,29 @@ describe("the finished page's Cook Along body", () => {
     expect(html).not.toContain('aria-label="Before you start"');
   });
 
+  it("says the Cook Along is about to change while an adjustment applies", () => {
+    const artifact = fixtureArtifact("toasted-oat-porridge");
+    const base = artifact.recipe.servings;
+    const html = renderToStaticMarkup(
+      createElement(ArtifactViewer, {
+        artifact,
+        onStartOver: noop,
+        queuedAdjustments: { servings: base + 6, dietary: "", cuisine: "", sousVoice: false },
+      }),
+    );
+    const view = html.slice(html.indexOf('aria-label="Cook Along"'));
+    expect(view.length).toBeLessThan(html.length);
+    // One mark above the view, then the view's notice, and Cook waits.
+    expect(view.match(/Before your changes/g) ?? []).toHaveLength(1);
+    expect(view.indexOf("Before your changes")).toBeLessThan(view.indexOf('aria-label="Cooking timeline"'));
+    expect(view).toContain(`Adjusting: serves ${base} → ${base + 6}…`);
+    expect(view).toMatch(/<button[^>]*disabled=""[^>]*>(<svg[^>]*>[\s\S]*?<\/svg>)?Cook<\/button>/);
+    // Without an adjustment there is no mark and no notice.
+    const calm = renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
+    expect(calm).not.toContain("Before your changes");
+    expect(calm).not.toContain("Adjusting:");
+  });
+
   it("falls back to the open sections when the view cannot show the artifact", () => {
     const artifact = clone(fixtureArtifact("toasted-oat-porridge"));
     // A dependency cycle: the open schedule and the view both refuse it.
