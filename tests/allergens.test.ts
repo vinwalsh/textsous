@@ -8,6 +8,7 @@ import {
   withAllergenFloor,
 } from "../src/lib/allergens";
 import { compile } from "../src/lib/stages/compile";
+import { applyVariant } from "../src/lib/variant-apply";
 import type { CanonicalIngredient, CanonicalRecipe } from "../src/lib/schema/canonical";
 import type { TimelineDefinition } from "../src/lib/schema/timeline";
 import ArtifactViewer from "../src/app/ArtifactViewer";
@@ -159,6 +160,62 @@ const STROGANOFF: CanonicalIngredient[] = [
   ingredient("ing-6", "Dijon mustard", "1", "tbsp", ["mustard"]),
   ingredient("ing-7", "sour cream", "1/2", "cup", ["milk"]),
 ];
+
+describe("inferAllergens: alternatives and replaced ingredients in the note", () => {
+  const ROWS: Row[] = [
+    // An alternative's qualifier never switches off the floor for the ingredient.
+    ["all-purpose flour", "or a gluten-free flour blend", ["gluten"], []],
+    ["unsalted butter", "or vegan butter, softened", ["milk"], []],
+    ["large eggs", "or flax eggs to make it vegan", ["egg"], []],
+    ["fish sauce", "or soy sauce for vegetarian", ["fish"], ["gluten", "soy"]],
+    // The alternative itself may be used: its allergens become traces.
+    ["vegetable oil", "or melted butter", [], ["milk"]],
+    // The ingredient's own qualifier still counts.
+    ["butter", "vegan", [], []],
+    ["flour", "gluten-free blend", [], []],
+    // A substitute never inherits the replaced ingredient's allergens.
+    ["sunflower seed butter", "Replaces peanut butter (dietary nut-free).", [], []],
+    ["coconut aminos", "Replaces soy sauce (dietary soy-free). Verify on label: no soy; no wheat.", [], []],
+    ["coconut oil", "Replaces unsalted butter (cuisine thai)", [], []],
+    ["oat drink", "Replaces whole milk (dietary vegan). Verify on label: no milk ingredients.", [], ["gluten"]],
+  ];
+  it.each(ROWS)("%s (%s)", (name, note, allergens, traces) => {
+    const inferred = inferAllergens(name, note);
+    expect([...inferred.allergens].sort()).toEqual([...allergens].sort());
+    expect([...inferred.traces].sort()).toEqual([...traces].sort());
+  });
+
+  it("a nut-free variant's substitute does not bring peanuts back into Contains", () => {
+    const base = compile({
+      recipe: recipe([
+        ingredient("ing-1", "peanut butter", "1/2", "cup", ["peanuts"]),
+        ingredient("ing-2", "rice noodles", "8", "oz"),
+      ]),
+      timeline: TIMELINE,
+      review: PASSED_REVIEW,
+      equipmentProfile: { burners: 4, oven: true },
+    });
+    const { artifact } = applyVariant(base, {
+      kind: "dietary",
+      target: "nut-free",
+      titleOverride: null,
+      swaps: [
+        {
+          fromIngredientId: "ing-1",
+          to: { name: "sunflower seed butter", quantity: "1/2", unit: "cup" },
+          omitReason: null,
+          reason: "seed butter",
+          packageRequirements: ["no peanuts", "made in a nut-free facility"],
+        },
+      ],
+      stepOverrides: [],
+      techniqueChanges: [],
+      rationale: [],
+    });
+    expect(artifact.recipe.allergens).not.toContain("peanuts");
+    expect(applyArtifactAllergenFloor(artifact).recipe.allergens).not.toContain("peanuts");
+  });
+});
 
 describe("withAllergenFloor", () => {
   it("never removes a model tag and appends inferred ones", () => {

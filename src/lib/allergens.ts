@@ -486,15 +486,55 @@ function byEuOrder(a: Eu14Allergen, b: Eu14Allergen): number {
   return (ORDER.get(a) ?? 0) - (ORDER.get(b) ?? 0);
 }
 
+/** A note sentence about the ingredient this one replaced, or label checks. */
+const DROPPED_SENTENCE =
+  /^\s*(?:replaces|replacing|replaced|instead of|in place of|substitutes? for|swapped (?:in )?for|verify on (?:the )?label|check (?:the )?label)\b/i;
+/** A note segment offering a different ingredient: "or vegan butter". */
+const ALTERNATIVE_START = /^\s*(?:or|alternatively|optionally|substitute|sub|swap)\b/i;
+const ALTERNATIVE_MARKER =
+  /\b(?:to make (?:it|this|them)|to keep (?:it|this)|for an? [a-z -]*(?:version|option)|if (?:you are |youre |you're |making (?:it )?)?(?:vegan|vegetarian|dairy[ -]free|gluten[ -]free|egg[ -]free|nut[ -]free))\b/i;
+
+export interface SplitNote {
+  /** Note text about the ingredient itself. */
+  primary: string;
+  /** Alternatives the note offers ("or a gluten-free flour blend"). */
+  alternatives: string;
+}
+
 /**
- * Infer EU-14 allergens from an ingredient name and note. Definite matches go
- * to allergens; uncertain ones (oats, stock) go to traces. Pure.
+ * Split an ingredient note into what describes the ingredient and what
+ * offers an alternative. Sentences about a replaced ingredient ("Replaces
+ * peanut butter ...") and label checks are dropped: they name what is NOT
+ * in the dish. Pure.
  */
-export function inferAllergens(name: string, note?: string | null): InferredAllergens {
-  const text = normalizeAllergenText(`${name} ${note ?? ""}`);
-  const allergens = new Set<Eu14Allergen>();
-  const traces = new Set<Eu14Allergen>();
-  if (!text) return { allergens: [], traces: [] };
+export function splitAllergenNote(note: string | null | undefined): SplitNote {
+  if (!note) return { primary: "", alternatives: "" };
+  const primary: string[] = [];
+  const alternatives: string[] = [];
+  const sentences = note.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    if (DROPPED_SENTENCE.test(sentence)) continue;
+    for (const segment of sentence.split(/[,;()[\]]|\s[-–—]\s/)) {
+      if (!segment.trim()) continue;
+      if (ALTERNATIVE_START.test(segment) || ALTERNATIVE_MARKER.test(segment)) {
+        alternatives.push(segment);
+        continue;
+      }
+      // "softened or melted butter": the part after "or" is the alternative.
+      const or = /\b(?:or|alternatively)\b/i.exec(segment);
+      if (or) {
+        primary.push(segment.slice(0, or.index));
+        alternatives.push(segment.slice(or.index + or[0].length));
+      } else {
+        primary.push(segment);
+      }
+    }
+  }
+  return { primary: primary.join(" "), alternatives: alternatives.join(" ") };
+}
+
+function inferFromText(text: string, allergens: Set<Eu14Allergen>, traces: Set<Eu14Allergen>): void {
+  if (!text) return;
   for (const rule of COMPILED) {
     if (rule.skipIf && rule.skipIf.test(text)) continue;
     // Exclusions scope definite terms only, so "oat flour" is not gluten
@@ -507,6 +547,26 @@ export function inferAllergens(name: string, note?: string | null): InferredAlle
     if (matches(rule.terms, scoped)) allergens.add(rule.allergen);
     else if (matches(rule.traces, text)) traces.add(rule.allergen);
   }
+}
+
+/**
+ * Infer EU-14 allergens from an ingredient name and note. Definite matches go
+ * to allergens; uncertain ones (oats, stock) go to traces. Qualifiers like
+ * "vegan" or "gluten-free" count only for the ingredient itself (name and the
+ * note's own description), never from an alternative the note offers. An
+ * alternative ("or soy sauce") adds its allergens as traces, since the cook
+ * may use it. Sentences about a replaced ingredient are ignored. Pure.
+ */
+export function inferAllergens(name: string, note?: string | null): InferredAllergens {
+  const split = splitAllergenNote(note);
+  const primary = normalizeAllergenText(`${name} ${split.primary}`);
+  const alternative = normalizeAllergenText(split.alternatives);
+  const allergens = new Set<Eu14Allergen>();
+  const traces = new Set<Eu14Allergen>();
+  inferFromText(primary, allergens, traces);
+  const altAllergens = new Set<Eu14Allergen>();
+  inferFromText(alternative, altAllergens, traces);
+  for (const a of altAllergens) traces.add(a);
   return {
     allergens: [...allergens].sort(byEuOrder),
     traces: [...traces].filter((a) => !allergens.has(a)).sort(byEuOrder),
