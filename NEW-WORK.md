@@ -6,12 +6,17 @@ Everything in this repo was built inside the window, starting from
 then M7: 93 commits from `295620c` through `f92e0a1` (Nov 3, 22:50 ET to
 Nov 4, 04:00 ET; two of them are merges and two are docs), fast-forwarded
 to main and deployed on Nov 4 at 04:17 ET, then a warm-script fix and the
-docs commit that records the deploy. The range extends if further commits
+docs commit that records the deploy, then M8: 37 commits from `f1a7642`
+through `cf3fc28` (Nov 4, 14:27 to 14:57 ET; four of them are merges),
+pushed to main at 15:05 ET, then the M8 review: 7 commits of fixes and
+docs plus this log's update. The range extends if further commits
 land before the Nov 4, 9:00 PM ET deadline. M1 foundation +
 first conversion (Oct 27–28), M2 Cook Along pipeline (Oct 28), M3
 adjustments (Oct 29), M4 photo, web flow and artifact handoff (Oct 29–31),
 M5 proof and disclosure (Oct 29–Nov 3), M6 phone-check follow-ups (Nov 1),
-M7 assistants, embed, output format and brand (Nov 3–4).
+M7 assistants, embed, output format and brand (Nov 3–4), M8 progressive
+conversion, per-stage reasoning effort, up to 3 photos and quick fixes
+(Nov 4).
 Detail is in the dated log below. Proof through M6: 287 offline tests
 green, CI green, production `/api/health` ok on muse-spark-1.3, full eval
 23/23 (739k tokens). Proof for M7: 723 offline tests in 68 files with
@@ -20,6 +25,10 @@ green on main; four live conversions on a Vercel preview of the core
 stream, one on a preview of the final branch, and in production the
 health, page, header and cross-site checks plus 17 fresh conversions while
 warming the 20 /demo URLs and the /embed-demo post (TASKS.md M7.10, O12).
+Proof for M8: 859 offline tests in 80 files at `cf3fc28` and 863 after the
+review fixes, with MODEL_API_KEY unset, typecheck, lint, build and the
+schema/docs gate; live conversions on a Vercel preview (pasted text in
+50-63 s).
 
 Pre-existing outside this repo: the private TextSous platform (accounts,
 households, weekly meal plans, grocery lists, SOUS over text and MCP — with
@@ -179,4 +188,12 @@ dates above govern. Every entry falls inside the window regardless.
 
 2026-11-04: Shipped M7. A live conversion on a preview of the final branch took 275 s (canonicalize 67 s, procedure 161 s, review 46 s) and its artifact parsed in the TextSous app's Cookbook importer; main then fast-forwarded from `3e56ebb` to `f92e0a1` at 04:17 ET, CI green. Production: `/api/health` ok on muse-spark-1.3 (dailyCap 300, ratePerHour 20, skillsConfigured false until the owner sets the skills secret, signingConfigured true); every page 200 and an unknown path 404; the M7.10 headers on /, /embed and /embed.js; a convert POST marked cross-site gets 403; the secret skills routes answer 503 `not_configured`. Warmed the 20 /demo URLs and the /embed-demo post with three runs in parallel: 17 fresh conversions of 169-276 s, all 200 in the production logs, and a second run printed "cache hit" for all 21; one cached recipe carries an advisory review note (step order), which the review would have blocked before the advisory change. The warm script lost the answer to every request it sent on a kept-alive connection after a long conversion (about 40 s in, while the server kept converting), so it now opens a fresh connection per request, prints the network error, and says the server may still be converting whenever an answer is lost.
 
-2026-11-04: M8 server speed and streaming: every model stage sends an explicit reasoning_effort (src/lib/model/efforts.ts; overview and scaling minimal, the rest low; REASONING_EFFORT_<STAGE> overrides; the x-textsous-efforts header on previews only; a provider that refuses an effort is asked again without it), a new overview stage (one fast call: facts, a calm summary and the components) that runs alongside canonicalize for streaming clients only, pipeline progress events (onEvent), and NDJSON streaming in POST /api/convert for clients that send Accept: application/x-ndjson (facts, overview, recipe, procedure, then done or error; JSON answers unchanged without the header). The convert log records efforts, per-stage timings and the overview outcome. No live model calls were made: the new efforts are untested against Meta until the first preview run. 31 new offline tests.
+2026-11-04: M8 server speed and streaming: every model stage sends an explicit reasoning_effort (src/lib/model/efforts.ts; overview, procedure and scaling minimal, the rest low; REASONING_EFFORT_<STAGE> overrides; the x-textsous-efforts header on previews only; a provider that refuses an effort is asked again without it), a new overview stage (one fast call: facts, a calm summary and the components) that runs alongside canonicalize for streaming clients only, pipeline progress events (onEvent), and NDJSON streaming in POST /api/convert for clients that send Accept: application/x-ndjson (facts, overview, recipe, procedure, then done or error; JSON answers unchanged without the header). The convert log records efforts, per-stage timings and the overview outcome. Measured on a Vercel preview on Nov 4: the steps stage took 11-23 s at minimal against 37-40 s at low and those cook alongs passed the low-effort review, so procedure moved to minimal (a minimal review falsely blocked one, so review stays low), and pasted-text conversions finished in 50-63 s, so the progress copy, EMBED.md and /demo say about a minute. Photo transcription reads REASONING_EFFORT_TRANSCRIBE like the other stages. 31 new offline tests.
+
+2026-11-04: M8 quick fixes: servings rescale from 0.5 to 36 (one client-safe range in src/lib/scaling/servings.ts shared by the adjust panel, the adjust route, the pipeline and the scaling stage; the route refuses others with a 400 before any limit or daily unit), so a dozen-muffin recipe makes 18; past x2.25 a superlinear amount holds at 1.5 times the linear one; the scaling rules keep baking ratios (every ingredient in a batter or dough is linear, leaveners and salt included; scaling version 3, and adjustments are not cached); the header's Demo, Use in your assistant and GitHub links are 44 px buttons; Save to TextSous and Convert another recipe sit side by side down to a 320 px phone.
+
+2026-11-04: M8 photos: the photo tab takes up to 3 photos of one recipe in page order, each shrunk in the browser to a JPEG of at most 1600 px; /api/photo takes 1 to 3 `photo` fields (4 MB each, 4.4 MB in all) and reads them in one low-effort vision call that transcribes one recipe, the first that starts on the first photo, and says when it left another out; the confirm screen shows every page; size errors say 4 MB each, or too big together.
+
+2026-11-04: M8 progressive view: the home page and the /embed overlay show each part of a conversion as it streams in (src/app/conversion.ts, a reducer and the useConversion hook): a cooking line of icons over a moving line with the stage and the elapsed time, the recipe's facts with its allergens (no tags reads as unknown, never allergen-free), the overview, adjustments that can be chosen and queued before the cook along is ready and are applied once when it opens, ingredients, before you start, prep, then the steps (Essentials first) marked as still being checked. The finished page follows the same order, with "Prep (Mise en Place style)" and the timeline graphic last. Errors keep their copy and their place.
+
+2026-11-04: Review of M8, fixed in 7 commits on top of `cf3fc28`: a recipe posted for more than 36 servings takes dietary, cuisine and voice changes again (the browser's range check on the servings input blocked every submit; a servings change is now checked in code); the queued Adjust copy names the "Apply when ready" button, since choosing alone queues nothing; the progress note announces its explainer once instead of the elapsed time every second; a scaling reply that leaves out an ingredient scales it by the rule it already has, else linearly, with a warning, instead of failing with a 500 that kept the daily unit; the one-photo notice names the recipe that was read (the first that starts in the photo); the event contract and AGENTS.md say the overview can follow the recipe and clients accept any order; README and HANDOFF say a fresh conversion takes about a minute; this log corrects the M8 server entry and records the M8 work above. Prompts, stage versions and the cache key are unchanged. 863/863 offline in 80 files, typecheck, lint, build, schema/docs gate green.
