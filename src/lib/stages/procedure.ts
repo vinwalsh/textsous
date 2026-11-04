@@ -14,6 +14,7 @@ import {
   type TokenUsage,
 } from "../model";
 import { polishTimeline, sourceTimingPool } from "../format";
+import { repairTimelineReferences } from "./repair-refs";
 
 // Bumped on every prompt round deployed: preview and production share one
 // conversion cache, keyed by stage versions.
@@ -260,9 +261,12 @@ export async function procedure(
       reasoningEffort: opts.reasoningEffort ?? effortFor("procedure", opts.efforts),
     },
   );
+  // Ids first: a typo in a dependency, hold, lane or step id ("t-sofen")
+  // would otherwise make the scheduler throw and fail the conversion.
+  const referenced = repairTimelineReferences(recipe, result.data);
   // Deterministic clean-up after the model: card titles, timing labels,
   // timers, one-sentence why. The checks judge the polished timeline.
-  const polished = polishTimeline(recipe, result.data);
+  const polished = polishTimeline(recipe, referenced.timeline);
   return {
     timeline: polished.timeline,
     checks: runProcedureChecks(recipe, polished.timeline),
