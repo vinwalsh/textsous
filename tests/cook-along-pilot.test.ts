@@ -289,6 +289,8 @@ describe("the finished page's Cook Along body", () => {
     expect(html).toMatch(/<button[^>]*>(<svg[^>]*>[\s\S]*?<\/svg>)?Cook<\/button>/);
     expect(html).toContain("Read this First");
     expect(html).not.toContain("Your kitchen, ready.");
+    // The view adds no second <main> inside the page.
+    expect(html.match(/<main\b/g) ?? []).toHaveLength(0);
     expect(html).not.toContain("<h3>Timeline</h3>");
     // The header parts and the action row stay.
     expect(html).toContain("Toasted Oat Porridge with Brown Butter Apples");

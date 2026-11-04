@@ -664,9 +664,11 @@ function ScheduledCookingRecipe({ embedded = false, recipe, mealAttributes, time
   }
 
   const stats = <div className={styles.stats}><span><Clock3 size={17} /><strong>About {plan.serveMinute} min</strong> to serve</span><span><Utensils size={16} /><strong>{plan.handsOnMinutes} min</strong> hands-on</span><span><ChefHat size={18} />One cook</span></div>;
+  // Embedded, the host page has the <main>.
+  const Container = embedded ? "div" : "main";
   return <div className={embedded ? `${styles.page} ${styles.embedded}` : styles.page}>
     {!embedded && <RecipeMasthead />}
-    <main className={styles.container}>
+    <Container className={styles.container}>
       {embedded ? <div className={styles.embeddedStats}>{stats}{dietaryControls && <div className={styles.dietaryControls}>{dietaryControls}</div>}</div> : <section className={styles.hero}>
         <div><RecipeMetadata servings={recipe.servings} actions={metadataActions} /><h1>{recipe.title}</h1>
           {stats}
@@ -837,7 +839,7 @@ function ScheduledCookingRecipe({ embedded = false, recipe, mealAttributes, time
         <aside className={styles.recipeAside}><div className={styles.ingredientCard}><Ingredients recipe={recipe} preview={ingredientsPreview} controls={ingredientsControls ?? controls} footer={ingredientsFooter} /><button className={styles.recipeLink} onClick={() => switchTab("recipe")}>Read the full method<ArrowRight size={16} /></button></div></aside>
       </div>
       {footerContent}{!embedded && <RecipeFooter servings={recipe.servings} />}
-    </main>
+    </Container>
   </div>;
 }
 
@@ -875,7 +877,8 @@ function UntimedCookingRecipe({ embedded = false, recipe, mealAttributes, contro
   useEffect(() => {
     onTimelineActivityChange?.({ hasStarted: false, isRunning: false, hasRunningTimers: false, isReady: true });
   }, [onTimelineActivityChange]);
-  return <div className={embedded ? `${styles.page} ${styles.embedded}` : styles.page}>{!embedded && <RecipeMasthead />}<main className={styles.container}>
+  const Container = embedded ? "div" : "main";
+  return <div className={embedded ? `${styles.page} ${styles.embedded}` : styles.page}>{!embedded && <RecipeMasthead />}<Container className={styles.container}>
     {!embedded && <section className={styles.hero}><div><RecipeMetadata servings={recipe.servings} actions={metadataActions} /><h1>{recipe.title}</h1>{!ingredientsPreview && <MealAttributes attributes={mealAttributes} recipe={recipe} />}{dietaryControls && <div className={styles.dietaryControls}>{dietaryControls}</div>}</div></section>}
     {headerActions}{recipeNotice}
     <div className={styles.layout}><div className={styles.mainColumn}>
@@ -891,7 +894,7 @@ function UntimedCookingRecipe({ embedded = false, recipe, mealAttributes, contro
       {tab === "recipe" && <RecipeMethod recipe={recipe} ingredientsPreview={ingredientsPreview} ingredientsControls={ingredientsControls ?? controls} ingredientsFooter={ingredientsFooter} detailLevel={detailLevel} onDetailLevelChange={changeDetailLevel} />}
     </div><aside className={styles.recipeAside}><div className={styles.ingredientCard}><Ingredients recipe={recipe} preview={ingredientsPreview} controls={ingredientsControls ?? controls} footer={ingredientsFooter} /><button className={styles.recipeLink} onClick={() => setTab("recipe")}>Read the full method <ArrowRight size={16} /></button></div></aside></div>
     {footerContent}{!embedded && <RecipeFooter servings={recipe.servings} />}
-  </main></div>;
+  </Container></div>;
 }
 
 export default CookingPilot;
