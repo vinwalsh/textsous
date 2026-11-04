@@ -4,6 +4,7 @@
  * warnings. Pure functions, no model calls, safe for offline tests.
  */
 import type { CanonicalRecipe } from "./schema/canonical";
+import { formatQuantityWithUnit } from "./scaling/units";
 import type { CardTitleSchema, TimelineDefinition, TimelineTask } from "./schema/timeline";
 import type { z } from "zod";
 
@@ -440,7 +441,7 @@ export function runFormatWarnings(
           code: "amount_missing",
           taskId: task.id,
           ingredientId: id,
-          message: `"${task.label}" uses the ${ingredient.name} but its description does not say how much (${`${quantity} ${ingredient.unit}`.trim()}).`,
+          message: `"${task.label}" uses the ${ingredient.name} but its description does not say how much (${formatQuantityWithUnit(quantity, ingredient.unit)}).`,
         });
       }
     }
