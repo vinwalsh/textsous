@@ -79,6 +79,9 @@ https://open.textsous.com/embed-demo. [`docs/EMBED.md`](docs/EMBED.md) covers
 the attributes, privacy, caching, and a plain "Open with TextSous" link for
 readers without JavaScript.
 
+https://open.textsous.com/demo-sites has four pretend recipe blogs, with
+recipes written for the demo (CC0), that carry the Adjust with SOUS button.
+
 ## Use TextSous from your AI assistant
 
 Connect Muse, ChatGPT, Claude or Gemini to the TextSous MCP server at

@@ -51,6 +51,7 @@ export default function DemoPost({
       <p className={styles.banner} role="note">
         <strong>Demo page.</strong> A sample recipe blog post that shows the TextSous Cook Along
         button. The recipe is an original written for this project (CC0).
+        {" "}<a href={`${origin}/demo-sites`}>See Adjust with SOUS on four demo recipe blogs</a>.
         {src || origin === PRODUCTION_ORIGIN ? null : (
           <>
             {" "}

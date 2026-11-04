@@ -3,6 +3,8 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseUrlList, postJson, warmOne, warmTargets } from "../scripts/warm-demo";
+import { demoSiteMetadata } from "../src/app/demo-sites/[slug]/BlogPost";
+import { DEMO_SITES } from "../src/app/demo-sites/recipes";
 
 describe("warm-demo URL list", () => {
   it("reads the same 20 https URLs the /demo page lists", () => {
@@ -12,14 +14,24 @@ describe("warm-demo URL list", () => {
     expect(parseUrlList("# note\n\n https://a.example/x \n")).toEqual(["https://a.example/x"]);
   });
 
-  it("also warms the /embed-demo post on the deployed origin (readiness-4)", () => {
+  it("also warms the /embed-demo post and the /demo-sites blogs on the deployed origin (readiness-4)", () => {
     const urls = ["https://a.example/x"];
     expect(warmTargets(urls, "https://open.textsous.com")).toEqual([
       "https://a.example/x",
       "https://open.textsous.com/embed-demo",
+      "https://open.textsous.com/demo-sites/lemon-blueberry-muffins",
+      "https://open.textsous.com/demo-sites/sheet-pan-chicken",
+      "https://open.textsous.com/demo-sites/skillet-cornbread",
+      "https://open.textsous.com/demo-sites/turkey-chili",
     ]);
-    // http (a local run): the converter refuses http, so the post is skipped.
+    // http (a local run): the converter refuses http, so the site's own pages are skipped.
     expect(warmTargets(urls, "http://localhost:3101")).toEqual(urls);
+  });
+
+  it("warms each blog at the address its canonical link names", () => {
+    const base = "https://open.textsous.com";
+    const blogs = warmTargets([], base).filter((url) => url.includes("/demo-sites/"));
+    expect(blogs).toEqual(DEMO_SITES.map((recipe) => demoSiteMetadata(recipe, base).alternates?.canonical));
   });
 });
 
