@@ -42,7 +42,7 @@ export default function SiteHeader() {
             </a>
           </nav>
         </div>
-        <p className="site-intro">Turn any recipe into a calm, step-by-step cook along.</p>
+        <p className="site-intro">Turn any recipe into a calm, step-by-step Cook Along.</p>
       </div>
     </header>
   );

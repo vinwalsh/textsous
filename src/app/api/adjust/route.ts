@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     }
     // Size checks before any limit or daily unit: one unit, one real recipe.
     if (JSON.stringify(valid.data).length > MAX_ADJUST_ARTIFACT_CHARS) {
-      return fail(ROUTE, 400, { error: "This cook along is too large to adjust here (64 KB max)." });
+      return fail(ROUTE, 400, { error: "This Cook Along is too large to adjust here (64 KB max)." });
     }
     if (cuisine !== undefined && cuisine.trim().length > MAX_CUISINE_CHARS) {
       return fail(ROUTE, 400, {

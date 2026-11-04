@@ -13,7 +13,7 @@ import {
 export const metadata: Metadata = {
   title: "Use TextSous in your AI assistant",
   description:
-    "Connect TextSous to Muse, ChatGPT, Claude or Gemini and turn any recipe into a cook along in the assistant you already use.",
+    "Connect TextSous to Muse, ChatGPT, Claude or Gemini and turn any recipe into a Cook Along in the assistant you already use.",
 };
 
 export default async function AssistantsPage({
@@ -70,7 +70,7 @@ export default async function AssistantsPage({
           </li>
           <li>Sign in with your free TextSous account when Muse asks (or create one there).</li>
           <li>
-            Ask Muse to turn a recipe into a cook along: send a link, paste the text, or share a
+            Ask Muse to turn a recipe into a Cook Along: send a link, paste the text, or share a
             photo. For a photo, Muse reads it and checks the words with you before saving.
           </li>
         </ol>
@@ -110,7 +110,7 @@ export default async function AssistantsPage({
         </h2>
         <ol className={styles.steps}>
           <li>You send a recipe link, pasted text or a photo to your assistant.</li>
-          <li>Your assistant reads it and writes the cook along with its own model, following the TextSous format.</li>
+          <li>Your assistant reads it and writes the Cook Along with its own model, following the TextSous format.</li>
           <li>TextSous checks the steps, builds the timeline and saves it, with credit to the original recipe.</li>
           <li>You get a link that opens here, and a copy in your TextSous Cookbook.</li>
         </ol>

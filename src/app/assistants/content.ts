@@ -17,5 +17,5 @@ export function promptRecipeUrl(raw: string | string[] | undefined): string | nu
 }
 
 export function assistantPrompt(recipeUrl: string): string {
-  return `Use TextSous to turn this recipe into a cook along: ${recipeUrl}`;
+  return `Use TextSous to turn this recipe into a Cook Along: ${recipeUrl}`;
 }

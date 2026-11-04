@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   try {
     saved = await saveArtifact(prepared.artifact);
   } catch {
-    return failure(500, "internal", "The cook along could not be stored. Try again.");
+    return failure(500, "internal", "The Cook Along could not be stored. Try again.");
   }
   const origin = publicOrigin(req);
   const artifactUrl = buildSignedArtifactUrl(origin, saved.id, signArtifactId(saved.id, saved.expiresAt, secret));

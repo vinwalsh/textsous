@@ -37,7 +37,7 @@ export default function DemoPage() {
     <main>
       <h1>Demo recipes</h1>
       <p className="tagline">
-        Twenty recipes we test with. Pick one and it opens as a cook along: one converted
+        Twenty recipes we test with. Pick one and it opens as a Cook Along: one converted
         recently opens right away; a fresh one takes about a minute and fills in as it goes.
       </p>
       {urls.length === 0 ? (

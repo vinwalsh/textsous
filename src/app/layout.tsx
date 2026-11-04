@@ -8,7 +8,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TextSous Open",
   description:
-    "Turn any recipe into a calm, step-by-step TextSous cook along: your mise en place first, then timed steps.",
+    "Turn any recipe into a calm, step-by-step TextSous Cook Along: your mise en place first, then timed steps.",
 };
 
 export const viewport: Viewport = {

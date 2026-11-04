@@ -192,6 +192,13 @@ export default function AdjustPanel({
 
   const hasChange = hasAdjustment({ servings, dietary, cuisine, sousVoice }, base);
   const queued = artifact ? null : (pending?.queued ?? null);
+  // The queued choices are exactly what the controls show: the button says so.
+  const showingQueued =
+    queued !== null &&
+    queued.servings === servings &&
+    queued.dietary === dietary &&
+    queued.cuisine.trim() === cuisine.trim() &&
+    queued.sousVoice === sousVoice;
 
   async function apply(choices: AdjustChoices) {
     if (!artifact) return;
@@ -264,7 +271,7 @@ export default function AdjustPanel({
       <h2 className="card-title">Adjust this recipe</h2>
       {artifact ? null : (
         <p className="meta adjust-pending">
-          Your cook along is still being written. Choose changes, then tap “Apply when ready”: they
+          Your Cook Along is still being written. Choose changes, then tap “Apply when ready”: they
           apply as soon as it&apos;s ready.
         </p>
       )}
@@ -347,7 +354,15 @@ export default function AdjustPanel({
             className={submitButtonClass(error)}
             disabled={!hasChange || applying}
           >
-            {applying ? "Adjusting…" : artifact ? "Apply adjustments" : "Apply when ready"}
+            {applying
+              ? "Adjusting…"
+              : artifact
+                ? "Apply adjustments"
+                : showingQueued
+                  ? "Queued ✓"
+                  : queued
+                    ? "Update queued changes"
+                    : "Apply when ready"}
           </button>
           {modified ? (
             <button type="button" className="btn" onClick={onReset} disabled={applying}>

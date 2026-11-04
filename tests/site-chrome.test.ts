@@ -60,7 +60,7 @@ describe("site header", () => {
   });
 
   it("has one warm line of intro and no hype", () => {
-    expect(html).toContain("Turn any recipe into a calm, step-by-step cook along.");
+    expect(html).toContain("Turn any recipe into a calm, step-by-step Cook Along.");
     expect(html).not.toMatch(/magic/i);
   });
 });

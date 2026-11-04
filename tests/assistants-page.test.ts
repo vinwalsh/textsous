@@ -32,7 +32,7 @@ describe("/assistants", () => {
     const url = "https://example.com/recipes/toast";
     const html = await render(url);
     expect(html).toContain("Your recipe, ready to send");
-    expect(html).toContain(`Use TextSous to turn this recipe into a cook along: ${url}`);
+    expect(html).toContain(`Use TextSous to turn this recipe into a Cook Along: ${url}`);
     expect(html).toContain("Copy prompt");
   });
 
@@ -42,7 +42,7 @@ describe("/assistants", () => {
     expect(promptRecipeUrl(["https://a.example/r", "https://b.example/r"])).toBe("https://a.example/r");
     expect(await render("javascript:alert(1)")).not.toContain("ready to send");
     expect(assistantPrompt("https://x.example/r")).toBe(
-      "Use TextSous to turn this recipe into a cook along: https://x.example/r",
+      "Use TextSous to turn this recipe into a Cook Along: https://x.example/r",
     );
   });
 });
