@@ -59,14 +59,52 @@ function topoOrder(tasks: TimelineTask[]): TimelineTask[] {
   return order;
 }
 
+function waitMinutes(task: TimelineTask): number {
+  return task.scheduling.waits.reduce((a, w) => a + w, 0) / 60;
+}
+
+/** Ids of the tasks that turn the oven on (the preheat). */
+export function ovenOnTaskIds(tasks: readonly TimelineTask[]): Set<string> {
+  return new Set(tasks.filter((t) => t.equipmentEvent === "oven-on").map((t) => t.id));
+}
+
+/**
+ * Earliest start that a task's dependencies and waits allow, with the
+ * dependency that sets it. Waits count from the last dependency, except on a
+ * task that depends on an oven-on (preheat) task: there the wait is the oven
+ * heating up, so it counts from the preheat's end while the cook keeps
+ * working, and the task still starts only after every dependency ends.
+ * Shared by the scheduler and the review's task_schedule check.
+ */
+export function readyAfter(
+  task: TimelineTask,
+  endOf: (id: string) => number | undefined,
+  ovenOnIds: ReadonlySet<string>,
+): { at: number; via: string | null } {
+  const wait = waitMinutes(task);
+  const ovenDeps = wait > 0 ? task.dependencies.filter((d) => ovenOnIds.has(d)) : [];
+  let at = task.dependencies.length === 0 ? wait : 0;
+  let via: string | null = null;
+  for (const dep of task.dependencies) {
+    const waited = ovenDeps.length === 0 || ovenDeps.includes(dep) ? wait : 0;
+    const ready = (endOf(dep) ?? 0) + waited;
+    if (ready > at) {
+      at = ready;
+      via = dep;
+    }
+  }
+  return { at, via };
+}
+
 /**
  * Deterministic list scheduler. Rules, in force order:
  * - dependencies and resource holds are never violated;
  * - one cook: hands-on tasks never overlap, unattended tasks overlap freely;
  * - every prep task ends before the first cook task starts;
  * - the serve task starts after every other task ends.
- * Waits are seconds of idle time after dependencies complete, before the task
- * starts. The model never schedules: start/end minutes come only from here.
+ * Waits are seconds of idle time before the task starts: after its
+ * dependencies complete, or after the preheat for the oven heat-up (see
+ * readyAfter). The model never schedules: start/end minutes come only from here.
  */
 export function schedule(timeline: TimelineDefinition): ScheduleResult {
   const tasks = timeline.tasks;
@@ -90,9 +128,7 @@ export function schedule(timeline: TimelineDefinition): ScheduleResult {
     }
     held.get(hold.taskId)?.add(hold.resourceId);
   }
-  const waitsMinutes = new Map(
-    tasks.map((t) => [t.id, t.scheduling.waits.reduce((a, w) => a + w, 0) / 60] as const),
-  );
+  const ovenOn = ovenOnTaskIds(tasks);
 
   const start = new Map<string, number>();
   const end = new Map<string, number>();
@@ -100,9 +136,9 @@ export function schedule(timeline: TimelineDefinition): ScheduleResult {
   let cookFreeAt = 0;
 
   const place = (task: TimelineTask, notBefore: number): void => {
-    const depEnd = Math.max(0, ...task.dependencies.map((d) => end.get(d) ?? 0));
+    const ready = readyAfter(task, (id) => end.get(id), ovenOn).at;
     const heldFree = Math.max(0, ...[...(held.get(task.id) ?? [])].map((r) => resourceFreeAt.get(r) ?? 0));
-    let taskStart = Math.max(depEnd + (waitsMinutes.get(task.id) ?? 0), notBefore, heldFree);
+    let taskStart = Math.max(ready, notBefore, heldFree);
     if (task.attention === "hands-on") taskStart = Math.max(taskStart, cookFreeAt);
     const taskEnd = taskStart + task.minutes;
     start.set(task.id, taskStart);
@@ -123,24 +159,14 @@ export function schedule(timeline: TimelineDefinition): ScheduleResult {
   const othersEnd = Math.max(0, ...rest.map((t) => end.get(t.id) ?? 0));
   place(serve, othersEnd);
 
-  // Critical path: longest dependency chain by minutes (waits included).
-  const weight = new Map(
-    tasks.map((t) => [t.id, t.minutes + (waitsMinutes.get(t.id) ?? 0)] as const),
-  );
+  // Critical path: longest dependency chain by minutes, waits included the
+  // same way the scheduler counts them.
   const dist = new Map<string, number>();
   const prev = new Map<string, string | null>();
   for (const task of order) {
-    let best = 0;
-    let bestDep: string | null = null;
-    for (const dep of task.dependencies) {
-      const d = dist.get(dep) ?? 0;
-      if (d > best) {
-        best = d;
-        bestDep = dep;
-      }
-    }
-    dist.set(task.id, best + (weight.get(task.id) ?? 0));
-    prev.set(task.id, bestDep);
+    const ready = readyAfter(task, (id) => dist.get(id), ovenOn);
+    dist.set(task.id, ready.at + task.minutes);
+    prev.set(task.id, ready.via);
   }
   let tip: string | null = null;
   for (const task of order) {

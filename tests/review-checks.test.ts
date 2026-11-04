@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CanonicalRecipe } from "../src/lib/schema/canonical";
 import type { TimelineDefinition, TimelineTask } from "../src/lib/schema/timeline";
-import type { ScheduleResult } from "../src/lib/scheduler/schedule";
+import { schedule, type ScheduleResult } from "../src/lib/scheduler/schedule";
 import type { StructuredChatClient } from "../src/lib/model/structured";
 import {
   REVIEW_CHECK_ORDER,
@@ -235,6 +235,27 @@ describe("runCodedReviewChecks", () => {
       makeSchedule(["a", 0, 5], ["b", 2, 7]),
     );
     expect(passed(runCodedReviewChecks(input), "task_schedule")).toBe(false);
+  });
+
+  it("counts the oven heat-up from the preheat, as the scheduler does", () => {
+    const tasks = [
+      makeTask("preheat", { phase: "prep", minutes: 1, equipmentEvent: "oven-on" }),
+      makeTask("slice", { phase: "prep", minutes: 8 }),
+      makeTask("toss", { minutes: 2, dependencies: ["slice"] }),
+      makeTask("roast", {
+        minutes: 20,
+        attention: "unattended",
+        dependencies: ["preheat", "toss"],
+        scheduling: { waits: [600], resourceIds: [], ingredientIds: ["ing-1"] },
+      }),
+    ];
+    const timeline = makeTimeline(tasks);
+    const scheduled = schedule(timeline);
+    expect(scheduled.tasks.find((t) => t.id === "roast")).toMatchObject({ startMinutes: 11 });
+    expect(passed(runCodedReviewChecks(makeInput(makeRecipe(), timeline, scheduled)), "task_schedule")).toBe(true);
+    // Before the oven has had its 10 minutes: refused.
+    const early = makeSchedule(["preheat", 0, 1], ["slice", 1, 9], ["toss", 9, 11], ["roast", 10, 30]);
+    expect(passed(runCodedReviewChecks(makeInput(makeRecipe(), timeline, early)), "task_schedule")).toBe(false);
   });
 
   it("passes source_timing on estimates without quotes", () => {

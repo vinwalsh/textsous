@@ -7,7 +7,7 @@ import {
 } from "../schema/artifact";
 import type { CanonicalRecipe } from "../schema/canonical";
 import type { TimelineDefinition } from "../schema/timeline";
-import type { ScheduleResult } from "../scheduler/schedule";
+import { ovenOnTaskIds, readyAfter, type ScheduleResult } from "../scheduler/schedule";
 import {
   callStructured,
   type ProviderName,
@@ -137,6 +137,7 @@ function taskScheduleCheck(
   for (const entry of schedule.tasks) {
     if (!taskIds.has(entry.id)) violations.push(`unknown scheduled task: ${entry.id}`);
   }
+  const ovenOn = ovenOnTaskIds(timeline.tasks);
   for (const task of timeline.tasks) {
     const s = sched.get(task.id);
     if (!s) continue;
@@ -145,9 +146,9 @@ function taskScheduleCheck(
         `${task.id}: scheduled for ${s.endMinutes - s.startMinutes}m but needs ${task.minutes}m`,
       );
     }
-    const depEnd = Math.max(0, ...task.dependencies.map((d) => sched.get(d)?.endMinutes ?? 0));
-    const waitsMin = task.scheduling.waits.reduce((a, w) => a + w, 0) / 60;
-    if (s.startMinutes < depEnd + waitsMin - 1e-9) {
+    // Same rule as the scheduler: the oven heat-up counts from the preheat.
+    const ready = readyAfter(task, (id) => sched.get(id)?.endMinutes, ovenOn).at;
+    if (s.startMinutes < ready - 1e-9) {
       violations.push(`${task.id}: starts before its dependencies and waits clear`);
     }
   }

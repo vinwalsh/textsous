@@ -585,6 +585,10 @@ describe("oven heat-up, why and format advice", () => {
     expect(waits["task-roast-carrots"]).toEqual([600]);
     const placed = new Map(result.schedule.tasks.map((t) => [t.id, t] as const));
     expect(placed.get("task-roast-carrots")!.startMinutes).toBeGreaterThanOrEqual(placed.get("task-preheat-oven")!.endMinutes + 10);
+    // The heat-up counts from the preheat (ends at 1), not from the toss (ends at 6).
+    expect(placed.get("task-toss-carrots")!.endMinutes).toBe(6);
+    expect(placed.get("task-roast-carrots")!.startMinutes).toBe(11);
+    expect(result.summary.totalMinutes).toBe(32);
   });
 
   it("keeps one sentence of why and returns format advice pointed at the task", async () => {

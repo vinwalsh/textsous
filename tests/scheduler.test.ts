@@ -133,6 +133,46 @@ describe("schedule", () => {
     expect(times(result)).toEqual({ a: [3, 8], serve: [8, 10] });
   });
 
+  // The guide's oven rule: preheat first, the first oven task depends on it
+  // and waits 600 s. The oven heats while the cook preps, so the heat-up
+  // counts from the preheat, not from the last prep task.
+  function ovenRecipe(preheatLast = false): TimelineDefinition {
+    const preheat = task("preheat", { phase: "prep", minutes: 1, laneIds: ["lane-kitchen"], equipmentEvent: "oven-on" });
+    const slice = task("slice", { phase: "prep", minutes: 8 });
+    return timeline([
+      ...(preheatLast ? [slice, preheat] : [preheat, slice]),
+      task("toss", { minutes: 2, dependencies: ["slice"] }),
+      task("roast", {
+        minutes: 20,
+        attention: "unattended",
+        dependencies: ["preheat", "toss"],
+        scheduling: { waits: [600], resourceIds: [], ingredientIds: [] },
+      }),
+      task("serve", { phase: "finish", minutes: 1, dependencies: ["roast"] }),
+    ]);
+  }
+
+  it("counts the oven heat-up from the preheat, not from the last dependency", () => {
+    const result = schedule(ovenRecipe());
+    // The oven is hot at 11, when tossing ends: no idle 10 minutes after it.
+    expect(times(result)).toEqual({
+      preheat: [0, 1],
+      slice: [1, 9],
+      toss: [9, 11],
+      roast: [11, 31],
+      serve: [31, 32],
+    });
+    expect(result.totalMinutes).toBe(32);
+    // By dependencies alone, the heat-up (1 + 10) outlasts slice and toss (8 + 2).
+    expect(result.criticalPath).toEqual(["preheat", "roast", "serve"]);
+  });
+
+  it("still gives the oven its full heat-up when the preheat comes late", () => {
+    const result = schedule(ovenRecipe(true));
+    expect(times(result).preheat).toEqual([8, 9]);
+    expect(times(result).roast).toEqual([19, 39]);
+  });
+
   it("reports the critical path and total time", () => {
     const result = schedule(
       timeline([
