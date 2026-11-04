@@ -78,6 +78,13 @@ describe("friendlyError", () => {
       detailPart: /under 5 MB/,
     },
     {
+      name: "oversize JSON body",
+      status: 413,
+      message: "Request body is too large (256 KB max).",
+      title: "That's too much to send at once",
+      detailPart: /256 KB/,
+    },
+    {
       name: "roundup page",
       status: 422,
       message: "single-recipe pages only",

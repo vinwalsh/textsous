@@ -88,6 +88,13 @@ export function friendlyError(
     };
   }
   if (status === 413) {
+    if (/request body is too large/i.test(message)) {
+      return {
+        title: "That's too much to send at once",
+        detail:
+          "Requests are limited to 256 KB. Paste just the one recipe, not the whole page, and try again.",
+      };
+    }
     return {
       title: "That photo is too big",
       detail: "Photos must be under 5 MB. Try a smaller image.",
