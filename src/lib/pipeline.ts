@@ -28,6 +28,7 @@ import {
   MAX_SERVINGS,
   MIN_SERVINGS,
   type ScaleFlag,
+  unscaledNote,
 } from "./stages/scaling";
 import { applyDietary } from "./stages/dietary";
 import { applyCuisine } from "./stages/cuisine";
@@ -422,7 +423,10 @@ export interface AdjustUsage {
 export interface AdjustedArtifact {
   artifact: CookAlongArtifact;
   scaleFlags: ScaleFlag[];
-  /** Automatic fixes made in code (e.g. step cards reworded for a swap). */
+  /**
+   * Notes for the reader: automatic fixes made in code (e.g. step cards
+   * reworded for a swap) and amounts a rescale left as printed.
+   */
   warnings: string[];
   usage: AdjustUsage;
 }
@@ -498,6 +502,7 @@ export async function adjustArtifact(
     const applied = applyScaling(current, servings, assigned.rules);
     current = applied.artifact;
     scaleFlags = applied.flags;
+    if (applied.unscaled.length > 0) warnings.push(unscaledNote(applied.unscaled));
   }
   if (dietary !== undefined) {
     assertTimeFor("dietary", STAGE_MIN_MS.dietary);

@@ -107,6 +107,16 @@ export interface ScaleFlag {
 export interface ApplyScalingResult {
   artifact: CookAlongArtifact;
   flags: ScaleFlag[];
+  /** Names of ingredients whose amounts could not be rescaled ("Half a" red onion). */
+  unscaled: string[];
+}
+
+/** Amounts nobody needs to check: nothing printed, or not a measured amount. */
+const NOTHING_TO_CHECK = /^\s*$|\b(?:to taste|as needed|as desired|optional)\b/i;
+
+/** The reader's note for ingredients left as printed. Pure. */
+export function unscaledNote(names: readonly string[]): string {
+  return `Check these amounts; they were not rescaled: ${names.join(", ")}.`;
 }
 
 /**
@@ -116,7 +126,9 @@ export interface ApplyScalingResult {
  * in step and task text that read as an ingredient's current amount (the
  * number directly followed by its unit or name) are rescaled; times,
  * temperatures and pan sizes never are. Other amount-like numbers in steps
- * and step cards are flagged for the cook to verify. Pure.
+ * and step cards are flagged for the cook to verify. Ingredients whose
+ * amounts cannot be rescaled ("Half a", "A fistful") stay as printed and are
+ * named in `unscaled` and in one change note. Pure.
  */
 export function applyScaling(
   artifact: CookAlongArtifact,
@@ -135,6 +147,7 @@ export function applyScaling(
     throw new Error(`missing scale rule for ${missing.join(", ")}`);
   }
   const mappings: AmountMapping[] = [];
+  const unscaled: string[] = [];
   const ingredients = recipe.ingredients.map((ingredient) => {
     const rule = byId.get(ingredient.id) ?? "linear";
     const scaled = scaleIngredient({ ...ingredient, scaleRule: rule }, factor);
@@ -158,6 +171,14 @@ export function applyScaling(
           name: ingredient.name,
         });
       }
+    } else if (
+      !scaled.scaled &&
+      rule !== "to-taste" &&
+      Math.abs(eff - 1) > 1e-9 &&
+      !NOTHING_TO_CHECK.test(ingredient.quantity) &&
+      !unscaled.includes(ingredient.name)
+    ) {
+      unscaled.push(ingredient.name);
     }
     return {
       ...ingredient,
@@ -213,6 +234,7 @@ export function applyScaling(
           kind: "scale" as const,
           detail: `rescaled ${recipe.servings} → ${targetServings} servings (×${formatAmount(targetServings / recipe.servings)})`,
         },
+        ...(unscaled.length > 0 ? [{ kind: "scale" as const, detail: unscaledNote(unscaled) }] : []),
         ...flags.map((flag) => {
           const index = recipe.steps.findIndex((s) => s.id === flag.stepId);
           const where = flag.card
@@ -228,5 +250,6 @@ export function applyScaling(
       ],
     },
     flags,
+    unscaled,
   };
 }

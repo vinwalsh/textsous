@@ -3,16 +3,36 @@
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import type { CookAlongArtifact } from "../lib/schema/artifact";
 import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
+import { reviewNoteTexts } from "../lib/review-notes";
 import { MAX_SERVINGS } from "../lib/scaling/servings";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
-import { apiFetch, friendlyError, submitButtonClass, type ApiResult, type FriendlyError } from "./request";
+import {
+  apiFetch,
+  convertNotices,
+  friendlyError,
+  submitButtonClass,
+  type ApiResult,
+  type FriendlyError,
+} from "./request";
 import { withScreenOn } from "./wake-lock";
 
 interface AdjustOk {
   artifact: CookAlongArtifact;
   scaleFlags: ScaleFlag[];
+  warnings?: unknown;
+}
+
+/**
+ * This adjustment's own notes for the What changed summary ("Check these
+ * amounts; they were not rescaled: ..."): the adjust response's warnings
+ * without the conversion's review notes, which Notes on this conversion
+ * already shows. Pure.
+ */
+export function adjustNotices(warnings: unknown, artifact: Pick<CookAlongArtifact, "reviewNotes">): string[] {
+  const review = new Set(reviewNoteTexts(artifact));
+  return convertNotices(warnings).filter((note) => !review.has(note.trim()));
 }
 
 /** One scale flag as a sentence with readable positions, never an id. Pure. */
@@ -139,6 +159,7 @@ export default function AdjustPanel({
   const [error, setError] = useState<FriendlyError | null>(null);
   const [summary, setSummary] = useState("");
   const [flags, setFlags] = useState<ScaleFlag[]>([]);
+  const [notes, setNotes] = useState<string[]>([]);
   const autoRan = useRef(false);
 
   const hasChange = hasAdjustment({ servings, dietary, cuisine, sousVoice }, base);
@@ -158,6 +179,7 @@ export default function AdjustPanel({
     const nextSummary = adjustSummary(artifact.recipe.servings, choices);
     setSummary(nextSummary);
     setFlags(data.scaleFlags);
+    setNotes(adjustNotices(data.warnings, data.artifact));
     setServings(data.artifact.recipe.servings);
     setDietary("");
     setCuisine("");
@@ -312,8 +334,11 @@ export default function AdjustPanel({
           <p>
             <strong>What changed:</strong> {summary}
           </p>
-          {flags.length > 0 ? (
+          {notes.length + flags.length > 0 ? (
             <ul className="changes">
+              {notes.map((note, i) => (
+                <li key={`note-${i}`}>{note}</li>
+              ))}
               {flags.map((f, i) => (
                 <li key={`${f.stepId}-${i}`}>{scaleFlagText(f, artifact?.recipe.steps ?? [])}</li>
               ))}
