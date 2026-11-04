@@ -548,6 +548,8 @@ export default function ArtifactViewer({
   // Cook Along body: the ported TextSous Cook Along view when the artifact
   // adapts and schedules for it; else the open sections below (fallback).
   const pilotInput = useMemo(() => (cookAlongView ? cookingPilotInput(current) : null), [current, cookAlongView]);
+  // One total time on the page: the Cook Along view's own when it shows.
+  const serveMinutes = pilotInput?.serveMinute ?? totalMinutes;
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
 
@@ -632,7 +634,7 @@ export default function ArtifactViewer({
         <h2 className="recipe-title">{recipe.title}</h2>
         <p className="meta">
           Serves {recipe.servings} · {recipe.ingredients.length} ingredients
-          {totalMinutes !== null ? ` · About ${totalMinutes} minutes` : ""}
+          {serveMinutes !== null ? ` · About ${serveMinutes} minutes` : ""}
           {recipe.methodLabel ? ` · Method: ${recipe.methodLabel}` : ""}
         </p>
         {before("facts")}

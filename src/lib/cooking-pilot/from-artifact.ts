@@ -30,6 +30,8 @@ import { sha256Hex } from "./sha256";
 export interface CookingPilotInput {
   recipe: CookingPilotRecipe;
   timelineDefinition: CookingTimelineDefinition;
+  /** Minutes to serve on the view's own schedule (set by cookingPilotInput), so the page shows one total time. */
+  serveMinute?: number;
 }
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
@@ -297,8 +299,8 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
 export function cookingPilotInput(artifact: CookAlongArtifact): CookingPilotInput | null {
   try {
     const input = adaptArtifactForCookingPilot(artifact);
-    buildCookingPlan(structuredClone(input.timelineDefinition));
-    return input;
+    const plan = buildCookingPlan(structuredClone(input.timelineDefinition));
+    return { ...input, serveMinute: plan.serveMinute };
   } catch {
     return null;
   }

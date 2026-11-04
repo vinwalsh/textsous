@@ -111,8 +111,10 @@ describe.each(ALL)("adaptArtifactForCookingPilot: $name", ({ artifact }) => {
     expect(Math.abs(plan.serveMinute - schedule(artifact.timelineDefinition).totalMinutes)).toBeLessThanOrEqual(10);
   });
 
-  it("is ready for the view (cookingPilotInput)", () => {
-    expect(cookingPilotInput(artifact)).not.toBeNull();
+  it("is ready for the view (cookingPilotInput), with the view's time to serve", () => {
+    const ready = cookingPilotInput(artifact);
+    expect(ready).not.toBeNull();
+    expect(ready?.serveMinute).toBe(buildCookingPlan(definition).serveMinute);
   });
 });
 
@@ -257,6 +259,20 @@ describe("the finished page's Cook Along body", () => {
     // The header parts and the action row stay.
     expect(html).toContain("Toasted Oat Porridge with Brown Butter Apples");
     expect(html).toContain("Convert another recipe");
+  });
+
+  it("shows one total time: the view's time to serve in the facts line", () => {
+    const artifact = clone(fixtureArtifact("toasted-oat-porridge"));
+    // A range the open schedule counts low and the view counts high.
+    const task = artifact.timelineDefinition.tasks.find((t) => t.phase === "cook") ?? artifact.timelineDefinition.tasks[0];
+    task.range = { low: task.minutes, high: task.minutes + 20 };
+    const serve = cookingPilotInput(artifact)?.serveMinute;
+    expect(serve).toBeDefined();
+    expect(serve).not.toBe(schedule(artifact.timelineDefinition).totalMinutes);
+    const html = renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
+    expect(html).toContain(` · About ${serve} minutes`);
+    expect(html).toContain(`<strong>About ${serve} min</strong>`);
+    expect(html).not.toContain(`About ${schedule(artifact.timelineDefinition).totalMinutes} min`);
   });
 
   it("keeps the header parts and notes above the Cook Along view, and Save below it", () => {
