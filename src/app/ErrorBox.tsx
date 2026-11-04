@@ -19,6 +19,13 @@ export default function ErrorBox({
           </button>
         </div>
       ) : null}
+      {error.action === "assistants" && error.href ? (
+        <div className="btn-row">
+          <a className="btn btn-primary" href={error.href} style={{ textDecoration: "none" }}>
+            Continue in your AI assistant
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

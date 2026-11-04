@@ -9,7 +9,7 @@ describe("friendlyError", () => {
     timeout?: boolean;
     title: string;
     detailPart: RegExp;
-    action?: "paste-text";
+    action?: "paste-text" | "assistants";
   }> = [
     {
       name: "client timeout",
@@ -103,8 +103,9 @@ describe("friendlyError", () => {
       name: "daily cap",
       status: 429,
       message: "Daily conversion cap reached.",
-      title: "Today's conversions are used up",
-      detailPart: /tomorrow/,
+      title: "Today's free conversions are used up",
+      detailPart: /your own AI assistant/,
+      action: "assistants",
     },
     {
       name: "server error",
