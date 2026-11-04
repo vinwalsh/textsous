@@ -6,7 +6,7 @@ import ProgressNote, { progressCopy } from "../src/app/ProgressNote";
 describe("progress copy", () => {
   it("describes the convert stages in plain words", () => {
     const copy = progressCopy("convert");
-    expect(copy).toContain("about 2 minutes");
+    expect(copy).toContain("Usually 3 to 4 minutes");
     expect(copy).toContain("reading the recipe");
     expect(copy).toContain("planning the timeline");
     expect(copy).toContain("checking it");
