@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
 import DemoPage from "../src/app/demo/page";
+import { CookingPilot } from "../src/components/cooking-pilot/cooking-pilot";
 import { MAX_TASK_MINUTES as OPEN_MAX_TASK_MINUTES } from "../src/lib/schema/timeline";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../src/lib/schema/artifact";
 import { LANE_PALETTE, KITCHEN_LANE_COLOR } from "../src/lib/lane-palette";
@@ -218,6 +219,39 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     const serve = input.timelineDefinition.tasks.find((t) => t.id === timeline.serveTaskId);
     expect(serve?.laneIds).toEqual(["kitchen"]);
     expect(() => buildCookingPlan(input.timelineDefinition)).not.toThrow();
+  });
+
+  it("lets the cook change estimates in Adjust Cooking Times, and an edit reschedules", () => {
+    const artifact = clone(base);
+    const tasks = artifact.timelineDefinition.tasks;
+    const estimate = tasks.find((t) => t.timingBasis === "estimate" && t.id !== artifact.timelineDefinition.serveTaskId);
+    expect(estimate).toBeDefined();
+    if (!estimate) return;
+    // A ranged estimate with a check, like a batch: an edit replaces both.
+    estimate.range = { low: estimate.minutes, high: estimate.minutes + 4 };
+    estimate.checkpoints = ["Golden at the edges"];
+    const input = adaptArtifactForCookingPilot(artifact);
+    const definition = input.timelineDefinition;
+    expect(definition.tasks.filter((t) => t.editableMinutes).map((t) => t.id)).toEqual(
+      tasks.filter((t) => t.timingBasis === "estimate").map((t) => t.id),
+    );
+    const before = buildCookingPlan(definition);
+    const minutes = estimate.minutes + 30;
+    const after = buildCookingPlan(definition, { [estimate.id]: minutes });
+    const edited = after.tasks.find((t) => t.id === estimate.id);
+    expect(edited?.minutes).toBe(minutes);
+    expect(edited?.adjustedFromMinutes).toBe(estimate.minutes + 4);
+    expect(edited?.range).toBeUndefined();
+    expect(edited?.checkpoints?.every((point) => point.afterMinutes <= minutes)).toBe(true);
+    expect(after.serveMinute).toBeGreaterThan(before.serveMinute);
+    const source = tasks.find((t) => t.timingBasis === "source");
+    if (source) expect(() => buildCookingPlan(definition, { [source.id]: source.minutes + 1 })).toThrow();
+    // The list renders a row per estimate.
+    const html = renderToStaticMarkup(
+      createElement(CookingPilot, { embedded: true, initialTab: "overview", recipe: input.recipe, timelineDefinition: definition }),
+    );
+    const rows = html.match(/estimate in minutes"/g) ?? [];
+    expect(rows).toHaveLength(tasks.filter((t) => t.timingBasis === "estimate").length);
   });
 
   it("returns null when the artifact cannot be shown, so the page falls back", () => {

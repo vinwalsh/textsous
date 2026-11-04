@@ -142,19 +142,20 @@ export function buildCookingPlan(input: CookingTimelineDefinition, overrides: Re
         task.description = task.timingAdjustment.instructionTemplate.replaceAll("{minutes}", String(task.minutes));
         task.completionCue = task.timingAdjustment.completionCue;
         if (!isExactInstructionPartition(task.description, task.instructionParts)) delete task.instructionParts;
-        task.range = undefined;
-        // Keep early food checks when possible; an earlier finish still needs
-        // the same checks. Never leave a checkpoint beyond the revised step.
-        if (task.checkpoints) {
-          const checks = new Map<number, Set<string>>();
-          for (const point of task.checkpoints) {
-            const minute = Math.min(point.afterMinutes, task.minutes);
-            const labels = checks.get(minute) ?? new Set<string>();
-            labels.add(point.label);
-            checks.set(minute, labels);
-          }
-          task.checkpoints = [...checks].map(([afterMinutes, labels]) => ({ afterMinutes, label: [...labels].join(" ") }));
+      }
+      // The cook's time replaces the step's range (an estimate may have one
+      // too). Keep early food checks when possible; an earlier finish still
+      // needs the same checks. Never leave a checkpoint beyond the revised step.
+      task.range = undefined;
+      if (task.checkpoints) {
+        const checks = new Map<number, Set<string>>();
+        for (const point of task.checkpoints) {
+          const minute = Math.min(point.afterMinutes, task.minutes);
+          const labels = checks.get(minute) ?? new Set<string>();
+          labels.add(point.label);
+          checks.set(minute, labels);
         }
+        task.checkpoints = [...checks].map(([afterMinutes, labels]) => ({ afterMinutes, label: [...labels].join(" ") }));
       }
     }
     if (!phaseIds.includes(task.phase) || !unique(task.laneIds) || task.laneIds.some(lane => !laneIds.includes(lane))) return fail(`Invalid presentation references: ${task.id}`);

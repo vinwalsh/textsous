@@ -210,6 +210,8 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
       minutes,
       ...(range ? { range } : {}),
       timingBasis: task.timingBasis,
+      // Estimates are the cook's to change in Adjust Cooking Times; source timings stay fixed.
+      ...(task.timingBasis === "estimate" ? { editableMinutes: true } : {}),
       attention: task.attention,
       timerEnabledByDefault: task.timerEnabledByDefault,
       laneIds: (laneOf.get(task.id) ?? []).map((id) => laneIds.get(id)),
