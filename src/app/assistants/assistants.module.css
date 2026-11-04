@@ -7,7 +7,7 @@
 
 .eyebrow {
   margin: 0.5rem 0 0;
-  color: var(--ts-accent, #d45a35);
+  color: var(--ts-action, #b74725);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.04em;
