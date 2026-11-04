@@ -97,7 +97,12 @@ export interface CallStructuredOptions {
   maxTokens?: number;
   /** reasoning_effort for the call; unset sends nothing (provider default, high on Meta). */
   reasoningEffort?: ReasoningEffort;
+  /** Pause before the one manual retry of a transient upstream error. Default 1500 ms. */
+  retryDelayMs?: number;
 }
+
+/** Pause before retrying a transient upstream error by hand. */
+export const TRANSIENT_RETRY_DELAY_MS = 1_500;
 
 /** Values the Meta Model API accepts for reasoning_effort. */
 export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
@@ -127,6 +132,20 @@ function isCallTimeout(error: unknown): boolean {
   const name = `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
   return /Timeout/i.test(name) || /^request timed out/i.test(err?.message ?? "");
 }
+
+/**
+ * A fast upstream failure worth one more try: HTTP 429 or 5xx, or a dropped
+ * connection (APIConnectionError). Never a timeout: that call was slow, and
+ * a second one would run into the deadline.
+ */
+function isTransient(error: unknown): boolean {
+  if (isCallTimeout(error) || mayHaveSpent(error)) return false;
+  const err = error as { status?: unknown; name?: string; constructor?: { name?: string } };
+  if (typeof err?.status === "number") return err.status === 429 || err.status >= 500;
+  return /APIConnectionError/.test(`${err?.name ?? ""} ${err?.constructor?.name ?? ""}`);
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const CONCISE_RETRY =
   "Your previous reply was cut off at the length limit, so it was discarded. " +
@@ -202,12 +221,15 @@ export async function callStructured<T>(
   let usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
   let attempts = 0;
   let lengthRetried = false;
+  let transientRetried = false;
+  const retryDelayMs = opts.retryDelayMs ?? TRANSIENT_RETRY_DELAY_MS;
 
   for (let validationAttempt = 0; ; validationAttempt += 1) {
     let content: string | null;
     let finishReason: string | null | undefined;
     const left = timeLeftMs();
     if (left < MIN_CALL_MS) throw new DeadlineError(opts.schemaName);
+    const http = callOptions(left);
     try {
       attempts += 1;
       const response = await client.chat.completions.create(
@@ -219,7 +241,7 @@ export async function callStructured<T>(
           ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
           ...(opts.reasoningEffort !== undefined ? { reasoning_effort: opts.reasoningEffort } : {}),
         },
-        callOptions(left),
+        http,
       );
       markSpent();
       const u = response.usage;
@@ -240,6 +262,20 @@ export async function callStructured<T>(
         continue;
       }
       if (isCallTimeout(error)) throw new ModelTimeoutError();
+      // Under a route deadline the SDK never retries (callOptions), so one
+      // upstream 429/503 or dropped connection would end a conversion that
+      // may have run for minutes. Retry once by hand when time allows.
+      if (
+        !transientRetried &&
+        http.maxRetries === 0 &&
+        isTransient(error) &&
+        timeLeftMs() >= MIN_CALL_MS + retryDelayMs + 2_000
+      ) {
+        transientRetried = true;
+        await sleep(retryDelayMs);
+        validationAttempt -= 1;
+        continue;
+      }
       throw error;
     }
 
