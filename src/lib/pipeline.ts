@@ -2,6 +2,7 @@ import type { CookAlongArtifact, EquipmentProfile } from "./schema/artifact";
 import type { CanonicalRecipe } from "./schema/canonical";
 import { DIETARY_TARGETS } from "./schema/variant";
 import type { ProviderName, StructuredChatClient, TokenUsage } from "./model";
+import { assertTimeFor, STAGE_MIN_MS } from "./model/budget";
 import {
   canonicalize,
   type CanonicalizeCheck,
@@ -67,9 +68,12 @@ export async function convertToArtifact(
 ): Promise<PipelineResult> {
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
+  assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
   const canon = await canonicalize(input, { provider });
+  assertTimeFor("procedure", STAGE_MIN_MS.procedure);
   const proc = await procedure(canon.recipe, { provider });
   const sched = schedule(proc.timeline);
+  assertTimeFor("review", STAGE_MIN_MS.review);
   const rev = await review(
     {
       recipe: canon.recipe,
@@ -111,8 +115,10 @@ export async function convertRecipeToArtifact(
 ): Promise<PipelineResult> {
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
+  assertTimeFor("procedure", STAGE_MIN_MS.procedure);
   const proc = await procedure(recipe, { provider });
   const sched = schedule(proc.timeline);
+  assertTimeFor("review", STAGE_MIN_MS.review);
   const rev = await review(
     { recipe, timeline: proc.timeline, schedule: sched, equipmentProfile },
     { provider },
@@ -208,6 +214,7 @@ export async function adjustArtifact(
     const recipe = current.recipe;
     // Rules are judged on the printed quantities at native servings, the
     // same base applyScaling scales from.
+    assertTimeFor("scaling", STAGE_MIN_MS.scaling);
     const assigned = await assignScaleRules(
       {
         title: recipe.title,
@@ -228,6 +235,7 @@ export async function adjustArtifact(
     scaleFlags = applied.flags;
   }
   if (dietary !== undefined) {
+    assertTimeFor("dietary", STAGE_MIN_MS.dietary);
     const applied = await applyDietary(current, dietary, {
       provider: opts.provider,
       client: opts.clients?.dietary,
@@ -239,6 +247,7 @@ export async function adjustArtifact(
     removedNames = applied.removedNames;
   }
   if (cuisine !== undefined) {
+    assertTimeFor("cuisine", STAGE_MIN_MS.cuisine);
     const applied = await applyCuisine(current, cuisine, {
       provider: opts.provider,
       client: opts.clients?.cuisine,
@@ -251,6 +260,7 @@ export async function adjustArtifact(
     removedNames = applied.removedNames;
   }
   if (voiceName !== undefined) {
+    assertTimeFor("voice", STAGE_MIN_MS.voice);
     const voiced = await voice(current.timelineDefinition, {
       provider: opts.provider,
       client: opts.clients?.voice,

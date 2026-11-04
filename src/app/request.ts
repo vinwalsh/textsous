@@ -7,11 +7,17 @@ export interface ApiResult {
   timeout: boolean;
 }
 
+/**
+ * Client wait for convert, adjust and photo: longer than the server's 300 s
+ * function limit, so the server's own friendly error arrives first.
+ */
+export const API_TIMEOUT_MS = 310_000;
+
 /** fetch with an abort timeout and a forgiving JSON parse. Never throws. */
 export async function apiFetch(
   input: string,
   init: RequestInit = {},
-  timeoutMs = 150_000,
+  timeoutMs = API_TIMEOUT_MS,
 ): Promise<ApiResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

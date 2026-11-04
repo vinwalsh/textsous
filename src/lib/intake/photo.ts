@@ -6,6 +6,7 @@ import {
   type TokenUsage,
 } from "../model";
 import { canonicalize, type CanonicalizeResult } from "../stages/canonicalize";
+import { assertTimeFor, STAGE_MIN_MS } from "../model/budget";
 import type { CanonicalRecipe } from "../schema/canonical";
 
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -234,7 +235,9 @@ export async function photoToCanonical(
   opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
 ): Promise<PhotoResult> {
   const photo = validatePhoto(bytes);
+  assertTimeFor("transcribe", STAGE_MIN_MS.transcribe);
   const transcribed = await transcribePhoto(photoDataUrl(photo), photo.orientation, opts);
+  assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
   const canonical = await canonicalize(
     {
       source: {

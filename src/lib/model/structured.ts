@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { toResponseJsonSchema } from "../schema/json";
 import { assertUsableInProduction, resolveProvider, type ProviderName } from "./profiles";
+import { DeadlineError, MIN_CALL_MS, MODEL_CALL_TIMEOUT_MS, markSpent, timeLeftMs } from "./budget";
 
 export interface ChatTextContentPart {
   type: "text";
@@ -64,8 +65,8 @@ export interface StructuredChatClient {
         temperature: number;
         response_format: ResponseFormat;
         max_completion_tokens?: number;
-      }): Promise<{
-        choices: Array<{ message: { content: string | null } }>;
+      }, options?: { timeout?: number }): Promise<{
+        choices: Array<{ message: { content: string | null }; finish_reason?: string | null }>;
         usage?: {
           prompt_tokens: number;
           completion_tokens: number;
@@ -99,6 +100,18 @@ function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
     totalTokens: a.totalTokens + b.totalTokens,
   };
 }
+
+/** Timeouts may have spent tokens upstream; HTTP errors and refused connections did not. */
+function mayHaveSpent(error: unknown): boolean {
+  const err = error as { name?: string; constructor?: { name?: string } };
+  const name = `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
+  return /Timeout|AbortError/i.test(name);
+}
+
+const CONCISE_RETRY =
+  "Your previous reply was cut off at the length limit, so it was discarded. " +
+  "Reply again with the complete JSON object, more concisely: short descriptions, " +
+  "no repeated text, no extra whitespace. No prose.";
 
 function isJsonSchemaRejection(error: unknown): boolean {
   const err = error as { status?: number; message?: string; error?: { message?: string } };
@@ -136,12 +149,16 @@ export async function callStructured<T>(
   const temperature = opts.temperature ?? 0;
 
   // Explicit global fetch: honors proxy env (NODE_USE_ENV_PROXY) everywhere.
+  // One SDK retry at most: a stage that times out twice would outlive the
+  // route's 300 s limit.
   const client: StructuredChatClient =
     opts.client ??
     new OpenAI({
       baseURL: config.baseUrl,
       apiKey: config.apiKey,
       fetch: globalThis.fetch,
+      timeout: MODEL_CALL_TIMEOUT_MS,
+      maxRetries: 1,
     });
   const jsonSchema = toResponseJsonSchema(zodSchema as z.ZodTypeAny);
 
@@ -153,18 +170,26 @@ export async function callStructured<T>(
   const transcript: ChatTextMessage[] = [...messages];
   let usage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
   let attempts = 0;
+  let lengthRetried = false;
 
   for (let validationAttempt = 0; ; validationAttempt += 1) {
     let content: string | null;
+    let finishReason: string | null | undefined;
+    const left = timeLeftMs();
+    if (left < MIN_CALL_MS) throw new DeadlineError(opts.schemaName);
     try {
       attempts += 1;
-      const response = await client.chat.completions.create({
-        model: config.model,
-        messages: transcript,
-        temperature,
-        response_format: format,
-        ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
-      });
+      const response = await client.chat.completions.create(
+        {
+          model: config.model,
+          messages: transcript,
+          temperature,
+          response_format: format,
+          ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
+        },
+        { timeout: Math.min(MODEL_CALL_TIMEOUT_MS, Math.floor(left)) },
+      );
+      markSpent();
       const u = response.usage;
       if (u) {
         usage = addUsage(usage, {
@@ -174,7 +199,9 @@ export async function callStructured<T>(
         });
       }
       content = response.choices[0]?.message?.content ?? null;
+      finishReason = response.choices[0]?.finish_reason;
     } catch (error) {
+      if (mayHaveSpent(error)) markSpent();
       if (!fallbackUsed && isJsonSchemaRejection(error)) {
         fallbackUsed = true;
         format = { type: "json_object" };
@@ -183,6 +210,19 @@ export async function callStructured<T>(
       throw error;
     }
 
+    if (finishReason === "length") {
+      // Truncated JSON is never re-prompted as if it were an answer: drop it
+      // and ask once for a more concise complete reply.
+      if (lengthRetried) {
+        throw new Error(
+          "Model reply was cut off at the length limit twice (finish_reason length).",
+        );
+      }
+      lengthRetried = true;
+      transcript.push({ role: "user", content: CONCISE_RETRY });
+      validationAttempt -= 1;
+      continue;
+    }
     if (content === null || content.trim() === "") {
       throw new Error("Model returned empty content.");
     }
