@@ -89,7 +89,10 @@ describe.each(ALL)("adaptArtifactForCookingPilot: $name", ({ artifact }) => {
       const task = definition.tasks.find((candidate) => candidate.id === open.id);
       expect(task, open.id).toBeDefined();
       if (!task) continue;
-      expect(task.minutes).toBe(open.minutes);
+      // A range runs to its high end, like the view's own source ranges.
+      const ranged = open.range && open.range.low < open.range.high ? open.range : null;
+      expect(task.minutes).toBe(ranged ? ranged.high : open.minutes);
+      expect(task.range).toEqual(ranged ? { min: ranged.low, max: ranged.high } : undefined);
       expect(task.timingBasis).toBe(open.timingBasis);
       expect(task.attention).toBe(open.attention);
       expect(task.timerEnabledByDefault).toBe(open.timerEnabledByDefault);
@@ -145,19 +148,44 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     }
   });
 
-  it("turns checkpoints into one check at the range's low end, else the task's end", () => {
+  it("keeps a range: the task runs to its high end and may finish from its low end", () => {
+    const artifact = clone(base);
+    const task = artifact.timelineDefinition.tasks[0];
+    task.minutes = 12;
+    task.range = { low: 10, high: 14 };
+    let adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
+    expect(adapted.minutes).toBe(14);
+    expect(adapted.range).toEqual({ min: 10, max: 14 });
+    expect(() => buildCookingPlan(adaptArtifactForCookingPilot(artifact).timelineDefinition)).not.toThrow();
+    task.range = { low: 12, high: 12 };
+    adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
+    expect(adapted.minutes).toBe(12);
+    expect(adapted.range).toBeUndefined();
+  });
+
+  it("turns checkpoints into one check at the range's low end, as sentences", () => {
     const artifact = clone(base);
     const task = artifact.timelineDefinition.tasks[0];
     task.minutes = 12;
     task.range = { low: 10, high: 12 };
-    task.checkpoints = ["Bubbles at the edge.", "Smells toasty."];
-    let adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
+    task.checkpoints = ["Bubbles at the edge", "Smells toasty."];
+    const adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
     expect(adapted.range).toEqual({ min: 10, max: 12 });
     expect(adapted.checkpoints).toEqual([{ afterMinutes: 10, label: "Bubbles at the edge. Smells toasty." }]);
-    task.range = { low: 10, high: 14 };
-    adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
-    expect(adapted.range).toBeUndefined();
-    expect(adapted.checkpoints).toEqual([{ afterMinutes: 12, label: "Bubbles at the edge. Smells toasty." }]);
+    expect(adapted.tip ?? "").not.toContain("Watch for");
+  });
+
+  it("puts checkpoints without a range in the tip, never as a check at the task's end", () => {
+    const artifact = clone(base);
+    const task = artifact.timelineDefinition.tasks[0];
+    task.minutes = 12;
+    task.range = null;
+    task.tip = "Stir now and then";
+    task.checkpoints = ["Bubbles at the edge", "Smells toasty!"];
+    const adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
+    expect(adapted.checkpoints).toBeUndefined();
+    expect(adapted.tip).toBe("Stir now and then. Watch for: Bubbles at the edge. Smells toasty!");
+    expect(() => buildCookingPlan(adaptArtifactForCookingPilot(artifact).timelineDefinition)).not.toThrow();
   });
 
   it("shows the why line with tips and hides it in Essentials", () => {

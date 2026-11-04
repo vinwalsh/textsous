@@ -10,8 +10,11 @@
  * - every prep task ends before the first cook task starts, and the serve
  *   task starts after every other task ends: added as dependencies;
  * - resource holds occupy the resource for the task, like resourceIds.
- * Checkpoints (observable cues, no times in the open format) become one
- * check at the low end of the task's source range, else at its end.
+ * A range keeps both ends: the task runs to its high end (the view's
+ * conservative estimate) and may finish from its low end. Checkpoints
+ * (observable cues, no times in the open format) become one check at the
+ * range's low end; a task without a range gets them in its tip as
+ * "Watch for: ...", never as a check timed at its end.
  */
 import type { CookingPilotRecipe } from "@/components/cooking-pilot/cooking-pilot";
 import { rollUpTraces } from "@/lib/allergens";
@@ -77,11 +80,19 @@ function cardTitle(task: TimelineTask): CookingTaskDefinition["cardTitle"] {
   return context ? { action, subject, context } : { action, subject };
 }
 
-function checkpoints(task: TimelineTask, minutes: number, range: { min: number; max: number } | undefined) {
-  const labels = task.checkpoints.map((label) => label.trim()).filter(Boolean);
-  if (labels.length === 0) return undefined;
-  const label = clip(labels.join(" "), INSTRUCTION_MAX);
-  return [{ afterMinutes: range && range.min < minutes ? range.min : minutes, label }];
+/** Ends a sentence, so joined cues and tips read as sentences, not one run-on line. */
+const sentence = (text: string) => (/[.!?…]["'”’)\]]*$/.test(text) ? text : `${text}.`);
+
+/** The view's timing for a task: a range runs to its high end and may finish from its low end. */
+function taskTiming(task: TimelineTask): { minutes: number; range?: { min: number; max: number } } {
+  return task.range && task.range.low < task.range.high
+    ? { minutes: task.range.high, range: { min: task.range.low, max: task.range.high } }
+    : { minutes: task.minutes };
+}
+
+/** The task's checkpoints as sentences, joined ("" when it has none). */
+function cues(task: TimelineTask): string {
+  return task.checkpoints.map((label) => label.trim()).filter(Boolean).map(sentence).join(" ");
 }
 
 /**
@@ -162,7 +173,7 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
   const ovenOn = new Set(openTasks.filter((task) => task.equipmentEvent === "oven-on").map((task) => task.id));
   const horizon = Math.min(
     MAX_TIMELINE_SECONDS,
-    minuteSeconds(openTasks.reduce((sum, task) => sum + task.minutes * 60 + task.scheduling.waits.reduce((a, b) => a + b, 0), 0)),
+    minuteSeconds(openTasks.reduce((sum, task) => sum + taskTiming(task).minutes * 60 + task.scheduling.waits.reduce((a, b) => a + b, 0), 0)),
   );
 
   const tasks: CookingTaskDefinition[] = openTasks.map((task) => {
@@ -176,14 +187,16 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
       const minWaitSeconds = Math.min(MAX_TIMELINE_SECONDS, counts ? wait : 0);
       return { taskId: taskIds.get(id), minWaitSeconds, maxWaitSeconds: Math.max(minWaitSeconds, horizon) };
     });
-    const range = task.range && task.range.high === task.minutes && task.range.low < task.range.high
-      ? { min: task.range.low, max: task.range.high }
-      : undefined;
+    const { minutes, range } = taskTiming(task);
     const description = task.description.trim();
     const why = task.why?.trim() ?? "";
     const withWhy = why && description.length + 1 + why.length <= INSTRUCTION_MAX;
-    const tip = clip([task.tip?.trim() ?? "", withWhy ? "" : why].filter(Boolean).join(" "), INSTRUCTION_MAX);
-    const points = checkpoints(task, task.minutes, range);
+    const watch = cues(task);
+    const points = watch && range ? [{ afterMinutes: range.min, label: clip(watch, INSTRUCTION_MAX) }] : undefined;
+    const tip = clip(
+      [task.tip?.trim() ?? "", withWhy ? "" : why, watch && !range ? `Watch for: ${watch}` : ""].filter(Boolean).map(sentence).join(" "),
+      INSTRUCTION_MAX,
+    );
     return {
       id: taskIds.get(task.id),
       phase: task.phase,
@@ -192,7 +205,7 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
       ...(withWhy ? { instructionParts: [{ kind: "essential" as const, text: description }, { kind: "explanation" as const, text: ` ${why}` }] } : {}),
       completionCue: clip(task.completionCue.trim(), CUE_MAX),
       ...(cardTitle(task) ? { cardTitle: cardTitle(task) } : {}),
-      minutes: task.minutes,
+      minutes,
       ...(range ? { range } : {}),
       timingBasis: task.timingBasis,
       attention: task.attention,
