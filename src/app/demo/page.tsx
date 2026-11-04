@@ -59,6 +59,9 @@ export default function DemoPage() {
         <Link href="/embed-demo">Cook Along button on a demo blog post</Link>.
       </p>
       <p className="meta">
+        Or try <Link href="/demo-sites">Adjust with SOUS on four demo recipe blogs</Link>.
+      </p>
+      <p className="meta">
         <Link href="/">Back to the converter</Link>
       </p>
     </main>

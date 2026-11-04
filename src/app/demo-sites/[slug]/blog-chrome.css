@@ -1,0 +1,10 @@
+/* Loaded only by /demo-sites/<slug>: those pages play third-party recipe
+   blogs, so they hide the TextSous site header and footer, the same way
+   /embed does (src/app/embed/embed-chrome.css). Scoped with :has() so it is
+   harmless if it ever reaches another route; the /demo-sites index keeps
+   the chrome. */
+body:has(.ts-demo-site-root) > .site-header,
+body:has(.ts-demo-site-root) > header,
+body:has(.ts-demo-site-root) > .site-footer {
+  display: none;
+}

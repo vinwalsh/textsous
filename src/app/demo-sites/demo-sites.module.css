@@ -1,0 +1,307 @@
+/* /demo-sites/<slug>: pretend third-party recipe blogs. Each blog sets its
+   own palette and fonts as --blog-* variables (all text pairs pass WCAG AA);
+   the demo banner on top stays in TextSous colors and type. */
+
+.baking {
+  --blog-bg: #fff6f1;
+  --blog-card: #ffffff;
+  --blog-ink: #3b2a26;
+  --blog-muted: #6f5650;
+  --blog-accent: #a23e58;
+  --blog-border: #ebd3ca;
+  --blog-hero: linear-gradient(135deg, #fbe3d7, #f6d3dd);
+  --blog-radius: 18px;
+  --blog-button-radius: 999px;
+  --blog-body-font: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --blog-heading-font: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+.weeknights {
+  --blog-bg: #ffffff;
+  --blog-card: #f4f8f6;
+  --blog-ink: #1e2a2e;
+  --blog-muted: #50616a;
+  --blog-accent: #2c6b5a;
+  --blog-border: #d5e1dc;
+  --blog-hero: linear-gradient(135deg, #e2efe9, #f3f0e3);
+  --blog-radius: 8px;
+  --blog-button-radius: 6px;
+  --blog-body-font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --blog-heading-font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+}
+
+.cabin {
+  --blog-bg: #f3ece0;
+  --blog-card: #fffcf6;
+  --blog-ink: #2e2620;
+  --blog-muted: #5c5046;
+  --blog-accent: #8a4517;
+  --blog-border: #d6c6af;
+  --blog-hero: repeating-linear-gradient(90deg, #e9d9bf 0 22px, #e2cfb0 22px 44px);
+  --blog-radius: 3px;
+  --blog-button-radius: 3px;
+  --blog-body-font: Georgia, "Times New Roman", serif;
+  --blog-heading-font: Rockwell, "Rockwell Nova", "Roboto Slab", "DejaVu Serif", Georgia, serif;
+}
+
+.site {
+  flex: 1 0 auto;
+  width: 100%;
+  background: var(--blog-bg);
+  color: var(--blog-ink);
+  font-family: var(--blog-body-font);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.site h1,
+.site h2,
+.site h3,
+.site h4 {
+  color: var(--blog-ink);
+  font-family: var(--blog-heading-font);
+}
+
+.site a {
+  color: var(--blog-accent);
+}
+
+.site a:hover {
+  color: var(--blog-ink);
+}
+
+/* ---------- Demo banner (TextSous) ---------- */
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 8px;
+  margin: 0;
+  padding: 0 16px;
+  background: var(--ts-ink);
+  color: #fff;
+  font-family: var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.banner a,
+.banner a:hover {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.bannerNote {
+  flex-basis: 100%;
+  padding: 0 0 10px;
+}
+
+/* ---------- The blog ---------- */
+
+.blogHeader,
+.main,
+.blogFooter {
+  max-width: calc(44rem + 32px);
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.blogHeader {
+  padding-top: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--blog-border);
+  text-align: center;
+}
+
+.blogName {
+  margin: 0;
+  font-family: var(--blog-heading-font);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.baking .blogName {
+  font-style: italic;
+}
+
+.cabin .blogName,
+.cabin .kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.blogTagline {
+  margin: 4px 0 0;
+  color: var(--blog-muted);
+  font-size: 15px;
+}
+
+.main {
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+
+.kicker {
+  margin: 24px 0 4px;
+  color: var(--blog-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.byline {
+  margin: 0;
+  color: var(--blog-muted);
+  font-size: 15px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.jump {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid var(--blog-accent);
+  border-radius: var(--blog-button-radius);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site .jump:hover {
+  background: var(--blog-accent);
+  color: #fff;
+}
+
+.hero {
+  margin: 0 0 20px;
+  padding: 12px;
+  border-radius: var(--blog-radius);
+  background: var(--blog-hero);
+}
+
+.heroArt {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+}
+
+/* ---------- Recipe card ---------- */
+
+.card {
+  margin: 32px 0 8px;
+  padding: 20px 16px;
+  border: 1px solid var(--blog-border);
+  border-radius: var(--blog-radius);
+  background: var(--blog-card);
+  scroll-margin-top: 16px;
+}
+
+.cardTitle {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 12px;
+}
+
+.facts dt {
+  color: var(--blog-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.cardAdjust {
+  margin: 12px 0 4px;
+}
+
+.groupHeading {
+  margin: 14px 0 4px;
+  font-size: 16px;
+}
+
+.ingredients,
+.notes {
+  margin: 0 0 8px;
+  padding-left: 1.25rem;
+}
+
+.steps {
+  margin: 0 0 8px;
+  padding-left: 1.5rem;
+}
+
+.ingredients li,
+.notes li {
+  margin: 4px 0;
+}
+
+.steps li {
+  margin: 10px 0;
+}
+
+.license {
+  margin: 16px 0 0;
+  color: var(--blog-muted);
+  font-size: 14px;
+}
+
+.blogFooter {
+  padding-top: 16px;
+  padding-bottom: 40px;
+  border-top: 1px solid var(--blog-border);
+  color: var(--blog-muted);
+  font-size: 14px;
+}
+
+.blogFooter a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+@media (min-width: 40rem) {
+  .title {
+    font-size: 40px;
+  }
+
+  .card {
+    padding: 24px 28px;
+  }
+}
