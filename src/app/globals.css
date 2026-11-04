@@ -1,4 +1,19 @@
 :root {
+  /* TextSous design tokens (contract C6). Light theme only; text on
+     --ts-action is white. Existing styles below are unchanged for now. */
+  --ts-bg: #FAF8F5;
+  --ts-ink: #22201C;
+  --ts-muted: #726A65;
+  --ts-border: #E2DBD5;
+  --ts-card: #FFFFFF;
+  --ts-accent: #D45A35;
+  --ts-action: #B74725;
+  --ts-action-hover: #9D3D20;
+  --ts-accent-soft: #F7E9E1;
+  --ts-secondary: #F1EBE4;
+  --ts-radius: 10px;
+  --ts-pill: 30px;
+
   --ink: #1c1917;
   --muted: #57534e;
   --line: #e3ded6;
