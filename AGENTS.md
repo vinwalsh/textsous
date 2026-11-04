@@ -5,13 +5,13 @@ TextSous is a meal-planning platform from SOUS AI LLC. People plan their week by
 texting SOUS, the platform's assistant, or by talking to SOUS from an AI
 assistant over MCP. This repo holds the platform's open-source tools, starting
 with a TypeScript library, CLI and web app that convert any recipe (URL, pasted
-text, cookbook photo) into the TextSous Cook Along format: a canonical recipe
-JSON, a component-lane cooking timeline, and adjustable variants (servings,
-dietary, cuisine infusion, SOUS voice). The app runs at
-https://open.textsous.com and hands finished recipes to https://textsous.com
-("Open with TextSous", "Save to TextSous"). Started at the Meta Global AI
-Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
-2026 is hackathon work; NEW-WORK.md records it.
+text, up to 3 cookbook photos of one recipe) into the TextSous Cook Along
+format: a canonical recipe JSON, a component-lane cooking timeline, and
+adjustable variants (servings, dietary, cuisine infusion, SOUS voice). The app
+runs at https://open.textsous.com and hands finished recipes to
+https://textsous.com ("Open with TextSous", "Save to TextSous"). Started at the
+Meta Global AI Developer Hackathon on Meta Model API. Everything built from
+Oct 27 to Nov 4, 2026 is hackathon work; NEW-WORK.md records it.
 
 ## Status (read first)
 Updated 2026-11-04. Keep this section current: when something ships, say so

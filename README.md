@@ -1,10 +1,10 @@
 # TextSous Open
 
-Open-source tools that convert any recipe — a URL, pasted text, or a cookbook
-photo — into the TextSous Cook Along format: a canonical recipe JSON, a
-component-lane cooking timeline, and adjustable variants (servings, dietary,
-cuisine, SOUS voice). The web app runs at https://open.textsous.com and hands
-finished recipes to https://textsous.com.
+Open-source tools that convert any recipe — a URL, pasted text, or up to 3
+cookbook photos of one recipe — into the TextSous Cook Along format: a
+canonical recipe JSON, a component-lane cooking timeline, and adjustable
+variants (servings, dietary, cuisine, SOUS voice). The web app runs at
+https://open.textsous.com and hands finished recipes to https://textsous.com.
 
 ## 60-second quickstart
 
@@ -118,8 +118,11 @@ browser.
   and non-HTML content are refused.
 - One recipe per page: roundups and collections are rejected, not guessed at.
 - Pasted text can be up to 60,000 characters.
-- Photos must be PNG, JPEG, or WebP. The browser shrinks large phone photos
-  before upload; the server takes up to 5 MB and processes it in memory only.
+- Up to 3 photos of one recipe, for a recipe that runs over more than one
+  page: PNG, JPEG, or WebP, in page order. The browser shrinks each photo
+  before upload (at most 1600 px, JPEG); the server takes up to 4 MB a photo
+  and 4.4 MB in all, reads every page in one model call, and processes the
+  photos in memory only.
 - A fresh conversion takes 3 to 4 minutes; a recipe converted before opens
   from the cache right away.
 - Servings rescale from 0.5× to 12. Adjustments never change a step's timing;
