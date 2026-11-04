@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { keepScreenOn, withScreenOn } from "../src/app/wake-lock";
 
@@ -42,5 +43,11 @@ describe("keeping the screen on", () => {
     const releaseRefused = await keepScreenOn(refused);
     expect(() => releaseRefused()).not.toThrow();
     await expect(withScreenOn(async () => 7, refused)).resolves.toBe(7);
+  });
+});
+
+describe("the embed overlay", () => {
+  it("lets its iframe keep the screen on (cross-origin frames need the allow attribute)", () => {
+    expect(readFileSync("public/embed.js", "utf8")).toContain('iframe.setAttribute("allow", "screen-wake-lock")');
   });
 });

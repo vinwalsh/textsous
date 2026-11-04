@@ -378,6 +378,8 @@
 
     var iframe = d.createElement("iframe");
     iframe.title = "TextSous Cook Along";
+    // Lets the overlay keep a phone's screen on during a 3-4 minute conversion.
+    iframe.setAttribute("allow", "screen-wake-lock");
     iframe.src = buildFrameUrl(ORIGIN, {
       url: target.url,
       src: target.src,
