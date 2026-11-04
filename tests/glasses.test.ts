@@ -285,6 +285,20 @@ describe("D-pad navigation", () => {
     expect(spatialTarget(boxes, 0, "down")).toBeNull();
   });
 
+  it("keeps Left and Right in the row: a row's end goes nowhere, not to the next row", () => {
+    // The top row's last button sits above and left of the bottom row's last.
+    expect(spatialTarget(boxes, 7, "right")).toBeNull();
+    expect(spatialTarget(boxes, 5, "left")).toBeNull();
+    expect(spatialTarget(boxes, 6, "right")).toBe(7);
+    // A row whose buttons differ in height still counts as one row.
+    const header = [
+      { x: 300, y: 10, w: 90, h: 40 },
+      { x: 400, y: 4, w: 120, h: 52 },
+    ];
+    expect(spatialTarget(header, 0, "right")).toBe(1);
+    expect(spatialTarget(header, 1, "right")).toBeNull();
+  });
+
   it("moves up to the nearest control in line", () => {
     expect(spatialTarget(boxes, 0, "up")).toBe(5);
     expect(spatialTarget(boxes, 4, "up")).toBe(7);

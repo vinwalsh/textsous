@@ -318,22 +318,26 @@ export interface Box {
 
 /**
  * D-pad navigation: the nearest box in a direction from box `from`, by
- * centers, preferring boxes in line with it. Null when none lies that way.
+ * centers, preferring boxes in line with it. Left and Right stay in the
+ * row (boxes overlapping it vertically), so a row's end goes nowhere. Null
+ * when none lies that way.
  */
 export function spatialTarget(boxes: readonly Box[], from: number, dir: Direction): number | null {
   const a = boxes[from];
   if (!a) return null;
   const ax = a.x + a.w / 2;
   const ay = a.y + a.h / 2;
+  const sideways = dir === "left" || dir === "right";
   let best: number | null = null;
   let bestScore = Infinity;
   boxes.forEach((b, i) => {
     if (i === from) return;
+    if (sideways && (b.y >= a.y + a.h || b.y + b.h <= a.y)) return;
     const dx = b.x + b.w / 2 - ax;
     const dy = b.y + b.h / 2 - ay;
     const along = dir === "left" ? -dx : dir === "right" ? dx : dir === "up" ? -dy : dy;
     if (along <= 1) return;
-    const across = dir === "left" || dir === "right" ? Math.abs(dy) : Math.abs(dx);
+    const across = sideways ? Math.abs(dy) : Math.abs(dx);
     const score = along + across * 2;
     if (score < bestScore) {
       bestScore = score;
