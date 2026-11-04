@@ -188,13 +188,17 @@ export function applyVariant(
     return { ...step, text: text || step.text };
   });
 
-  const tasks = applyTaskOverrides(
+  const { tasks, dropped } = applyTaskOverrides(
     artifact.timelineDefinition.tasks,
     transform,
     textSwaps,
     protectedNames,
     [...forbidden],
     warnings,
+    artifact.timelineDefinition.serveTaskId,
+  );
+  const resourceHolds = artifact.timelineDefinition.resourceHolds.filter(
+    (hold) => !dropped.has(hold.taskId),
   );
   for (const warning of warnings) changes.push({ kind: "swap", detail: warning });
 
@@ -228,7 +232,7 @@ export function applyVariant(
         methodLabel,
         methodNotice,
       },
-      timelineDefinition: { ...artifact.timelineDefinition, tasks },
+      timelineDefinition: { ...artifact.timelineDefinition, tasks, resourceHolds },
       changes: [...artifact.changes, ...changes],
     },
     removedNames: [...removedNames],
@@ -250,7 +254,10 @@ function timingsOf(task: Pick<TimelineTask, "label" | "description" | "completio
  * and no removed ingredient named again (a failing override is dropped with
  * a warning). Any card text that still names a swapped ingredient is then
  * reworded in code: the substitute's name replaces the old one, or the
- * clause goes for a removal. Timings, ids and structure never change.
+ * clause goes for a removal. A card left with nothing to do after a removal
+ * is dropped (its dependents inherit its dependencies) when nothing else
+ * hangs on it, else it becomes a "Skip this step" card with the timer off.
+ * Timings and the ids of kept tasks never change.
  */
 function applyTaskOverrides(
   tasks: TimelineTask[],
@@ -259,7 +266,8 @@ function applyTaskOverrides(
   protectedNames: string[],
   earlierRemoved: string[],
   warnings: string[],
-): TimelineTask[] {
+  serveTaskId: string,
+): { tasks: TimelineTask[]; dropped: Set<string> } {
   const byId = new Map(tasks.map((t) => [t.id, t] as const));
   const overrides = new Map<string, NonNullable<VariantTransform["taskOverrides"]>[number]>();
   for (const override of transform.taskOverrides ?? []) {
@@ -276,8 +284,18 @@ function applyTaskOverrides(
     head: null,
   }));
   const guardSwaps = [...swaps, ...earlierSwaps];
+  const emptied = new Set<string>();
+  const removedIds = new Set(
+    transform.swaps.filter((swap) => (swap.to ?? null) === null).map((swap) => swap.fromIngredientId),
+  );
+  // A task can go only when nothing else hangs on it: not the serve task,
+  // no oven event, no ingredient left that only it would use.
+  const canDrop = (task: TimelineTask): boolean =>
+    task.id !== serveTaskId &&
+    !task.equipmentEvent &&
+    task.scheduling.ingredientIds.every((id) => removedIds.has(id));
 
-  return tasks.map((task) => {
+  const mapped = tasks.map((task) => {
     let next: TimelineTask = task;
     const override = overrides.get(task.id);
     if (override) {
@@ -316,17 +334,41 @@ function applyTaskOverrides(
       (typeof next.why === "string" && mentionsAny(next.why, swaps, protectedNames));
     if (!stillNamed) return next;
     const removedOnly = swaps.filter((s) => s.newName === null).map((s) => s.oldName);
-    const fallbackDescription =
-      removedOnly.length > 0 ? `Skip the ${removedOnly.join(" and ")} for this version.` : next.description;
+    const skipText =
+      removedOnly.length > 0 ? `Skip the ${removedOnly.join(" and ")} for this version.` : "";
+    const label = reword(next.label);
+    const description = reword(next.description);
+    if (!label && !description) {
+      // The card only handled a removed ingredient ("Toast the almonds").
+      // Drop it when that is safe; otherwise keep its slot as a skip card
+      // with no timer. Never fall back to the original wording.
+      emptied.add(task.id);
+      warnings.push(
+        `"${task.label}" only handled ${removedOnly.join(" and ") || "a removed ingredient"}, so it was ${
+          canDrop(next) ? "removed" : "marked to skip"
+        } for this version.`,
+      );
+      return {
+        ...next,
+        label: "Skip this step",
+        cardTitle: { action: "Skip", subject: "this step", context: "" },
+        description: skipText || "Skip this step for this version.",
+        completionCue: "Skipped.",
+        checkpoints: [],
+        tip: null,
+        why: null,
+        timerEnabledByDefault: false,
+      };
+    }
     const rewritten: TimelineTask = {
       ...next,
-      label: reword(next.label) || next.label,
+      label: label || firstSentence(description),
       cardTitle: {
         ...next.cardTitle,
         subject: reword(next.cardTitle.subject) || "step",
         context: reword(next.cardTitle.context),
       },
-      description: reword(next.description) || fallbackDescription,
+      description: description || skipText || label,
       completionCue: reword(next.completionCue) || "Done.",
       checkpoints: next.checkpoints.map(reword).filter((c) => c.length > 0),
       tip: typeof next.tip === "string" ? reword(next.tip) || null : next.tip,
@@ -346,4 +388,27 @@ function applyTaskOverrides(
     );
     return rewritten;
   });
+  const dropped = new Set([...emptied].filter((id) => canDrop(mapped.find((t) => t.id === id) as TimelineTask)));
+  if (dropped.size === 0) return { tasks: mapped, dropped };
+  const depsById = new Map(mapped.map((t) => [t.id, t.dependencies] as const));
+  // A dependent inherits the dropped task's own dependencies.
+  const resolve = (id: string, seen: Set<string>): string[] => {
+    if (!dropped.has(id)) return [id];
+    if (seen.has(id)) return [];
+    seen.add(id);
+    return (depsById.get(id) ?? []).flatMap((dep) => resolve(dep, seen));
+  };
+  const kept = mapped
+    .filter((t) => !dropped.has(t.id))
+    .map((t) => {
+      if (!t.dependencies.some((dep) => dropped.has(dep))) return t;
+      const deps = [...new Set(t.dependencies.flatMap((dep) => resolve(dep, new Set())))];
+      return { ...t, dependencies: deps };
+    });
+  return { tasks: kept, dropped };
+}
+
+function firstSentence(text: string): string {
+  const first = text.split(/(?<=[.!?])\s+/)[0] ?? text;
+  return first.replace(/[.!?]+$/, "").trim() || text;
 }

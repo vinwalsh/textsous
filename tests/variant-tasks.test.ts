@@ -221,3 +221,122 @@ describe("adjustArtifact servings then vegan", () => {
     expect(allTaskText(result.artifact).filter((t) => DAIRY.test(t))).toEqual([]);
   });
 });
+
+describe("removal rewording never leaves broken or stale cards", () => {
+  it("removes amount, unit and prep words with the name, and keeps a following verb clause", () => {
+    const parmesan = { oldName: "parmesan cheese", newName: null, head: "cheese" };
+    expect(
+      rewordForSwap("Sprinkle with 1/4 cup grated parmesan cheese and serve.", parmesan, []),
+    ).toBe("Serve.");
+    expect(rewordForSwap("Add the cheese and stir until melted.", parmesan, [])).toBe(
+      "Stir until melted.",
+    );
+    expect(rewordForSwap("Top with the cheese and basil.", parmesan, [])).toBe("Top with basil.");
+    expect(
+      rewordForSwap("Toss with 2 tablespoons freshly grated parmesan cheese, basil and salt.", parmesan, []),
+    ).toBe("Toss with basil and salt.");
+  });
+
+  function task(
+    id: string,
+    label: string,
+    description: string,
+    extra: Partial<CookAlongArtifact["timelineDefinition"]["tasks"][number]> = {},
+  ): CookAlongArtifact["timelineDefinition"]["tasks"][number] {
+    return {
+      id,
+      phase: "cook",
+      label,
+      cardTitle: { action: label.split(" ")[0], subject: label.split(" ").slice(1).join(" ") || "step", context: "" },
+      description,
+      completionCue: "Done.",
+      minutes: 4,
+      range: null,
+      timingBasis: "estimate",
+      sourceQuote: null,
+      attention: "hands-on",
+      timerEnabledByDefault: true,
+      laneIds: ["lane-k"],
+      dependencies: [],
+      sourceStepIds: ["step-1"],
+      checkpoints: [],
+      tip: null,
+      why: null,
+      equipmentEvent: null,
+      scheduling: { waits: [], resourceIds: [], ingredientIds: [] },
+      ...extra,
+    };
+  }
+
+  function salad(toastExtra: Partial<CookAlongArtifact["timelineDefinition"]["tasks"][number]> = {}): CookAlongArtifact {
+    const base = porridge();
+    return {
+      ...base,
+      recipe: {
+        ...base.recipe,
+        ingredients: [
+          { ...base.recipe.ingredients[0], id: "ing-1", name: "mixed greens", allergens: [], allergenTraces: [] },
+          { ...base.recipe.ingredients[0], id: "ing-2", name: "sliced almonds", allergens: ["nuts"], allergenTraces: [] },
+        ],
+      },
+      timelineDefinition: {
+        lanes: [{ id: "lane-k", label: "Kitchen", color: "#AAA398", kind: "kitchen" }],
+        tasks: [
+          task("task-toast", "Toast the almonds", "Toast the almonds in a dry pan for about 4 minutes.", {
+            scheduling: { waits: [], resourceIds: ["pan-1"], ingredientIds: ["ing-2"] },
+            ...toastExtra,
+          }),
+          task("task-toss", "Toss the greens", "Toss the greens.", {
+            dependencies: ["task-toast"],
+            scheduling: { waits: [], resourceIds: [], ingredientIds: ["ing-1"] },
+          }),
+          task("task-serve", "Serve the salad", "Serve right away.", {
+            phase: "finish",
+            dependencies: ["task-toss"],
+          }),
+        ],
+        resources: [{ id: "pan-1", label: "Dry pan", kind: "pan" }],
+        resourceHolds: [{ taskId: "task-toast", resourceId: "pan-1" }],
+        serveTaskId: "task-serve",
+      },
+    };
+  }
+
+  const NUT_FREE: VariantTransform = {
+    kind: "dietary",
+    target: "nut-free",
+    titleOverride: null,
+    swaps: [
+      {
+        fromIngredientId: "ing-2",
+        to: null,
+        omitReason: "garnish only",
+        reason: "nut-free",
+        packageRequirements: [],
+      },
+    ],
+    stepOverrides: [],
+    techniqueChanges: [],
+    rationale: [],
+  };
+
+  it("drops a card that only handled the removed ingredient and rewires its dependents", () => {
+    const { artifact, warnings } = applyVariant(salad(), NUT_FREE);
+    const tasks = artifact.timelineDefinition.tasks;
+    expect(tasks.map((t) => t.id)).toEqual(["task-toss", "task-serve"]);
+    expect(tasks[0].dependencies).toEqual([]);
+    expect(artifact.timelineDefinition.resourceHolds).toEqual([]);
+    expect(allTaskText(artifact).join(" ")).not.toMatch(/almond/i);
+    expect(warnings.join(" ")).toMatch(/Toast the almonds" only handled sliced almonds, so it was removed/);
+    expect(() => TimelineDefinitionSchema.parse(artifact.timelineDefinition)).not.toThrow();
+  });
+
+  it("keeps an emptied card that cannot be dropped as a skip card with no timer", () => {
+    const { artifact } = applyVariant(salad({ equipmentEvent: "oven-on" }), NUT_FREE);
+    const toast = artifact.timelineDefinition.tasks.find((t) => t.id === "task-toast");
+    expect(toast?.label).toBe("Skip this step");
+    expect(toast?.timerEnabledByDefault).toBe(false);
+    expect(toast?.description).toBe("Skip the sliced almonds for this version.");
+    expect(toast?.cardTitle).toEqual({ action: "Skip", subject: "this step", context: "" });
+  });
+});

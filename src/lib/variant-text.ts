@@ -101,6 +101,27 @@ function matchCase(replacement: string, original: string): string {
 const AMOUNT =
   "(?:(?:\\d+(?:[./]\\d+)?(?:\\s+\\d+/\\d+)?|[½¼¾⅓⅔⅛])\\s*(?:[a-zA-Z]+\\.?\\s+)?(?:of\\s+)?)?";
 
+/** Prep words that belong to the mention ("grated", "freshly ground"). */
+const MODIFIERS =
+  "(?:(?:freshly|finely|coarsely|roughly|thinly|lightly|fresh|toasted|[a-z]+ed)\\s+){0,3}";
+
+/**
+ * Verbs that start a new clause after "and"/"then". "parmesan and serve" is
+ * not a list, so removing the parmesan must not leave "with serve".
+ */
+const CLAUSE_VERBS = [
+  "add", "adjust", "allow", "arrange", "bake", "beat", "blend", "boil", "bring", "check",
+  "chill", "chop", "combine", "continue", "cook", "cool", "cover", "cut", "discard",
+  "divide", "drain", "drizzle", "enjoy", "finish", "flip", "fold", "fry", "garnish",
+  "grill", "heat", "keep", "knead", "leave", "let", "mash", "melt", "mix", "place",
+  "plate", "pour", "press", "reduce", "remove", "repeat", "rest", "return", "rinse",
+  "roast", "roll", "saute", "sauté", "scatter", "scrape", "season", "serve", "set",
+  "shape", "simmer", "slice", "spoon", "spread", "sprinkle", "squeeze", "stir", "taste",
+  "toast", "top", "toss", "transfer", "turn", "use", "wait", "warm", "whisk",
+];
+const VERB_AHEAD = `(?!(?:${CLAUSE_VERBS.join("|")})\\b)`;
+const CLAUSE_SPLIT = new RegExp(`\\s*[,;]\\s*|\\s+(?:and|then|and then)\\s+(?=(?:${CLAUSE_VERBS.join("|")})\\b)`, "i");
+
 function capitalizeLike(result: string, original: string): string {
   const trimmed = result.replace(/\s+([,.;!?])/g, "$1").replace(/\s{2,}/g, " ").trim();
   if (!trimmed) return trimmed;
@@ -115,10 +136,13 @@ function removeMention(text: string, swap: TextSwap, protectedNames: string[]): 
   if (!target) return text;
   let out = text;
   // List shapes first: "a, b and X", "a and the X", "X and b", "X, b".
+  // Amount, unit and prep words go with the name, so nothing is left hanging
+  // ("1/4 cup grated"); a conjunction followed by a verb is not a list.
+  const mention = `(?:the\\s+)?${AMOUNT}${MODIFIERS}(?:${target})\\b`;
   const patterns = [
-    new RegExp(`,?\\s+(?:and|or|&)\\s+(?:the\\s+)?${AMOUNT}(?:${target})\\b`, "gi"),
-    new RegExp(`,\\s*(?:the\\s+)?${AMOUNT}(?:${target})\\b(?=\\s*(?:,|and\\b|or\\b))`, "gi"),
-    new RegExp(`(?:the\\s+)?${AMOUNT}\\b(?:${target})\\s*(?:,\\s*|\\s+(?:and|or|&)\\s+)`, "gi"),
+    new RegExp(`,?\\s+(?:and|or|&)\\s+${mention}`, "gi"),
+    new RegExp(`,\\s*${mention}(?=\\s*(?:,|and\\s+${VERB_AHEAD}|or\\b))`, "gi"),
+    new RegExp(`\\b${mention}\\s*(?:,\\s*${VERB_AHEAD}|\\s+(?:and|or|&)\\s+${VERB_AHEAD})`, "gi"),
   ];
   for (const [index, pattern] of patterns.entries()) {
     if (!mentions(out, swap, protectedNames)) break;
@@ -152,8 +176,12 @@ function removeMention(text: string, swap: TextSwap, protectedNames: string[]): 
     }
     const end = /[.!?]$/.test(sentence) ? sentence.slice(-1) : "";
     const body = end ? sentence.slice(0, -1) : sentence;
-    const clauses = body.split(/\s*[,;]\s*/).filter((c) => !mentions(c, swap, protectedNames));
-    if (clauses.length > 0) kept.push(`${clauses.join(", ")}${end}`);
+    const clauses = body.split(CLAUSE_SPLIT).filter((c) => !mentions(c, swap, protectedNames));
+    if (clauses.length > 0) {
+      let joined = clauses.join(", ");
+      if (/^[A-Z]/.test(sentence.trim())) joined = `${joined.charAt(0).toUpperCase()}${joined.slice(1)}`;
+      kept.push(`${joined}${end}`);
+    }
   }
   return capitalizeLike(kept.join(" "), text);
 }
