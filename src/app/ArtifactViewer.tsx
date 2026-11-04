@@ -3,7 +3,7 @@
 import { Fragment, useMemo, useState } from "react";
 import type { ArtifactChange, CookAlongArtifact } from "../lib/schema/artifact";
 import type { Lane, TimelineTask } from "../lib/schema/timeline";
-import { buildImportUrl } from "../lib/handoff";
+import { buildImportUrl, saveToTextSousEnabled } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
 import { laneDisplayColors, taskLaneColor } from "../lib/lane-palette";
 import { mergeNotes, reviewNoteTexts } from "../lib/review-notes";
@@ -235,6 +235,7 @@ export default function ArtifactViewer({
   notices = [],
   embedded = false,
   onClose,
+  saveEnabled = saveToTextSousEnabled(),
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -243,6 +244,8 @@ export default function ArtifactViewer({
   /** Inside the /embed overlay: save opens a new tab, Close replaces "Convert another recipe". */
   embedded?: boolean;
   onClose?: () => void;
+  /** "Save to TextSous" shows unless the deploy turned it off (NEXT_PUBLIC_SAVE_TO_TEXTSOUS). */
+  saveEnabled?: boolean;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -486,9 +489,11 @@ export default function ArtifactViewer({
 
       {saveError ? <ErrorBox error={saveError} /> : null}
       <div className="btn-row save-row">
-        <button type="button" className="btn btn-primary" onClick={saveToTextSous} disabled={saveBusy}>
-          {saveBusy ? "Saving…" : "Save to TextSous"}
-        </button>
+        {saveEnabled ? (
+          <button type="button" className="btn btn-primary" onClick={saveToTextSous} disabled={saveBusy}>
+            {saveBusy ? "Saving…" : "Save to TextSous"}
+          </button>
+        ) : null}
         {embedded && onClose ? (
           <button type="button" className="btn" onClick={onClose}>
             Close
@@ -508,7 +513,9 @@ export default function ArtifactViewer({
           if it didn&apos;t.
         </p>
       ) : null}
-      <p className="meta">Saving keeps the recipe for 24 hours so TextSous can import it.</p>
+      {saveEnabled ? (
+        <p className="meta">Saving keeps the recipe for 24 hours so TextSous can import it.</p>
+      ) : null}
     </article>
   );
 }

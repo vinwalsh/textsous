@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
 import EmbedApp, { EmbedStatus, initialEmbedState, readyFromConvert } from "../src/app/embed/EmbedApp";
+import { saveToTextSousEnabled } from "../src/lib/handoff";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
 
 const noop = () => {};
@@ -112,6 +113,21 @@ describe("embedded artifact viewer", () => {
     const html = renderToString(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
     expect(html).toContain("Convert another recipe");
     expect(html).not.toContain(">Close</button>");
+  });
+
+  it("hides Save to TextSous when the deploy turns it off (textsous.com/import not live yet)", () => {
+    expect(saveToTextSousEnabled(undefined)).toBe(true);
+    expect(saveToTextSousEnabled("")).toBe(true);
+    expect(saveToTextSousEnabled("on")).toBe(true);
+    for (const off of ["off", "OFF", "0", "false", " no "]) expect(saveToTextSousEnabled(off)).toBe(false);
+    const hidden = renderToString(
+      createElement(ArtifactViewer, { artifact, onStartOver: noop, saveEnabled: false }),
+    );
+    expect(hidden).not.toContain("Save to TextSous");
+    expect(hidden).not.toContain("Saving keeps the recipe");
+    expect(hidden).toContain("Convert another recipe");
+    const shown = renderToString(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
+    expect(shown).toContain("Save to TextSous");
   });
 
   it("keeps the convert warnings and shows them in the overlay, as on the home page", () => {

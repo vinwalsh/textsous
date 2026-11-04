@@ -185,6 +185,9 @@ link.
   site cannot spend conversions through its readers' browsers. The overlay's
   own requests come from the `/embed` page and are same-origin; scripts and
   servers send no such header and are not affected.
+- "Save to TextSous" opens textsous.com/import. A deploy built with
+  `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off` hides the button (on the site and in the
+  overlay) until that page is live.
 - `src/app/embed-demo/`: the demo post, built from the original CC0 fixture
   `eval/fixtures/toasted-oat-porridge.html`.
   `/embed-demo?src=<this site's /api/artifact link>&autoopen=1` opens the
