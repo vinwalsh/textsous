@@ -1,0 +1,17 @@
+.control { display: flex; align-items: center; justify-content: flex-end; margin: 8px 0 12px; }
+.options { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--pilot-line, #ded8ce); border-radius: 7px; background: var(--pilot-soft, #f1ece5); }
+.control .options button { min-height: 28px; padding: 4px 9px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--pilot-muted, #746c60); font: 500 11px/1.3 var(--font-sans), system-ui, sans-serif; cursor: pointer; }
+.options button[aria-pressed="true"] { color: var(--pilot-ink, #292622); background: var(--pilot-surface, #fff); border-color: var(--pilot-line, #ded8ce); box-shadow: 0 1px 2px #29262208; }
+.options button:hover { color: var(--pilot-action, #bb4827); }
+.options button:focus-visible, .extras summary:focus-visible { outline: 2px solid var(--pilot-action, #bb4827); outline-offset: 3px; }
+.extras { margin: 12px 0; border-top: 1px solid var(--pilot-line, #ded8ce); }
+.extras summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; cursor: pointer; color: var(--pilot-action, #bb4827); font-size: 12px; font-weight: 550; list-style: none; }
+.extras summary::-webkit-details-marker { display: none; }
+.extras summary > svg { flex-shrink: 0; transition: transform .15s; }
+.extras[open] summary > svg { transform: rotate(180deg); }
+.extras p, .tip { color: var(--pilot-muted, #746c60); font-size: 12px; line-height: 1.7; }
+.extras p { margin: 0 0 10px; }
+@media (max-width: 600px) {
+  .control { justify-content: flex-start; }
+  .control .options button { min-height: 32px; }
+}

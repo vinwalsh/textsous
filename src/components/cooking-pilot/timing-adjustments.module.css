@@ -1,0 +1,14 @@
+.notice { display: flex; gap: 12px; margin: 16px 0 24px; padding: 18px; border: 1px solid #c9ad77; border-radius: 16px; background: #fbf3df; color: #493e2b; }
+.notice > svg { flex-shrink: 0; margin-top: 3px; }
+.notice strong { font-size: 15px; }
+.notice p { margin: 6px 0; font-size: 14px; line-height: 1.6; }
+.notice button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.highlight { background: #fbf3df; border: 1px solid #dbc18e !important; border-radius: 12px; padding: 14px !important; margin: 8px 0; }
+.highlight > span { line-height: 1.5; }
+.highlight small { display: block; font-size: 12px; line-height: 1.6; margin-top: 7px; font-weight: 400; }
+.badge { display: block; color: #795323; font-size: 11px; letter-spacing: .04em; margin-bottom: 4px; }
+.status { color: var(--color-text, #3f4138); font-size: 13px; line-height: 1.5; margin-top: 12px; }
+.wakeStatus { font-size: 12px; }
+.wakeStatus button { text-decoration: underline; min-height: 44px; margin-left: 4px; }
+.methodNotice p { padding: 16px; border-radius: 12px; background: #fbf3df; font-size: 14px; margin-top: 16px; }
+@media (max-width: 640px) { .highlight { flex-wrap: wrap; gap: 12px; } .highlight > span { flex-basis: 100%; } }

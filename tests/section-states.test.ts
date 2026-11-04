@@ -222,7 +222,8 @@ describe("adjusting the finished cook along", () => {
   const queued: AdjustChoices = { servings: base + 16, dietary: "vegan", cuisine: "Italian", sousVoice: false };
 
   function render(props: Record<string, unknown>) {
-    return renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: () => {}, ...props }));
+    // The open sections (the Cook Along view's fallback) carry the per-section marks.
+    return renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: () => {}, cookAlongView: false, ...props }));
   }
 
   it("reads like the queued note: Adjusting: serves 2 → 18 · Vegan · Italian style…", () => {

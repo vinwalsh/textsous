@@ -101,7 +101,7 @@ function artifact(): CookAlongArtifact {
 
 function render(): string {
   return renderToString(
-    createElement(ArtifactViewer, { artifact: artifact(), onStartOver: () => {} }),
+    createElement(ArtifactViewer, { artifact: artifact(), onStartOver: () => {}, cookAlongView: false }),
   ).replace(/<!-- -->/g, "");
 }
 

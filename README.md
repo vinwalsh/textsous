@@ -5,6 +5,9 @@ cookbook photos of one recipe — into the TextSous Cook Along format: a
 canonical recipe JSON, a component-lane cooking timeline, and adjustable
 variants (servings, dietary, cuisine, SOUS voice). The web app runs at
 https://open.textsous.com and hands finished recipes to https://textsous.com.
+Finished recipes open in the TextSous Cook Along view (component lanes, a
+guided timeline, step cards with timers), ported from the TextSous app:
+try it at https://open.textsous.com/cook-along-demo.
 
 ## 60-second quickstart
 

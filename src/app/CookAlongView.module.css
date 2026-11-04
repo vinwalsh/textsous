@@ -1,0 +1,9 @@
+/* The Cook Along body is wider than the 720 px text column, so its lanes
+   have room: the view's own layout keys off the viewport, which is the
+   window on the site's pages and the overlay's frame in /embed. Both text
+   columns are centered, so the body centers on the same line. */
+.body {
+  --cook-along-width: min(1180px, calc(100vw - 32px));
+  width: var(--cook-along-width);
+  margin: 28px 0 8px calc(50% - var(--cook-along-width) / 2);
+}

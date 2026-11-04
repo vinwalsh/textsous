@@ -92,6 +92,13 @@ here with the date. Check the code before trusting any doc line about it.
   directory on this machine, especially ~/Documents/sous-app and
   ~/sous-worktrees. The platform's code is private, and this repo is a
   clean-room build from the spec below.
+- One owner-approved exception (Nov 4, 2026): the Cook Along view was
+  ported from the TextSous app at the owner's direction and is MIT here
+  (src/components/cooking-pilot/, src/lib/cooking-pilot/,
+  src/lib/cooking-timeline/, src/lib/recipe-servings.ts,
+  src/lib/timezone.ts). src/lib/cooking-pilot/from-artifact.ts adapts the
+  open artifact to it. No other private code: do not copy more from the
+  app without a new owner decision.
 - The textsous.com side of the handoff is built separately, in a private repo
   you cannot see. Its contract is the "Handoff" section below, the generated
   JSON Schemas in docs/schema/ and the skills API in docs/SKILLS.md, which

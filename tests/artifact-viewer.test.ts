@@ -101,7 +101,7 @@ function makeArtifact(): CookAlongArtifact {
 
 function renderViewer(): string {
   return renderToString(
-    createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {} }),
+    createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {}, cookAlongView: false }),
   );
 }
 
@@ -135,7 +135,7 @@ describe("artifact viewer layout", () => {
   it("shows the convert warnings after the steps, above the timeline, and nothing when there are none", () => {
     const note = "The page text was 90,000 characters; only the first 60,000 were kept.";
     const html = renderToString(
-      createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {}, notices: [note] }),
+      createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {}, notices: [note], cookAlongView: false }),
     );
     expect(html).toContain("Notes on this conversion");
     expect(html.indexOf("only the first 60,000 were kept")).toBeGreaterThan(html.indexOf(">Steps<"));
