@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { Command } from "commander";
+import { DEMO_SITE_SLUGS } from "../src/app/demo-sites/recipes";
 
 // `npm run warm -- --base https://open.textsous.com`: convert every /demo URL
-// (eval/urls.txt) and the /embed-demo post once through a deployed
-// /api/convert, so the demo and the embed showcase open from the cache. Run
+// (eval/urls.txt), the /embed-demo post and the four /demo-sites blogs once
+// through a deployed /api/convert, so the demos open from the cache. Run
 // it after any deploy that changes a stage version (the cache key includes
 // them), against production (a protected preview cannot fetch itself). One
 // request at a time; cache hits are free. A fresh conversion uses one daily
@@ -27,13 +28,19 @@ const TIMEOUT_MS = 430_000;
 
 /**
  * The URLs to warm: the /demo list, then the /embed-demo post's own address
- * (what embed.js sends when the post has no ?src=). Only for an https base:
- * the converter refuses http, so a local run skips the post. Pure.
+ * (what embed.js sends when the post has no ?src=), then the four
+ * /demo-sites blog posts (their canonical addresses, what the Adjust with
+ * SOUS button converts). Only for an https base: the converter refuses http,
+ * so a local run skips the site's own pages. Pure.
  */
 export function warmTargets(urls: readonly string[], base: string): string[] {
   const origin = new URL(base);
   if (origin.protocol !== "https:") return [...urls];
-  return [...urls, new URL("/embed-demo", origin).href];
+  return [
+    ...urls,
+    new URL("/embed-demo", origin).href,
+    ...DEMO_SITE_SLUGS.map((slug) => new URL(`/demo-sites/${slug}`, origin).href),
+  ];
 }
 
 /**
