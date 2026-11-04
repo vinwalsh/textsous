@@ -156,12 +156,30 @@ function formatAmount(quantity: string, unit: string): string {
   return `${quantity} ${unit}`.trim();
 }
 
+/** Conversion notes from the server (text cut, timings relabeled). */
+export function ConversionNotes({ notes }: { notes: readonly string[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <div className="notice" role="note" aria-label="Notes on this conversion">
+      <strong>Notes on this conversion:</strong>
+      <ul className="changes">
+        {notes.map((note, i) => (
+          <li key={i}>{note}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function ArtifactViewer({
   artifact,
   onStartOver,
+  notices = [],
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
+  /** Warnings the convert call returned, shown above Before you start. */
+  notices?: readonly string[];
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -269,6 +287,8 @@ export default function ArtifactViewer({
         onAdjusted={(next: CookAlongArtifact) => handleAdjusted(next)}
         onReset={handleReset}
       />
+
+      <ConversionNotes notes={notices} />
 
       <BeforeYouStart artifact={current} totalMinutes={totalMinutes} />
 

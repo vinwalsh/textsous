@@ -23,6 +23,13 @@ type Tab = "url" | "text" | "photo";
 interface ConvertOk {
   artifact: CookAlongArtifact;
   cached: boolean;
+  warnings?: unknown;
+}
+
+/** The convert response's warnings as display strings. Pure. */
+export function convertNotices(warnings: unknown): string[] {
+  if (!Array.isArray(warnings)) return [];
+  return warnings.filter((w): w is string => typeof w === "string" && w.trim().length > 0);
 }
 
 interface PhotoOk {
@@ -68,6 +75,7 @@ export default function ConverterForm({
   const [busy, setBusy] = useState<"convert" | "transcribe" | "load" | null>(null);
   const [error, setError] = useState<FriendlyError | null>(null);
   const [artifact, setArtifact] = useState<CookAlongArtifact | null>(null);
+  const [notices, setNotices] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<{
     photoUrl: string;
     fileName: string;
@@ -100,6 +108,7 @@ export default function ConverterForm({
       }
       if (confirm) URL.revokeObjectURL(confirm.photoUrl);
       setConfirm(null);
+      setNotices(convertNotices(data.warnings));
       setArtifact(valid.data);
       setBusy(null);
       window.scrollTo(0, 0);
@@ -134,6 +143,7 @@ export default function ConverterForm({
       setBusy(null);
       return;
     }
+    setNotices([]);
     setArtifact(valid.data);
     setBusy(null);
     window.scrollTo(0, 0);
@@ -229,11 +239,12 @@ export default function ConverterForm({
 
   function startOver() {
     setArtifact(null);
+    setNotices([]);
     setError(null);
   }
 
   if (artifact) {
-    return <ArtifactViewer artifact={artifact} onStartOver={startOver} />;
+    return <ArtifactViewer artifact={artifact} onStartOver={startOver} notices={notices} />;
   }
 
   if (confirm) {
