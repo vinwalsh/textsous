@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import type { RecipeOverview } from "../lib/convert-events";
 import type { ArtifactChange, ArtifactCredit, CookAlongArtifact } from "../lib/schema/artifact";
 import type { Lane, TimelineDefinition, TimelineTask } from "../lib/schema/timeline";
@@ -473,6 +473,16 @@ export default function ArtifactViewer({
   const [glassesBusy, setGlassesBusy] = useState(false);
   const [glassesError, setGlassesError] = useState<FriendlyError | null>(null);
 
+  // Back from the glasses view can restore this page from the back/forward
+  // cache: the link reads Cook on Meta glasses again.
+  useEffect(() => {
+    function onShow(event: PageTransitionEvent) {
+      if (event.persisted) setGlassesBusy(false);
+    }
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
   function chooseTipsMode(mode: TipsMode) {
     setTipsMode(mode);
     storeTipsMode(mode);
@@ -551,11 +561,12 @@ export default function ArtifactViewer({
       body: JSON.stringify({ artifact: current }),
     });
     const data = res.data as { url?: string; error?: string } | null;
+    // Not busy once we leave: browser Back may show this page again as it was.
+    setGlassesBusy(false);
     if (res.ok && data?.url) {
       window.location.href = glassesHref(data.url);
       return;
     }
-    setGlassesBusy(false);
     if (recipe.credit.kind === "url" && recipe.credit.url) {
       window.location.href = glassesFallbackHref(recipe.credit);
       return;
