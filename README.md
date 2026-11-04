@@ -24,7 +24,9 @@ time) and writes the Cook Along artifact to `/tmp/herby.json`. Add
 to adjust it. `npx tsx src/cli.ts convert --help` lists every flag.
 
 Prefer the browser? `npm run dev`, open http://localhost:3000, and paste a
-recipe URL — the same pipeline runs behind `/api/convert`.
+recipe URL — the same pipeline runs behind `/api/convert`. Send it
+`Accept: application/x-ndjson` to get the conversion progressively, one
+event per line as each part is ready (`src/lib/convert-events.ts`).
 
 ## Provider setup
 
@@ -37,6 +39,7 @@ Model access goes through one client with config from the environment:
 | `MODEL_ID`       | `muse-spark-1.3`           | Model to convert with          |
 | `BASETEN_API_KEY`| falls back to `MODEL_API_KEY` | Optional Baseten fallback key |
 | `BASETEN_BASE_URL` | falls back to `MODEL_BASE_URL` | Optional Baseten endpoint  |
+| `REASONING_EFFORT_<STAGE>` | `low` (`minimal` for overview and scaling) | reasoning_effort for one stage, e.g. `REASONING_EFFORT_PROCEDURE=minimal` |
 
 The Baseten profile always uses `meta-models/muse-spark-open-1026`. Never
 commit keys: copy them into `.env.local`, which is git-ignored.
@@ -120,8 +123,10 @@ browser.
 - Pasted text can be up to 60,000 characters.
 - Photos must be PNG, JPEG, or WebP. The browser shrinks large phone photos
   before upload; the server takes up to 5 MB and processes it in memory only.
-- A fresh conversion takes 3 to 4 minutes; a recipe converted before opens
-  from the cache right away.
+- A fresh conversion takes a few minutes; the page fills in as each part is
+  ready (the recipe's facts and a short summary first, then ingredients,
+  prep and steps), and a recipe converted before opens from the cache right
+  away.
 - Servings rescale from 0.5× to 12. Adjustments never change a step's timing;
   removing an ingredient can drop a step that only handled it.
 - Live conversions are limited per IP to 20 an hour each for converting,
