@@ -13,7 +13,6 @@ import {
   IngredientsCard,
   OverviewCard,
   PrepSection,
-  readTipsMode,
   StepsSection,
   storeTipsMode,
   TipsToggle,
@@ -107,7 +106,8 @@ export function FactsCard({ facts, recipe }: { facts: RecipeFacts; recipe: Canon
 
 /**
  * The cook along while it is written: the cooking line on top, then each
- * part as soon as it arrives, in the finished page's order. Adjustments
+ * part as soon as it arrives, in the finished page's order. Steps show as
+ * essentials first, with tips one tap away once they exist. Adjustments
  * chosen here wait for the finished cook along (`onQueue`).
  */
 export default function ProgressiveView({
@@ -120,7 +120,8 @@ export default function ProgressiveView({
   onQueue: (choices: AdjustChoices | null) => void;
 }) {
   const { facts, overview, recipe, timeline } = state;
-  const [tipsMode, setTipsMode] = useState<TipsMode>(readTipsMode);
+  // Essentials first; the cook can switch to With tips once tips exist.
+  const [tipsMode, setTipsMode] = useState<TipsMode>("essentials");
   const totalMinutes = useMemo(() => {
     if (!timeline) return null;
     try {

@@ -149,12 +149,13 @@ describe("progressive view, part by part", () => {
     expect(html).not.toContain("With tips");
   });
 
-  it("offers With tips once tips or why lines exist", () => {
+  it("builds the essential steps first and offers With tips once tips or why lines exist", () => {
     const tasks = TIMELINE.tasks.map((t, i) => (i === 1 ? { ...t, tip: "Stir from the edges.", why: "Even cooking." } : t));
     const html = render(reduceConversion(withRecipe, { type: "procedure", timeline: { ...TIMELINE, tasks } }));
-    expect(html).toContain("With tips");
-    expect(html).toContain("Tip: Stir from the edges.");
-    expect(html).toContain("Why: Even cooking.");
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Essentials/);
+    expect(html).toMatch(/aria-pressed="false"[^>]*>With tips/);
+    expect(html).not.toContain("Tip: Stir from the edges.");
+    expect(html).toContain(tasks[1].description);
   });
 
   it("keeps the owner's order: line, facts, overview, adjustments, ingredients, before you start, prep, steps", () => {
