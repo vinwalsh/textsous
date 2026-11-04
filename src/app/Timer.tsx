@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 
 function format(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  const mmss = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  // A long simmer reads 4:00:00, not 240:00.
+  return h > 0 ? `${h}:${mmss}` : mmss;
 }
 
 /** Shift a countdown by delta seconds, never below zero. Pure. */
