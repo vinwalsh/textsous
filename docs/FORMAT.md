@@ -79,6 +79,7 @@ The component-lane cooking plan: lanes, phases, timed tasks, resources and the s
 - `tasks[].sourceStepIds`: array of string (min 1 items)
 - `tasks[].checkpoints`: array of string
 - `tasks[].tip`: string or null, optional
+- `tasks[].why`: string or null, optional
 - `tasks[].equipmentEvent`: string or null, optional (one of: oven-on, oven-off)
 - `tasks[].scheduling`: object
 - `tasks[].scheduling.waits`: array of integer
@@ -161,6 +162,7 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `timelineDefinition.tasks[].sourceStepIds`: array of string (min 1 items)
 - `timelineDefinition.tasks[].checkpoints`: array of string
 - `timelineDefinition.tasks[].tip`: string or null, optional
+- `timelineDefinition.tasks[].why`: string or null, optional
 - `timelineDefinition.tasks[].equipmentEvent`: string or null, optional (one of: oven-on, oven-off)
 - `timelineDefinition.tasks[].scheduling`: object
 - `timelineDefinition.tasks[].scheduling.waits`: array of integer

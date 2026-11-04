@@ -180,6 +180,12 @@
               "null"
             ]
           },
+          "why": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "equipmentEvent": {
             "anyOf": [
               {

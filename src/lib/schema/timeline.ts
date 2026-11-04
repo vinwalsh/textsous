@@ -52,6 +52,10 @@ export const TimelineTaskSchema = z.strictObject({
   sourceStepIds: z.array(z.string().min(1)).min(1),
   checkpoints: z.array(z.string().min(1)),
   tip: z.string().nullish(),
+  // Optional one-sentence rationale ("why this step matters"), shown with
+  // tips and hidden in the viewer's Essentials mode. Added after v1 shipped,
+  // so artifacts without it stay valid.
+  why: z.string().nullish(),
   equipmentEvent: EquipmentEventSchema.nullish(),
   scheduling: TaskSchedulingSchema,
 });
