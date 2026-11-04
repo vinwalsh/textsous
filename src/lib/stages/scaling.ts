@@ -10,8 +10,7 @@ import {
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
-import { parseAmount } from "../scaling/amounts";
-import { effectiveFactor, formatAmount, round2, scaleIngredient } from "../scaling/scale";
+import { effectiveFactor, formatAmount, round2, scalableAmount, scaleIngredient } from "../scaling/scale";
 import { nativeServingsOf } from "../scaling/native";
 import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../scaling/servings";
 import { rescaleText, type AmountMapping } from "../scaling/text";
@@ -139,22 +138,23 @@ export function applyScaling(
   const ingredients = recipe.ingredients.map((ingredient) => {
     const rule = byId.get(ingredient.id) ?? "linear";
     const scaled = scaleIngredient({ ...ingredient, scaleRule: rule }, factor);
-    const original = parseAmount(ingredient.quantity);
-    const current = parseAmount(ingredient.cookQuantity ?? ingredient.quantity);
+    const eff = effectiveFactor(rule, factor);
+    // The leading amount when the quantity is more than one ("1/2 cup (100g)").
+    const original = scalableAmount(ingredient.quantity, ingredient.unit);
+    const current = scalableAmount(ingredient.cookQuantity ?? ingredient.quantity, ingredient.unit);
     if (scaled.scaled && original !== null && current !== null) {
-      const eff = effectiveFactor(rule, factor);
       const ends: Array<[number, number]> =
-        original.low === original.high
-          ? [[current.low, original.low]]
+        original.amount.low === original.amount.high
+          ? [[current.amount.low, original.amount.low]]
           : [
-              [current.low, original.low],
-              [current.high, original.high],
+              [current.amount.low, original.amount.low],
+              [current.amount.high, original.amount.high],
             ];
       for (const [now, base] of ends) {
         mappings.push({
           current: now,
           next: round2(base * eff),
-          unit: ingredient.unit,
+          unit: original.unit,
           name: ingredient.name,
         });
       }

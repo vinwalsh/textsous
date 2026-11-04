@@ -1,5 +1,5 @@
 import { findNumbers, type FoundNumber } from "./amounts";
-import { formatKitchenAmount } from "./scale";
+import { formatCookAmount } from "./scale";
 import { lookupUnit } from "./units";
 
 /**
@@ -229,7 +229,7 @@ function close(a: number, b: number): boolean {
 
 type Classified =
   | { kind: "skip" }
-  | { kind: "map"; next: number }
+  | { kind: "map"; next: number; unit: string }
   | { kind: "unmatched" };
 
 function classify(
@@ -281,7 +281,7 @@ function classify(
   const winners = scored.filter((x) => x.s === top);
   const next = winners[0].m.next;
   if (!winners.every((x) => close(x.m.next, next))) return { kind: "unmatched" };
-  return { kind: "map", next };
+  return { kind: "map", next, unit: winners[0].m.unit };
 }
 
 /**
@@ -311,7 +311,8 @@ export function rescaleText(
       continue;
     }
     if (close(decision.next, token.value ?? Number.NaN)) continue;
-    out = `${out.slice(0, token.start)}${formatKitchenAmount(decision.next)}${out.slice(token.end)}`;
+    // Same rounding as the ingredient list, so the next rescale still matches.
+    out = `${out.slice(0, token.start)}${formatCookAmount(decision.next, decision.unit)}${out.slice(token.end)}`;
   }
   return { text: out, unmatched: unmatched.reverse() };
 }
