@@ -18,7 +18,7 @@ import { skillsError, type SkillsError, type SkillsWarning } from "./errors";
 import { CookAlongRequestSchema, unknownKeyPaths, type CookAlongRequest } from "./input";
 import { normalize, type ResolvedSource } from "./normalize";
 import { getRecipeSource, type SourceResult } from "./source";
-import { formatPath, issueMessage, validateCookAlong } from "./validate";
+import { formatPath, issueMessage, MAX_REPORTED, validateCookAlong } from "./validate";
 
 export interface CookAlongSummary {
   title: string;
@@ -90,6 +90,14 @@ function formatAdvice(review: ReviewResult, timeline: TimelineDefinition): Skill
     const i = w.taskId === undefined ? undefined : index.get(w.taskId);
     return { code: w.code, message: w.message, ...(i === undefined ? {} : { path: `timeline.tasks[${i}]` }) };
   });
+}
+
+/** Every reply names at most MAX_REPORTED errors and warnings. */
+function capped(result: PrepareResult): PrepareResult {
+  const warnings = result.warnings.slice(0, MAX_REPORTED);
+  return result.ok
+    ? { ...result, warnings }
+    : { ok: false, errors: result.errors.slice(0, MAX_REPORTED), warnings };
 }
 
 /** Summary minutes come from the code schedule, never from the assistant. */
@@ -186,16 +194,21 @@ async function resolveSource(
 /**
  * The cook-along skill without storage: lenient parse, defaults, strict
  * validation, procedure checks, code schedule, coded review checks and
- * compile. No model calls. Errors carry the path to fix.
+ * compile. No model calls. Errors carry the path to fix; at most
+ * MAX_REPORTED errors and warnings come back.
  */
 export async function prepareCookAlong(raw: unknown, opts: PrepareOptions = {}): Promise<PrepareResult> {
+  return capped(await prepare(raw, opts));
+}
+
+async function prepare(raw: unknown, opts: PrepareOptions): Promise<PrepareResult> {
   const warnings: SkillsWarning[] = [];
   const parsed = CookAlongRequestSchema.safeParse(raw);
   if (!parsed.success) {
     return {
       ok: false,
       warnings,
-      errors: parsed.error.issues.map((issue) => {
+      errors: parsed.error.issues.slice(0, MAX_REPORTED).map((issue) => {
         const path = formatPath(issue.path);
         return skillsError(path || "body", issue.path.length === 0 ? "invalid_body" : "invalid_value", issueMessage(issue, path));
       }),

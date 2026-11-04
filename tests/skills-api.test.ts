@@ -495,6 +495,57 @@ describe("auth, size and rate limits", () => {
   });
 });
 
+describe("bounded replies (a hostile body cannot amplify)", () => {
+  // Inside the MCP's own ceilings: 150 ingredients with 100-character ids,
+  // 300 tasks each citing an unknown ingredient 150 times. Before the cap
+  // this built ~45,000 messages that each repeated every id (hundreds of MB).
+  function attackBody(taskCount: number) {
+    const ingredients = Array.from({ length: 150 }, (_, i) => ({ id: `i${i}`.padEnd(100, "x"), name: "a" }));
+    const tasks = Array.from({ length: taskCount }, (_, i) => ({
+      phase: "cook",
+      label: `Do thing ${String.fromCharCode(97 + (i % 26))}`,
+      description: "a",
+      completionCue: "done",
+      minutes: 1,
+      timingBasis: "estimate",
+      attention: "unattended",
+      laneIds: ["c"],
+      sourceStepIds: ["s"],
+      ingredientIds: Array(150).fill("z"),
+    }));
+    return {
+      source: { kind: "text", text: "a" },
+      recipe: { title: "t", servings: 1, ingredients, steps: [{ id: "s", text: "a" }] },
+      timeline: { lanes: [{ id: "c", label: "c", kind: "component" }, { id: "k", label: "k", kind: "kitchen" }], tasks },
+    };
+  }
+
+  it("answers at most 50 short errors, each naming at most 20 ids", async () => {
+    const raw = JSON.stringify(attackBody(300));
+    expect(raw.length).toBeLessThan(256 * 1024);
+    const res = await cookAlongPOST(post("/api/skills/cook-along", JSON.parse(raw)));
+    expect(res.status).toBe(422);
+    const text = await res.text();
+    expect(text.length).toBeLessThan(200 * 1024);
+    const body = JSON.parse(text) as { errors: Array<{ code: string; message: string }> };
+    expect(body.errors).toHaveLength(50);
+    expect(body.errors[0].code).toBe("unknown_reference");
+    expect(body.errors[0].message).toMatch(/ and 130 more\); "z" does not exist\.$/);
+    expect(Math.max(...body.errors.map((e) => e.message.length))).toBeLessThan(2600);
+  });
+
+  it("caps the lenient-parse errors too", async () => {
+    const result = await prepareCookAlong({
+      source: { kind: "text", text: "a" },
+      recipe: { title: "t", servings: 1, ingredients: Array.from({ length: 120 }, () => ({ name: 7 })), steps: [] },
+      timeline: { lanes: [], tasks: [] },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.length).toBeLessThanOrEqual(50);
+  });
+});
+
 describe("allergens in the summary", () => {
   it("reports traces the allergen floor adds, as the viewer does", async () => {
     // The guide allows empty allergen lists ("When unsure, leave the list

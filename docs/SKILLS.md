@@ -155,8 +155,10 @@ the deterministic allergen floor, the same lists the viewer shows as
   "warnings": [] }
 ```
 
-The full list of error codes and their fixes is in the `instructions`
-(section "Fixing errors"), generated from `src/lib/skills/errors.ts`.
+At most 50 errors come back at once (fix them and send the body again), and
+an id list inside a message names at most 20 ids. The full list of error
+codes and their fixes is in the `instructions` (section "Fixing errors"),
+generated from `src/lib/skills/errors.ts`.
 
 ### Shared responses
 

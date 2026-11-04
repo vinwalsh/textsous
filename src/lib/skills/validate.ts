@@ -56,11 +56,28 @@ export function issueMessage(issue: ZodIssue, path: string): string {
   }
 }
 
+/**
+ * At most this many errors come back from one save: enough to fix in one
+ * pass, and a hostile body cannot turn into a huge reply.
+ */
+export const MAX_REPORTED = 50;
+
+/** Id lists in messages name at most this many ids. */
+const MAX_LISTED_IDS = 20;
+
+/** "a, b, c" or "a, b, ... and 12 more"; "(none)" when empty. Pure. */
+export function listIds(ids: Iterable<string>): string {
+  const all = [...ids];
+  if (all.length === 0) return "(none)";
+  const shown = all.slice(0, MAX_LISTED_IDS).join(", ");
+  return all.length > MAX_LISTED_IDS ? `${shown} and ${all.length - MAX_LISTED_IDS} more` : shown;
+}
+
 function zodErrors(
   issues: ZodIssue[],
   toPath: (parts: Array<string | number>) => string,
 ): SkillsError[] {
-  return issues.map((issue) => {
+  return issues.slice(0, MAX_REPORTED).map((issue) => {
     const path = toPath(issue.path);
     return skillsError(path, "invalid_value", issueMessage(issue, path));
   });
@@ -137,42 +154,55 @@ export function validateCookAlong(
   const resourceIds = new Set(timeline.resources.map((r) => r.id));
   const ingredientIds = new Set(recipe.ingredients.map((i) => i.id));
   const taskById = new Map(timeline.tasks.map((t) => [t.id, t] as const));
-  const list = (ids: Set<string>) => [...ids].join(", ") || "(none)";
+  // Each id list is built once and shortened: messages stay small however
+  // many references are wrong.
+  const stepList = listIds(stepIds);
+  const laneList = listIds(laneIds);
+  const taskList = listIds(taskById.keys());
+  const ingredientList = listIds(ingredientIds);
+  const resourceList = listIds(resourceIds);
+  const room = () => errors.length < MAX_REPORTED;
   const stepPool = recipe.steps.map((s) => s.text);
   const normalizedSource = ctx.sourceText ? normalizeText(ctx.sourceText) : null;
 
-  timeline.tasks.forEach((task, i) => {
+  for (const [i, task] of timeline.tasks.entries()) {
+    if (!room()) break;
     const at = `timeline.tasks[${i}]`;
-    task.sourceStepIds.forEach((id, j) => {
+    for (const [j, id] of task.sourceStepIds.entries()) {
+      if (!room()) break;
       if (!stepIds.has(id)) {
-        errors.push(skillsError(`${at}.sourceStepIds[${j}]`, "unknown_reference", `Cite a step id from recipe.steps (${list(stepIds)}); "${id}" does not exist.`));
+        errors.push(skillsError(`${at}.sourceStepIds[${j}]`, "unknown_reference", `Cite a step id from recipe.steps (${stepList}); "${id}" does not exist.`));
       }
-    });
-    task.laneIds.forEach((id, j) => {
+    }
+    for (const [j, id] of task.laneIds.entries()) {
+      if (!room()) break;
       if (!laneIds.has(id)) {
-        errors.push(skillsError(`${at}.laneIds[${j}]`, "unknown_reference", `Use a lane id from timeline.lanes (${list(laneIds)}); "${id}" does not exist.`));
+        errors.push(skillsError(`${at}.laneIds[${j}]`, "unknown_reference", `Use a lane id from timeline.lanes (${laneList}); "${id}" does not exist.`));
       }
-    });
-    task.dependencies.forEach((id, j) => {
+    }
+    for (const [j, id] of task.dependencies.entries()) {
+      if (!room()) break;
       const dep = taskById.get(id);
       if (id === task.id) {
         errors.push(skillsError(`${at}.dependencies[${j}]`, "self_dependency", `Remove "${id}" from its own dependencies.`));
       } else if (!dep) {
-        errors.push(skillsError(`${at}.dependencies[${j}]`, "unknown_reference", `Depend only on task ids in timeline.tasks (${list(new Set(taskById.keys()))}); "${id}" does not exist.`));
+        errors.push(skillsError(`${at}.dependencies[${j}]`, "unknown_reference", `Depend only on task ids in timeline.tasks (${taskList}); "${id}" does not exist.`));
       } else if (task.phase === "prep" && dep.phase !== "prep") {
         errors.push(skillsError(`${at}.dependencies[${j}]`, "prep_depends_on_cook", `Prep task "${task.id}" cannot wait for ${dep.phase} task "${id}": mise en place comes first. Make "${task.id}" a cook task or drop the dependency.`));
       }
-    });
-    task.scheduling.ingredientIds.forEach((id, j) => {
+    }
+    for (const [j, id] of task.scheduling.ingredientIds.entries()) {
+      if (!room()) break;
       if (!ingredientIds.has(id)) {
-        errors.push(skillsError(`${at}.ingredientIds[${j}]`, "unknown_reference", `Use an ingredient id from recipe.ingredients (${list(ingredientIds)}); "${id}" does not exist.`));
+        errors.push(skillsError(`${at}.ingredientIds[${j}]`, "unknown_reference", `Use an ingredient id from recipe.ingredients (${ingredientList}); "${id}" does not exist.`));
       }
-    });
-    task.scheduling.resourceIds.forEach((id, j) => {
+    }
+    for (const [j, id] of task.scheduling.resourceIds.entries()) {
+      if (!room()) break;
       if (!resourceIds.has(id)) {
-        errors.push(skillsError(`${at}.resourceIds[${j}]`, "unknown_reference", `Declare "${id}" in timeline.resources or remove it; known resources: ${list(resourceIds)}.`));
+        errors.push(skillsError(`${at}.resourceIds[${j}]`, "unknown_reference", `Declare "${id}" in timeline.resources or remove it; known resources: ${resourceList}.`));
       }
-    });
+    }
 
     if (task.timingBasis === "source") {
       const quote = task.sourceQuote ?? "";
@@ -200,16 +230,17 @@ export function validateCookAlong(
     if (task.attention === "hands-on" && task.minutes > 15 && task.checkpoints.length === 0) {
       errors.push(skillsError(`${at}.checkpoints`, "needs_checkpoints", `Hands-on task "${task.id}" runs ${task.minutes} minutes: add observable checkpoints, split it, or mark the waiting part as a separate unattended task.`));
     }
-  });
+  }
 
-  timeline.resourceHolds.forEach((hold, i) => {
+  for (const [i, hold] of timeline.resourceHolds.entries()) {
+    if (!room()) break;
     if (!taskById.has(hold.taskId)) {
       errors.push(skillsError(`timeline.resourceHolds[${i}].taskId`, "unknown_reference", `Use a task id from timeline.tasks; "${hold.taskId}" does not exist.`));
     }
     if (!resourceIds.has(hold.resourceId)) {
       errors.push(skillsError(`timeline.resourceHolds[${i}].resourceId`, "unknown_reference", `Declare "${hold.resourceId}" in timeline.resources or remove this hold.`));
     }
-  });
+  }
 
   const serveTask = timeline.serveTaskId ? taskById.get(timeline.serveTaskId) : undefined;
   if (timeline.serveTaskId && !serveTask) {
@@ -256,7 +287,7 @@ export function validateCookAlong(
     }
   });
 
-  return { errors, warnings };
+  return { errors: errors.slice(0, MAX_REPORTED), warnings };
 }
 
 /** First dependency cycle as a list of task ids (closing id repeated), or null. */
