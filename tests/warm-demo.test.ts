@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
-import { parseUrlList } from "../scripts/warm-demo";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseUrlList, postJson, warmOne, warmTargets } from "../scripts/warm-demo";
 
 describe("warm-demo URL list", () => {
   it("reads the same 20 https URLs the /demo page lists", () => {
@@ -8,5 +10,60 @@ describe("warm-demo URL list", () => {
     expect(urls).toHaveLength(20);
     expect(urls.every((u) => u.startsWith("https://"))).toBe(true);
     expect(parseUrlList("# note\n\n https://a.example/x \n")).toEqual(["https://a.example/x"]);
+  });
+
+  it("also warms the /embed-demo post on the deployed origin (readiness-4)", () => {
+    const urls = ["https://a.example/x"];
+    expect(warmTargets(urls, "https://open.textsous.com")).toEqual([
+      "https://a.example/x",
+      "https://open.textsous.com/embed-demo",
+    ]);
+    // http (a local run): the converter refuses http, so the post is skipped.
+    expect(warmTargets(urls, "http://localhost:3101")).toEqual(urls);
+  });
+});
+
+describe("warm-demo waits for slow conversions (readiness-5)", () => {
+  let server: Server | null = null;
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
+    server = null;
+  });
+
+  /** A local /api/convert that answers after delayMs, like a slow conversion. */
+  async function slowConvert(delayMs: number): Promise<string> {
+    server = createServer((req, res) => {
+      let body = "";
+      req.on("data", (chunk: Buffer) => (body += chunk.toString("utf8")));
+      req.on("end", () => {
+        setTimeout(() => {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ cached: false, echo: JSON.parse(body) }));
+        }, delayMs);
+      });
+    });
+    await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", () => resolve()));
+    return `http://127.0.0.1:${(server!.address() as AddressInfo).port}`;
+  }
+
+  it("uses its own socket timeout, not fetch's 300 s header limit", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("fetch must not be used"));
+    const base = await slowConvert(300);
+    const res = await postJson(new URL("/api/convert", base), { url: "https://a.example/x" }, 5_000);
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.text)).toEqual({ cached: false, echo: { url: "https://a.example/x" } });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const warmed = await warmOne(base, "https://a.example/x", 5_000);
+    expect(warmed).toMatchObject({ status: 200, cached: false, reason: null });
+  });
+
+  it("reports a timeout only after its own limit", async () => {
+    const base = await slowConvert(2_000);
+    const warmed = await warmOne(base, "https://a.example/x", 200);
+    expect(warmed).toMatchObject({ status: null, reason: "timeout or network error" });
+    expect(warmed.ms).toBeGreaterThanOrEqual(190);
+    expect(warmed.ms).toBeLessThan(1_500);
   });
 });
