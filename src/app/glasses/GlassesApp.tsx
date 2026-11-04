@@ -171,8 +171,9 @@ function useSpatialKeys(onEscape: () => boolean): void {
       if (items.length === 0) return;
       const from = items.indexOf(document.activeElement as HTMLElement);
       if (from === -1) {
+        // Nothing focused yet: start from the main control.
         event.preventDefault();
-        items[0].focus();
+        (items.find((el) => el.classList.contains("g-btn-main")) ?? items[0]).focus();
         return;
       }
       const boxes = items.map((el) => {
@@ -315,6 +316,7 @@ export interface HudProps {
   onJump: (taskId: string) => void;
   onToggleVoice: () => void;
   detailsButtonRef?: Ref<HTMLButtonElement>;
+  timerButtonRef?: Ref<HTMLButtonElement>;
 }
 
 /** The HUD: the task now, what's next, the guide clock, controls and running timers. Pure. */
@@ -337,6 +339,7 @@ export function GlassesHud({
   onJump,
   onToggleVoice,
   detailsButtonRef,
+  timerButtonRef,
 }: HudProps) {
   const item = order[current];
   const task = item.task;
@@ -416,6 +419,7 @@ export function GlassesHud({
         <button
           type="button"
           className="g-btn"
+          ref={timerButtonRef}
           onClick={() =>
             onTimer(
               timer === null || timer.status === "done" ? "start" : timer.status === "running" ? "pause" : "resume",
@@ -563,6 +567,7 @@ function GlassesCookAlong({
   const restored = useRef(false);
   const pushedDetails = useRef(false);
   const detailsButton = useRef<HTMLButtonElement>(null);
+  const timerButton = useRef<HTMLButtonElement>(null);
 
   const say = useCallback((text: string, aloud: boolean) => {
     setAnnouncement(text);
@@ -735,7 +740,11 @@ function GlassesCookAlong({
     else if (kind === "resume") act({ type: "resume", taskId, now: t });
     else if (kind === "minus") act({ type: "adjust", taskId, deltaMs: -60_000, now: t });
     else if (kind === "plus") act({ type: "adjust", taskId, deltaMs: 60_000, now: t });
-    else act({ type: "stop", taskId });
+    else {
+      act({ type: "stop", taskId });
+      // Stop takes its row away: keep the D-pad on this task's Timer button.
+      setTimeout(() => timerButton.current?.focus(), 0);
+    }
   }
 
   function toggleVoice() {
@@ -778,6 +787,7 @@ function GlassesCookAlong({
         onJump={jump}
         onToggleVoice={toggleVoice}
         detailsButtonRef={detailsButton}
+        timerButtonRef={timerButton}
       />
       {details ? (
         <GlassesDetails
