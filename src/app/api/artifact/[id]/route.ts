@@ -5,6 +5,11 @@ import {
   loadArtifact,
   verifyArtifactSignature,
 } from "../../../../lib/artifact-store";
+import { fail } from "../../helpers";
+
+export const maxDuration = 30;
+
+const ROUTE = "artifact_get";
 
 /**
  * Fetch a stored artifact by id. The HMAC signature covers the id and
@@ -15,21 +20,21 @@ import {
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   if (!isArtifactId(id)) {
-    return NextResponse.json({ error: "Not found or expired." }, { status: 404 });
+    return fail(ROUTE, 404, { error: "Not found or expired." });
   }
   const record = await loadArtifact(id);
   if (!record) {
-    return NextResponse.json({ error: "Not found or expired." }, { status: 404 });
+    return fail(ROUTE, 404, { error: "Not found or expired." });
   }
   let secret: string;
   try {
     secret = artifactSigningSecret();
-  } catch {
-    return NextResponse.json({ error: "Artifact signing is not configured." }, { status: 500 });
+  } catch (error) {
+    return fail(ROUTE, 500, { error: "Artifact signing is not configured." }, error);
   }
   const sig = new URL(req.url).searchParams.get("sig") ?? "";
   if (!verifyArtifactSignature(id, record.expiresAt, sig, secret)) {
-    return NextResponse.json({ error: "Invalid signature." }, { status: 403 });
+    return fail(ROUTE, 403, { error: "Invalid signature." });
   }
   return NextResponse.json(record.artifact);
 }

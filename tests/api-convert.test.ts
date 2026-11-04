@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setCachedConversion, stageVersions } from "../src/lib/cache";
 import { POST } from "../src/app/api/convert/route";
+import { reserveDailyUnit } from "../src/lib/limits";
 
 // NOTE: the dev fallbacks for rate limit and daily cap are module-global, so
 // the cap test runs first while the counters are still zero. Later tests use
@@ -61,12 +62,20 @@ function makeRecipe(): Record<string, unknown> {
 }
 
 describe("POST /api/convert", () => {
-  it("returns 429 once the lowered daily cap is exceeded", async () => {
+  it("gives the daily unit back when no model tokens were spent, then 429s at the cap", async () => {
     process.env.DAILY_CONVERSION_CAP = "1";
     const first = await POST(req({ text: "Probe soup. Serves 2." }, "10.8.8.1"));
-    expect(first.status).toBe(500); // no key: cap consumed, model never called
+    expect(first.status).toBe(500); // no key: fails before any model call
     const second = await POST(req({ text: "Probe soup. Serves 2." }, "10.8.8.1"));
-    expect(second.status).toBe(429);
+    expect(second.status).toBe(500); // the unit came back, so not capped
+    const taken = await reserveDailyUnit();
+    expect(taken.allowed).toBe(true);
+    const third = await POST(req({ text: "Probe soup. Serves 2." }, "10.8.8.1"));
+    expect(third.status).toBe(429);
+    expect(await third.json()).toEqual({
+      error: expect.stringMatching(/Daily/),
+      reason: "daily_cap",
+    });
   });
 
   it("serves a cached URL conversion as the artifact with zero tokens", async () => {

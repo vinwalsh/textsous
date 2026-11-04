@@ -8,7 +8,11 @@ import {
 } from "../../../lib/artifact-store";
 import { buildSignedArtifactUrl } from "../../../lib/handoff";
 import { checkRateLimit } from "../../../lib/limits";
-import { clientIp } from "../convert/route";
+import { clientIp, fail, limited, readJsonBody, TOO_LARGE_MESSAGE } from "../helpers";
+
+export const maxDuration = 30;
+
+const ROUTE = "artifact";
 
 const BodySchema = z.strictObject({ artifact: z.unknown() });
 
@@ -17,35 +21,31 @@ const BodySchema = z.strictObject({ artifact: z.unknown() });
  * fetch URL. No daily cap: storing spends no model calls.
  */
 export async function POST(req: Request) {
-  const limited = await checkRateLimit(`artifact:${clientIp(req)}`);
-  if (!limited.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Try again later." },
-      { status: 429 },
-    );
-  }
-  const parsed = BodySchema.safeParse(await req.json().catch(() => null));
+  const body = await readJsonBody(req);
+  if (!body.ok) return fail(ROUTE, 413, { error: TOO_LARGE_MESSAGE });
+  const rate = await checkRateLimit(`artifact:${clientIp(req)}`);
+  if (!rate.allowed) return limited(ROUTE, "rate_limited");
+  const parsed = BodySchema.safeParse(body.value);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Request body must be a JSON object with an artifact field." },
-      { status: 400 },
-    );
+    return fail(ROUTE, 400, {
+      error: "Request body must be a JSON object with an artifact field.",
+    });
   }
   const valid = CookAlongArtifactSchema.safeParse(parsed.data.artifact);
   if (!valid.success) {
-    return NextResponse.json({ error: "Invalid artifact." }, { status: 400 });
+    return fail(ROUTE, 400, { error: "Invalid artifact." });
   }
   let secret: string;
   try {
     secret = artifactSigningSecret();
-  } catch {
-    return NextResponse.json({ error: "Artifact signing is not configured." }, { status: 500 });
+  } catch (error) {
+    return fail(ROUTE, 500, { error: "Artifact signing is not configured." }, error);
   }
   let saved;
   try {
     saved = await saveArtifact(valid.data);
-  } catch {
-    return NextResponse.json({ error: "Could not store the artifact." }, { status: 500 });
+  } catch (error) {
+    return fail(ROUTE, 500, { error: "Could not store the artifact." }, error);
   }
   const sig = signArtifactId(saved.id, saved.expiresAt, secret);
   const origin = new URL(req.url).origin;
