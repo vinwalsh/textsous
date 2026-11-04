@@ -224,8 +224,8 @@ export default function AdjustPanel({
       <h2 className="card-title">Adjust this recipe</h2>
       {artifact ? null : (
         <p className="meta adjust-pending">
-          Your cook along is still being written. Choose changes now and they apply as soon as it&apos;s
-          ready.
+          Your cook along is still being written. Choose changes, then tap “Apply when ready”: they
+          apply as soon as it&apos;s ready.
         </p>
       )}
       <form onSubmit={onSubmit} noValidate>
@@ -326,7 +326,7 @@ export default function AdjustPanel({
           <p>
             <strong>Will apply when ready:</strong> {adjustSummary(base, queued)}
           </p>
-          <p className="meta">You can change these until your cook along is ready.</p>
+          <p className="meta">To change them, choose again and tap “Apply when ready”.</p>
         </div>
       ) : null}
       {summary ? (

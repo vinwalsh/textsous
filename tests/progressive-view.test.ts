@@ -113,6 +113,8 @@ describe("progressive view, part by part", () => {
     expect(html).toContain("Writing the steps…");
     expect(html).toContain("Adjust this recipe");
     expect(html).toContain("still being written");
+    // Choosing alone queues nothing: the copy names the button that does.
+    expect(html).toContain("Choose changes, then tap “Apply when ready”: they apply as soon as it&#x27;s ready.");
     expect(html).toContain("Servings (now 2)");
     expect(html).toContain("Apply when ready");
     expect(html).toContain(">Ingredients<");
@@ -131,6 +133,7 @@ describe("progressive view, part by part", () => {
     const queued: AdjustChoices = { servings: 4, dietary: "gluten-free", cuisine: "", sousVoice: false };
     const html = render(withRecipe, queued);
     expect(html).toContain("<strong>Will apply when ready:</strong> serves 2 → 4 · Gluten-free");
+    expect(html).toContain("To change them, choose again and tap “Apply when ready”.");
     expect(html).toContain("Cancel changes");
     expect(html).toContain('value="4"');
   });
