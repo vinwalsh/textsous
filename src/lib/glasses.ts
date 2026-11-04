@@ -282,6 +282,8 @@ export function taskIngredientLines(
 /** What the glasses keep per cook along (localStorage), so a reload picks up. */
 export interface GlassesSaved {
   v: 1;
+  /** When it was saved (epoch ms). */
+  savedAt: number;
   currentTaskId: string | null;
   guide: GuideClock;
   timers: TaskTimer[];
@@ -295,8 +297,26 @@ export function glassesStorageKey(artifactId: string): string {
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
-/** Saved state for this cook along, keeping only timers on tasks it has. Null if unreadable. */
-export function parseSaved(raw: string | null, taskIds: ReadonlySet<string>): GlassesSaved | null {
+/** Saved state older than this is a cook along from another sitting: start fresh. */
+export const SAVED_MAX_AGE_MS = 6 * 60 * 60_000;
+/** So is a guide that ran this long past the schedule's total. */
+export const SAVED_PAST_TOTAL_MS = 60 * 60_000;
+
+/** True once the guide clock reaches the schedule's total. */
+export function guideDone(clock: GuideClock, totalMinutes: number, now: number): boolean {
+  return totalMinutes > 0 && guideElapsedMs(clock, now) >= totalMinutes * 60_000;
+}
+
+/**
+ * Saved state for this cook along, keeping only timers on tasks it has.
+ * Null if unreadable, saved over 6 hours ago, or its guide ran an hour past
+ * the schedule's total.
+ */
+export function parseSaved(
+  raw: string | null,
+  taskIds: ReadonlySet<string>,
+  { now, totalMinutes }: { now: number; totalMinutes: number },
+): GlassesSaved | null {
   if (!raw) return null;
   let value: unknown;
   try {
@@ -306,8 +326,10 @@ export function parseSaved(raw: string | null, taskIds: ReadonlySet<string>): Gl
   }
   const v = value as Partial<GlassesSaved> | null;
   if (!v || v.v !== 1 || !v.guide || !isNum(v.guide.elapsedMs)) return null;
+  if (!isNum(v.savedAt) || now - v.savedAt > SAVED_MAX_AGE_MS) return null;
   const startedAt = v.guide.startedAt;
   const guide: GuideClock = { elapsedMs: v.guide.elapsedMs, startedAt: isNum(startedAt) ? startedAt : null };
+  if (guideElapsedMs(guide, now) > totalMinutes * 60_000 + SAVED_PAST_TOTAL_MS) return null;
   const timers = (Array.isArray(v.timers) ? v.timers : []).filter(
     (t): t is TaskTimer =>
       !!t &&
@@ -322,7 +344,7 @@ export function parseSaved(raw: string | null, taskIds: ReadonlySet<string>): Gl
   const announced = (Array.isArray(v.announced) ? v.announced : []).filter(
     (id): id is string => typeof id === "string" && taskIds.has(id),
   );
-  return { v: 1, currentTaskId: current, guide, timers, announced };
+  return { v: 1, savedAt: v.savedAt, currentTaskId: current, guide, timers, announced };
 }
 
 /**

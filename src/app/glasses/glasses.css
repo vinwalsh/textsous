@@ -78,7 +78,8 @@ body:has(.ts-glasses-root) > main {
   color: var(--g-accent);
 }
 
-.g-voice {
+.g-voice,
+.g-over {
   min-height: 40px;
   padding: 0 12px;
   border: 2px solid var(--g-line);
@@ -195,6 +196,7 @@ body:has(.ts-glasses-root) > main {
 
 .g-btn:focus,
 .g-voice:focus,
+.g-over:focus,
 .g-chip:focus,
 .g-pick:focus {
   border-color: var(--g-focus);

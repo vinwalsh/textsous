@@ -169,6 +169,18 @@ describe("HUD", () => {
     expect(hud()).not.toContain("Also now");
   });
 
+  it("offers Start over beside the voice toggle", () => {
+    const html = hud();
+    const top = html.slice(html.indexOf('<header class="g-top">'), html.indexOf("</header>"));
+    expect(top).toContain('<button type="button" class="g-over">Start over</button>');
+  });
+
+  it("says Guide done once the clock reaches the schedule's total", () => {
+    const html = hud({ guide: { elapsedMs: totalMinutes * 60_000, startedAt: null } });
+    expect(html).toMatch(/class="g-btn g-btn-main" aria-disabled="true"[^>]*>Guide done</);
+    expect(hud({ guide: { elapsedMs: 60_000, startedAt: null } })).toContain(">Start guide<");
+  });
+
   it("shows the voice toggle state", () => {
     expect(hud({ voice: true })).toContain('aria-pressed="true"');
     expect(hud({ voice: false })).toContain("Voice off");

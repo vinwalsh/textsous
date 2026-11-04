@@ -12,6 +12,7 @@ import {
   glassesRequestFromSearch,
   glassesStorageKey,
   GUIDE_IDLE,
+  guideDone,
   guideElapsedMs,
   guideLine,
   hudOrder,
@@ -321,6 +322,8 @@ export interface HudProps {
   onTimer: (action: "start" | "pause" | "resume" | "minus" | "plus" | "stop") => void;
   onJump: (taskId: string) => void;
   onToggleVoice: () => void;
+  onStartOver?: () => void;
+  mainButtonRef?: Ref<HTMLButtonElement>;
   detailsButtonRef?: Ref<HTMLButtonElement>;
   timerButtonRef?: Ref<HTMLButtonElement>;
 }
@@ -345,6 +348,8 @@ export function GlassesHud({
   onTimer,
   onJump,
   onToggleVoice,
+  onStartOver,
+  mainButtonRef,
   detailsButtonRef,
   timerButtonRef,
 }: HudProps) {
@@ -353,6 +358,7 @@ export function GlassesHud({
   const next = order[current + 1];
   const timer = timers.find((t) => t.taskId === task.id) ?? null;
   const running = guide.startedAt !== null;
+  const done = !running && guideDone(guide, totalMinutes, now);
   const lane = laneName(task, artifact.timelineDefinition.lanes);
   const timerButton =
     timer === null
@@ -379,6 +385,9 @@ export function GlassesHud({
         </span>
         <button type="button" className="g-voice" aria-pressed={voice} onClick={onToggleVoice}>
           {voice ? "Voice on" : "Voice off"}
+        </button>
+        <button type="button" className="g-over" onClick={onStartOver}>
+          Start over
         </button>
       </header>
 
@@ -422,8 +431,15 @@ export function GlassesHud({
         <button type="button" className="g-btn" onClick={onPrev} aria-disabled={current === 0}>
           Prev
         </button>
-        <button type="button" className="g-btn g-btn-main" onClick={onToggleGuide} autoFocus>
-          {running ? "Pause guide" : "Start guide"}
+        <button
+          type="button"
+          className="g-btn g-btn-main"
+          onClick={onToggleGuide}
+          ref={mainButtonRef}
+          aria-disabled={done || undefined}
+          autoFocus
+        >
+          {running ? "Pause guide" : done ? "Guide done" : "Start guide"}
         </button>
         <button type="button" className="g-btn" onClick={onDetails} ref={detailsButtonRef}>
           Details
@@ -580,6 +596,7 @@ function GlassesCookAlong({
   const announcedRef = useRef<ReadonlySet<string>>(new Set());
   const restored = useRef(false);
   const pushedDetails = useRef(false);
+  const mainButton = useRef<HTMLButtonElement>(null);
   const detailsButton = useRef<HTMLButtonElement>(null);
   const timerButton = useRef<HTMLButtonElement>(null);
 
@@ -636,16 +653,17 @@ function GlassesCookAlong({
   useEffect(() => {
     const id = setTimeout(() => {
       const ids = new Set(order.map((o) => o.task.id));
+      const t = Date.now();
       let saved: GlassesSaved | null = null;
       try {
-        saved = parseSaved(window.localStorage.getItem(glassesStorageKey(artifact.id)), ids);
+        const raw = window.localStorage.getItem(glassesStorageKey(artifact.id));
+        saved = parseSaved(raw, ids, { now: t, totalMinutes });
       } catch {
         saved = null;
       }
       const on = readVoice();
       voiceRef.current = on;
       setVoice(on);
-      const t = Date.now();
       setNow(t);
       if (saved) {
         const index = saved.currentTaskId ? order.findIndex((o) => o.task.id === saved.currentTaskId) : -1;
@@ -662,13 +680,16 @@ function GlassesCookAlong({
       restored.current = true;
     }, 0);
     return () => clearTimeout(id);
-  }, [artifact.id, order]);
+  }, [artifact.id, order, totalMinutes]);
 
-  // Save after every change, once restored.
+  // Save after every change, once restored, and each minute while something
+  // runs (saved state over 6 hours old is ignored).
+  const beat = guide.startedAt !== null || timers.some((x) => x.status === "running") ? Math.floor(now / 60_000) : 0;
   useEffect(() => {
     if (!restored.current) return;
     const saved: GlassesSaved = {
       v: 1,
+      savedAt: Date.now(),
       currentTaskId: order[current]?.task.id ?? null,
       guide,
       timers,
@@ -679,7 +700,7 @@ function GlassesCookAlong({
     } catch {
       // Blocked storage: this visit still works, it just won't survive a reload.
     }
-  }, [artifact.id, order, current, guide, timers, announced]);
+  }, [artifact.id, order, current, guide, timers, announced, beat]);
 
   // One clock for the countdowns and the guide.
   const tick = useCallback(() => {
@@ -688,11 +709,24 @@ function GlassesCookAlong({
     act({ type: "tick", now: t });
     const g = guideRef.current;
     if (g.startedAt === null) return;
+    if (guideDone(g, totalMinutes, t)) {
+      // The schedule is over: the guide stops at its total, on the last step.
+      const stopped: GuideClock = { elapsedMs: totalMinutes * 60_000, startedAt: null };
+      guideRef.current = stopped;
+      setGuide(stopped);
+      const all = new Set(order.map((o) => o.task.id));
+      announcedRef.current = all;
+      setAnnounced(all);
+      setAlsoNow([]);
+      setCurrent(order.length - 1);
+      say(`Guide done. Last step: ${taskHeading(order[order.length - 1].task)}`, true);
+      return;
+    }
     // Every task whose start has passed, once each: two in one minute are both said.
     const marked = announcedRef.current;
     const show = dueTasks(order, Math.floor(guideElapsedMs(g, t) / 60_000), marked);
     if (show.length > 0) announce(show, new Set([...marked, ...show.map((i) => order[i].task.id)]));
-  }, [act, announce, order]);
+  }, [act, announce, order, say, totalMinutes]);
   const tickRef = useRef(tick);
   useEffect(() => {
     tickRef.current = tick;
@@ -754,6 +788,10 @@ function GlassesCookAlong({
       setGuide(paused);
       return;
     }
+    if (guideDone(guide, totalMinutes, t)) {
+      say("The guide is done. Choose Start over to cook it again.", true);
+      return;
+    }
     // From 0:00 the schedule runs from the task on screen; after a pause it
     // resumes where it stopped, at the task due then.
     const next = resumeGuide(order, current, guide, announcedRef.current, t);
@@ -776,6 +814,28 @@ function GlassesCookAlong({
       // Stop takes its row away: keep the D-pad on this task's Timer button.
       setTimeout(() => timerButton.current?.focus(), 0);
     }
+  }
+
+  // Back to step 1 at 0:00 with no timers: the next cook of this recipe.
+  function startOver() {
+    guideRef.current = GUIDE_IDLE;
+    setGuide(GUIDE_IDLE);
+    timersRef.current = [];
+    setTimers([]);
+    const none = new Set<string>();
+    announcedRef.current = none;
+    setAnnounced(none);
+    setAlsoNow([]);
+    setFlashing(new Set());
+    setNow(Date.now());
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      // Nothing to stop.
+    }
+    setCurrent(0);
+    say(`Started over. Step 1 of ${order.length}: ${taskHeading(order[0].task)}`, false);
+    setTimeout(() => mainButton.current?.focus(), 0);
   }
 
   function toggleVoice() {
@@ -818,6 +878,8 @@ function GlassesCookAlong({
         onTimer={onTimer}
         onJump={jump}
         onToggleVoice={toggleVoice}
+        onStartOver={startOver}
+        mainButtonRef={mainButton}
         detailsButtonRef={detailsButton}
         timerButtonRef={timerButton}
       />

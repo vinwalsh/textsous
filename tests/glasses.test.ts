@@ -12,6 +12,7 @@ import {
   glassesRequestFromSearch,
   glassesStorageKey,
   GUIDE_IDLE,
+  guideDone,
   guideElapsedMs,
   guideLine,
   hudOrder,
@@ -238,10 +239,13 @@ describe("task text", () => {
 
 describe("saved state", () => {
   const ids = new Set(["a", "b"]);
+  const HOUR = 60 * MIN;
+  const at = { now: 10_000, totalMinutes: 45 };
 
   it("round-trips and keeps only timers on this cook along's tasks", () => {
     const saved = {
       v: 1,
+      savedAt: 9_000,
       currentTaskId: "b",
       guide: { elapsedMs: 5000, startedAt: 100 },
       timers: [
@@ -251,8 +255,9 @@ describe("saved state", () => {
       ],
       announced: ["a", "gone", 7],
     };
-    expect(parseSaved(JSON.stringify(saved), ids)).toEqual({
+    expect(parseSaved(JSON.stringify(saved), ids, at)).toEqual({
       v: 1,
+      savedAt: 9_000,
       currentTaskId: "b",
       guide: { elapsedMs: 5000, startedAt: 100 },
       timers: [{ taskId: "a", status: "running", endsAt: 9000, remainingMs: 9000 }],
@@ -261,16 +266,41 @@ describe("saved state", () => {
   });
 
   it("ignores anything unreadable", () => {
-    expect(parseSaved(null, ids)).toBeNull();
-    expect(parseSaved("{", ids)).toBeNull();
-    expect(parseSaved(JSON.stringify({ v: 2 }), ids)).toBeNull();
-    expect(parseSaved(JSON.stringify({ v: 1, guide: { elapsedMs: 0 }, currentTaskId: "zz" }), ids)).toEqual({
+    expect(parseSaved(null, ids, at)).toBeNull();
+    expect(parseSaved("{", ids, at)).toBeNull();
+    expect(parseSaved(JSON.stringify({ v: 2 }), ids, at)).toBeNull();
+    // Saved before savedAt existed: treated as old.
+    expect(parseSaved(JSON.stringify({ v: 1, guide: { elapsedMs: 0 } }), ids, at)).toBeNull();
+    const bare = { v: 1, savedAt: 10_000, guide: { elapsedMs: 0 }, currentTaskId: "zz" };
+    expect(parseSaved(JSON.stringify(bare), ids, at)).toEqual({
       v: 1,
+      savedAt: 10_000,
       currentTaskId: null,
       guide: { elapsedMs: 0, startedAt: null },
       timers: [],
       announced: [],
     });
+  });
+
+  it("expires after 6 hours, or once the guide ran an hour past the schedule's total", () => {
+    const now = 100 * HOUR;
+    const state = (savedAt: number, guide: { elapsedMs: number; startedAt: number | null }) =>
+      JSON.stringify({ v: 1, savedAt, currentTaskId: "a", guide, timers: [], announced: [] });
+    const paused = { elapsedMs: 20 * MIN, startedAt: null };
+    expect(parseSaved(state(now - 5 * HOUR, paused), ids, { now, totalMinutes: 45 })).not.toBeNull();
+    expect(parseSaved(state(now - 6 * HOUR - 1, paused), ids, { now, totalMinutes: 45 })).toBeNull();
+    // Running since 100 minutes ago on a 45-minute schedule: 55 minutes past, kept.
+    const running = { elapsedMs: 0, startedAt: now - 100 * MIN };
+    expect(parseSaved(state(now - MIN, running), ids, { now, totalMinutes: 45 })).not.toBeNull();
+    // 106 minutes on a 45-minute schedule: over an hour past, dropped.
+    const longer = { elapsedMs: 0, startedAt: now - 106 * MIN };
+    expect(parseSaved(state(now - MIN, longer), ids, { now, totalMinutes: 45 })).toBeNull();
+  });
+
+  it("knows when the guide reaches the schedule's total", () => {
+    expect(guideDone({ elapsedMs: 44 * MIN, startedAt: null }, 45, 0)).toBe(false);
+    expect(guideDone({ elapsedMs: 44 * MIN, startedAt: 0 }, 45, MIN)).toBe(true);
+    expect(guideDone({ elapsedMs: 0, startedAt: null }, 0, 0)).toBe(false);
   });
 
   it("is kept per artifact", () => {
