@@ -54,6 +54,17 @@ export async function POST(req: Request) {
         error: "Request body must be a JSON object with an artifact field.",
       });
     }
+    const { servings, dietary, cuisine, voice } = parsed.data;
+    if (
+      servings === undefined &&
+      !dietary?.trim() &&
+      !cuisine?.trim() &&
+      !voice?.trim()
+    ) {
+      return fail(ROUTE, 400, {
+        error: "Choose at least one adjustment: servings, dietary, cuisine or voice.",
+      });
+    }
     const valid = CookAlongArtifactSchema.safeParse(parsed.data.artifact);
     if (!valid.success) {
       return fail(ROUTE, 400, { error: "Invalid artifact." });

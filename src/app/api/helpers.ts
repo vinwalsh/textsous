@@ -100,8 +100,9 @@ export function limited(route: string, reason: LimitReason): NextResponse {
 }
 
 /**
- * Run live model work under the pipeline deadline. If it throws before any
- * model tokens were spent, the daily unit is given back.
+ * Run live model work under the pipeline deadline. A daily unit is kept only
+ * once model tokens may have been spent: if the work throws or finishes
+ * without any model call, the unit is given back.
  */
 export async function runLive<T>(
   reservation: DailyReservation,
@@ -113,11 +114,14 @@ export async function runLive<T>(
 ): Promise<T> {
   const elapsed = startedAt === undefined ? 0 : Math.max(0, Date.now() - startedAt);
   const { budget, result } = runWithModelBudget(fn, { deadlineMs: deadlineMs - elapsed });
+  let value: T;
   try {
-    return await result;
+    value = await result;
   } catch (error) {
     if (!budget.spent) await reservation.release().catch(() => {});
     throw error;
   }
+  if (!budget.spent) await reservation.release().catch(() => {});
+  return value;
 }
 

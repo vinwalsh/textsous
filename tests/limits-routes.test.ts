@@ -200,6 +200,34 @@ describe("runLive gives the unit back only when nothing was spent", () => {
   });
 });
 
+describe("no model work keeps no daily unit", () => {
+  it("adjust with no adjustment is a 400 and leaves the limits untouched", async () => {
+    process.env.DAILY_CONVERSION_CAP = "1";
+    process.env.RATE_LIMIT_PER_HOUR = "1";
+    for (const body of [{ artifact: {} }, { artifact: {}, cuisine: "  ", dietary: "" }]) {
+      const res = await adjust(jsonRequest("/api/adjust", body, "10.7.0.9"));
+      expect(res.status).toBe(400);
+      expect(((await res.json()) as { error: string }).error).toMatch(/at least one adjustment/);
+    }
+    expect((await checkRateLimit("adjust:10.7.0.9")).allowed).toBe(true);
+    expect((await reserveDailyUnit()).allowed).toBe(true);
+  });
+
+  it("runLive gives the unit back when the work succeeds without a model call", async () => {
+    const release = vi.fn(async () => {});
+    await expect(runLive({ allowed: true, remaining: 1, release }, async () => "done")).resolves.toBe(
+      "done",
+    );
+    expect(release).toHaveBeenCalledTimes(1);
+    const kept = vi.fn(async () => {});
+    await runLive({ allowed: true, remaining: 1, release: kept }, async () => {
+      markSpent();
+      return "done";
+    });
+    expect(kept).not.toHaveBeenCalled();
+  });
+});
+
 describe("runLive deadline counts from the request start", () => {
   it("subtracts time already spent fetching the page", async () => {
     const { timeLeftMs } = await import("../src/lib/model/budget");
