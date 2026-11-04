@@ -83,9 +83,16 @@ describe("friendlyError", () => {
     {
       name: "oversize photo",
       status: 413,
-      message: "Photo is larger than the 5 MB limit.",
+      message: "Photo is larger than the 4 MB limit.",
       title: "That photo is too big",
-      detailPart: /under 5 MB/,
+      detailPart: /under 4 MB each/,
+    },
+    {
+      name: "photos too large together",
+      status: 413,
+      message: "These photos are too large together. Try fewer or smaller photos.",
+      title: "Those photos are too big together",
+      detailPart: /fewer or smaller photos/,
     },
     {
       name: "oversize JSON body",

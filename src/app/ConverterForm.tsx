@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ClipboardEvent,
-  type FormEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../lib/schema/artifact";
 import type { CanonicalRecipe } from "../lib/schema/canonical";
 import type { PhotoTranscription } from "../lib/intake/photo";
 import ArtifactViewer from "./ArtifactViewer";
 import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
+import PhotoPicker from "./PhotoPicker";
 import ProgressNote from "./ProgressNote";
 import {
   apiFetch,
@@ -22,8 +16,12 @@ import {
   submitButtonClass,
   type FriendlyError,
 } from "./request";
-import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
+import { preparePhotoPages } from "./photo-resize";
+import { usePhotoPages, type PhotoPage } from "./use-photo-pages";
 import { withScreenOn } from "./wake-lock";
+
+// Photo-tab helpers live in photo-pages.ts; re-exported for existing importers.
+export { firstPastedFile, PHOTO_MIME_TYPES, type PastedItem } from "./photo-pages";
 
 type Tab = "url" | "text" | "photo";
 
@@ -40,27 +38,7 @@ interface PhotoOk {
   recipe: CanonicalRecipe;
   transcription: PhotoTranscription;
   status: string;
-}
-
-/** Hosting caps request bodies at 4.5 MB; stay under it after shrinking. */
-const MAX_UPLOAD_BYTES = 4.4 * 1024 * 1024;
-
-export const PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
-
-/** Minimal clipboard-item shape; matches DataTransferItem structurally. */
-export interface PastedItem {
-  type: string;
-  getAsFile: () => File | null;
-}
-
-/** First pasted image file, or null when the paste holds no usable image. Pure. */
-export function firstPastedFile(items: readonly PastedItem[]): File | null {
-  for (const item of items) {
-    if (!item.type.startsWith("image/")) continue;
-    const file = item.getAsFile();
-    if (file) return file;
-  }
-  return null;
+  warnings?: unknown;
 }
 
 /**
@@ -83,7 +61,7 @@ export default function ConverterForm({
   const [tab, setTab] = useState<Tab>(initialTab);
   const [urlValue, setUrlValue] = useState(initialUrl);
   const [textValue, setTextValue] = useState("");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photos = usePhotoPages();
   const [busy, setBusy] = useState<"convert" | "transcribe" | "load" | null>(null);
   const [error, setError] = useState<FriendlyError | null>(null);
   const [artifact, setArtifact] = useState<CookAlongArtifact | null>(null);
@@ -91,8 +69,11 @@ export default function ConverterForm({
   const [confirm, setConfirm] = useState<{
     photoUrl: string;
     fileName: string;
+    /** Every page in order; its object URLs live as long as this screen. */
+    pages: PhotoPage[];
     recipe: CanonicalRecipe;
     transcription: PhotoTranscription;
+    notices: string[];
   } | null>(null);
   const autoRan = useRef(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -172,6 +153,12 @@ export default function ConverterForm({
     window.scrollTo(0, 0);
   }, []);
 
+  // The confirm screen owns its pages' object URLs: revoke them when it goes.
+  useEffect(() => {
+    const urls = confirm?.pages.map((page) => page.url) ?? [];
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [confirm]);
+
   useEffect(() => {
     if (autoRan.current) return;
     autoRan.current = true;
@@ -191,21 +178,30 @@ export default function ConverterForm({
 
   async function onTranscribe(event: FormEvent) {
     event.preventDefault();
-    if (!photoFile || busy) return;
+    const pages = photos.pages;
+    if (pages.length === 0 || busy) return;
     setBusy("transcribe");
     setError(null);
     // Shrink on the device first: phone photos exceed the upload limit.
-    const upload = await prepareUploadPhoto(photoFile);
-    if (upload.size > MAX_UPLOAD_BYTES) {
-      setError({
-        title: "That photo is too big",
-        detail: "Even after shrinking it is over 4 MB. Try a smaller image or a screenshot.",
-      });
+    const prepared = await preparePhotoPages(pages.map((page) => page.file));
+    if (!prepared.ok) {
+      setError(
+        pages.length > 1
+          ? {
+              title: "Those photos are too big together",
+              detail: "Even after shrinking they are over 4 MB. Try fewer photos, or screenshots of the pages.",
+            }
+          : {
+              title: "That photo is too big",
+              detail: "Even after shrinking it is over 4 MB. Try a smaller image or a screenshot.",
+            },
+      );
       setBusy(null);
       return;
     }
+    // One request, every page in order: one recipe, one transcription.
     const form = new FormData();
-    form.set("photo", upload);
+    for (const file of prepared.files) form.append("photo", file);
     const res = await withScreenOn(() => apiFetch("/api/photo", { method: "POST", body: form }));
     const data = res.data as (PhotoOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.recipe) {
@@ -213,37 +209,18 @@ export default function ConverterForm({
       setBusy(null);
       return;
     }
+    // The pages move to the confirm screen, which revokes their URLs.
+    const taken = photos.take();
     setConfirm({
-      photoUrl: URL.createObjectURL(photoFile),
-      fileName: photoFile.name,
+      photoUrl: taken[0]?.url ?? "",
+      fileName: taken[0]?.file.name ?? "",
+      pages: taken,
       recipe: data.recipe,
       transcription: data.transcription,
+      notices: convertNotices(data.warnings),
     });
     setBusy(null);
     window.scrollTo(0, 0);
-  }
-
-  function onPhotoPaste(event: ClipboardEvent<HTMLFormElement>) {
-    if (busy) return;
-    const items = event.clipboardData ? Array.from(event.clipboardData.items) : [];
-    const file = firstPastedFile(items);
-    if (!file) return;
-    if (!(PHOTO_MIME_TYPES as readonly string[]).includes(file.type)) {
-      setError({
-        title: "That photo won't work",
-        detail: "PNG, JPEG or WebP only — screenshots usually paste as PNG.",
-      });
-      return;
-    }
-    if (file.size > MAX_ORIGINAL_BYTES) {
-      setError({
-        title: "That photo is too big",
-        detail: "Photos must be under 30 MB. Try a smaller image.",
-      });
-      return;
-    }
-    setPhotoFile(file);
-    setError(null);
   }
 
   function switchToPaste() {
@@ -253,9 +230,12 @@ export default function ConverterForm({
   }
 
   function retake() {
-    if (confirm) URL.revokeObjectURL(confirm.photoUrl);
+    // Several pages come back to the list so one can be swapped; a single
+    // photo is cleared for a different one.
+    const kept = confirm && confirm.pages.length > 1 ? confirm.pages.map((page) => page.file) : [];
     setConfirm(null);
-    setPhotoFile(null);
+    photos.clear();
+    if (kept.length > 0) photos.add(kept);
     setTab("photo");
     setError(null);
   }
@@ -275,6 +255,8 @@ export default function ConverterForm({
       <PhotoConfirm
         photoUrl={confirm.photoUrl}
         fileName={confirm.fileName}
+        pages={confirm.pages.map((page) => ({ url: page.url, name: page.file.name }))}
+        notices={confirm.notices}
         recipe={confirm.recipe}
         transcription={confirm.transcription}
         busy={busy === "convert"}
@@ -307,37 +289,15 @@ export default function ConverterForm({
         </div>
 
         {tab === "photo" ? (
-          <form onSubmit={onTranscribe} onPaste={onPhotoPaste}>
-            <label className="field">
-              <span>Photo of the recipe</span>
-              <input
-                type="file"
-                accept={PHOTO_MIME_TYPES.join(",")}
-                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <p className="meta">
-              Take a photo or upload one: PNG, JPEG or WebP. Large photos are shrunk on your device
-              before upload. The photo is read in memory only.
-            </p>
-            <p className="meta">Tip: you can also paste a screenshot straight from your clipboard.</p>
-            {photoFile ? (
-              <p className="meta">
-                Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)} KB)
-              </p>
-            ) : null}
-            {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
-            <div className="btn-row">
-              <button
-                type="submit"
-                className={submitButtonClass(error)}
-                disabled={!photoFile || busy !== null}
-              >
-                {busy === "transcribe" ? "Transcribing…" : "Transcribe photo"}
-              </button>
-            </div>
-            {busy === "transcribe" ? <ProgressNote kind="transcribe" /> : null}
-          </form>
+          <PhotoPicker
+            photos={photos}
+            busy={busy !== null}
+            transcribing={busy === "transcribe"}
+            error={error}
+            onError={setError}
+            onSubmit={onTranscribe}
+            onPasteText={switchToPaste}
+          />
         ) : (
           <form onSubmit={onConvert}>
             {tab === "url" ? (

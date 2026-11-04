@@ -4,12 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import {
+  MAX_PHOTO_BODY_BYTES,
   MAX_PHOTO_BYTES,
+  MAX_PHOTOS,
   PhotoError,
+  TRANSCRIBE_REASONING_EFFORT,
   detectImageType,
+  otherRecipeWarning,
   photoDataUrl,
   photoToCanonical,
   readJpegOrientation,
+  transcribePhoto,
   validatePhoto,
 } from "../src/lib/intake/photo";
 import type { ChatTextMessage, StructuredChatClient } from "../src/lib/model/structured";
@@ -126,7 +131,11 @@ describe("validatePhoto", () => {
     expect(validatePhoto(makeWebP()).type).toBe("webp");
   });
 
-  it("rejects files over 5 MB", () => {
+  it("rejects files over 4 MB, under the 4.4 MB request cap", () => {
+    expect(MAX_PHOTO_BYTES).toBe(4 * 1024 * 1024);
+    expect(MAX_PHOTO_BYTES).toBeLessThan(MAX_PHOTO_BODY_BYTES);
+    expect(MAX_PHOTO_BODY_BYTES).toBeLessThan(4.5 * 1024 * 1024);
+    expect(MAX_PHOTOS).toBe(3);
     const big = Buffer.alloc(MAX_PHOTO_BYTES + 1);
     makePng(2, 2).copy(big, 0, 0, 8);
     try {
@@ -146,6 +155,16 @@ describe("validatePhoto", () => {
       expect(error).toBeInstanceOf(PhotoError);
       expect((error as PhotoError).code).toBe("unsupported-type");
     }
+  });
+
+  it("names the photo in the error when a request carries several", () => {
+    expect(() => validatePhoto(Buffer.from("GIF89a....", "latin1"), 2)).toThrow(
+      "Photo 2 has an unsupported image type: send PNG, JPEG or WebP.",
+    );
+    const big = Buffer.alloc(MAX_PHOTO_BYTES + 1);
+    makePng(2, 2).copy(big, 0, 0, 8);
+    expect(() => validatePhoto(big, 3)).toThrow("Photo 3 is larger than the 4 MB limit.");
+    expect(() => validatePhoto(big)).toThrow("Photo is larger than the 4 MB limit.");
   });
 });
 
@@ -189,6 +208,9 @@ const TRANSCRIPTION = {
   author: "A U Thor",
   page: 7,
 };
+
+/** The model's reply: the transcription plus the one-recipe flag. */
+const TRANSCRIPTION_REPLY = { ...TRANSCRIPTION, otherRecipeSkipped: false };
 
 function makeRecipeResponse(): CanonicalRecipe {
   return {
@@ -241,14 +263,17 @@ function makeRecipeResponse(): CanonicalRecipe {
 function queueClient(payloads: unknown[]): {
   client: StructuredChatClient;
   seen: ChatTextMessage[][];
+  efforts: Array<string | undefined>;
 } {
   const seen: ChatTextMessage[][] = [];
+  const efforts: Array<string | undefined> = [];
   let n = 0;
   const client: StructuredChatClient = {
     chat: {
       completions: {
         create: async (params) => {
           seen.push(params.messages);
+          efforts.push(params.reasoning_effort);
           const body = payloads[Math.min(n, payloads.length - 1)];
           n += 1;
           return {
@@ -259,7 +284,7 @@ function queueClient(payloads: unknown[]): {
       },
     },
   };
-  return { client, seen };
+  return { client, seen, efforts };
 }
 
 let savedKey: string | undefined;
@@ -276,7 +301,7 @@ afterEach(() => {
 
 describe("photoToCanonical", () => {
   it("transcribes then canonicalizes with a photo source and needs_review status", async () => {
-    const { client, seen } = queueClient([TRANSCRIPTION, makeRecipeResponse()]);
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY, makeRecipeResponse()]);
     const result = await photoToCanonical(makePng(4, 4), { client });
     expect(result.status).toBe("needs_review");
     expect(result.transcription).toEqual(TRANSCRIPTION);
@@ -293,6 +318,7 @@ describe("photoToCanonical", () => {
     expect(result.usage.transcribe.totalTokens).toBe(15);
     expect(result.usage.canonicalize.totalTokens).toBe(15);
     expect(result.canonicalizeResult.checks.length).toBeGreaterThan(0);
+    expect(result.warnings).toEqual([]);
 
     expect(seen).toHaveLength(2);
     const photoMessage = seen[0][1];
@@ -305,7 +331,7 @@ describe("photoToCanonical", () => {
 
   it("normalizes blank credit to null", async () => {
     const { client } = queueClient([
-      { ...TRANSCRIPTION, book: "", author: "  ", page: null },
+      { ...TRANSCRIPTION_REPLY, book: "", author: "  ", page: null },
       makeRecipeResponse(),
     ]);
     const result = await photoToCanonical(makePng(4, 4), { client });
@@ -315,9 +341,95 @@ describe("photoToCanonical", () => {
   });
 
   it("tells the model about non-upright EXIF orientation", async () => {
-    const { client, seen } = queueClient([TRANSCRIPTION, makeRecipeResponse()]);
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY, makeRecipeResponse()]);
     await photoToCanonical(makeJpeg(6), { client });
     expect(seen[0][0].content as string).toContain("orientation flag is 6");
+  });
+
+  it("reads up to 3 pages in one transcription call, then one canonicalize call", async () => {
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY, makeRecipeResponse()]);
+    const result = await photoToCanonical([makePng(4, 4), makeJpeg(), makeWebP()], { client });
+    expect(seen).toHaveLength(2);
+    const parts = seen[0][1].content as Array<{ type: string; image_url?: { url: string } }>;
+    expect(parts.map((p) => p.type)).toEqual(["text", "image_url", "image_url", "image_url"]);
+    expect(result.recipe.source.page).toBe(7);
+    expect(result.status).toBe("needs_review");
+  });
+
+  it("refuses no photos or more than 3, and names a bad page", async () => {
+    const { client } = queueClient([TRANSCRIPTION_REPLY, makeRecipeResponse()]);
+    await expect(photoToCanonical([], { client })).rejects.toThrow("Send 1 to 3 photos of one recipe.");
+    const four = [makePng(2, 2), makePng(2, 2), makePng(2, 2), makePng(2, 2)];
+    await expect(photoToCanonical(four, { client })).rejects.toThrow("Send 1 to 3 photos of one recipe.");
+    await expect(
+      photoToCanonical([makePng(2, 2), Buffer.from("GIF89a....", "latin1")], { client }),
+    ).rejects.toThrow("Photo 2 has an unsupported image type");
+  });
+});
+
+describe("transcribePhoto", () => {
+  const page = (label: string, orientation = 1) => ({
+    dataUrl: `data:image/jpeg;base64,${Buffer.from(label).toString("base64")}`,
+    orientation,
+  });
+
+  it("sends one user message: one text part, then every photo in page order", async () => {
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY]);
+    const pages = [page("one"), page("two"), page("three")];
+    const result = await transcribePhoto(pages, { client });
+    expect(seen).toHaveLength(1);
+    const messages = seen[0];
+    expect(messages.map((m) => m.role)).toEqual(["system", "user"]);
+    const parts = messages[1].content as Array<
+      { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }
+    >;
+    expect(parts).toHaveLength(4);
+    expect(parts[0]).toEqual({
+      type: "text",
+      text: expect.stringMatching(/^These 3 photos are consecutive pages of ONE recipe, in order/),
+    });
+    expect(parts.slice(1)).toEqual(pages.map((p) => ({ type: "image_url", image_url: { url: p.dataUrl } })));
+    expect(messages[0].content as string).toContain("consecutive pages of ONE recipe");
+    expect(messages[0].content as string).toContain("Never merge two recipes");
+    expect(result.transcription).toEqual(TRANSCRIPTION);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("keeps the single-photo wording for one photo", async () => {
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY]);
+    await transcribePhoto([page("only")], { client });
+    const parts = seen[0][1].content as Array<{ type: string; text?: string }>;
+    expect(parts.map((p) => p.type)).toEqual(["text", "image_url"]);
+    expect(parts[0].text).toBe("Transcribe this recipe photo.");
+    expect(seen[0][0].content as string).not.toContain("consecutive pages");
+  });
+
+  it("runs at low reasoning effort", async () => {
+    const { client, efforts } = queueClient([TRANSCRIPTION_REPLY]);
+    await transcribePhoto([page("only")], { client });
+    expect(TRANSCRIBE_REASONING_EFFORT).toBe("low");
+    expect(efforts).toEqual(["low"]);
+  });
+
+  it("names each rotated photo by its page", async () => {
+    const { client, seen } = queueClient([TRANSCRIPTION_REPLY]);
+    await transcribePhoto([page("one"), page("two", 6), page("three", 3)], { client });
+    const system = seen[0][0].content as string;
+    expect(system).toContain("Photo 2's EXIF orientation flag is 6");
+    expect(system).toContain("Photo 3's EXIF orientation flag is 3");
+    expect(system).not.toContain("Photo 1's EXIF");
+  });
+
+  it("warns, readably, when the photos hold another recipe it left out", async () => {
+    const { client } = queueClient([{ ...TRANSCRIPTION_REPLY, otherRecipeSkipped: true }]);
+    const many = await transcribePhoto([page("one"), page("two")], { client });
+    expect(many.warnings).toEqual([otherRecipeWarning(2)]);
+    expect(many.warnings[0]).toMatch(/only the one that starts on the first photo was read/);
+    expect(many.transcription).toEqual(TRANSCRIPTION);
+    const { client: single } = queueClient([{ ...TRANSCRIPTION_REPLY, otherRecipeSkipped: true }]);
+    expect((await transcribePhoto([page("one")], { client: single })).warnings[0]).toMatch(
+      /^The photo shows more than one recipe/,
+    );
   });
 });
 
@@ -385,7 +497,7 @@ describe("POST /api/photo", () => {
     const file = new File([filePart(big)], "big.png", { type: "image/png" });
     const res = await POST(photoRequest(file));
     expect(res.status).toBe(413);
-    expect(((await res.json()) as { error: string }).error).toMatch(/5 MB/);
+    expect(((await res.json()) as { error: string }).error).toMatch(/4 MB/);
   });
 
   it("never stores the image bytes on disk or in logs", async () => {

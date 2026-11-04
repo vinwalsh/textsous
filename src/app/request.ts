@@ -147,9 +147,15 @@ export function friendlyError(
           "Requests are limited to 256 KB. Paste just the one recipe, not the whole page, and try again.",
       };
     }
+    if (/too large together/i.test(message)) {
+      return {
+        title: "Those photos are too big together",
+        detail: "Try fewer or smaller photos, or a screenshot of each page.",
+      };
+    }
     return {
       title: "That photo is too big",
-      detail: "Photos must be under 5 MB. Try a smaller image.",
+      detail: "Photos must be under 4 MB each. Try a smaller image.",
     };
   }
   if (status === 422) {

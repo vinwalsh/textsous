@@ -609,6 +609,86 @@ textarea {
   border: 1px solid var(--ts-border);
 }
 
+/* Photo tab: up to 3 pages of one recipe, in page order. */
+.photo-help {
+  margin: 0 0 10px;
+}
+
+.photo-pages {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.photo-page {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  background: var(--ts-card);
+}
+
+.photo-thumb {
+  flex: none;
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border: 1px solid var(--ts-border);
+  border-radius: 6px;
+  background: var(--ts-secondary);
+}
+
+.photo-page-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.photo-remove {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 14px;
+}
+
+/* The label is the button; its file input is visually hidden. */
+.photo-add {
+  position: relative;
+  min-height: 44px;
+}
+
+.photo-add:focus-within {
+  outline: 2px solid var(--ts-accent);
+  outline-offset: 2px;
+}
+
+.photo-add.is-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.photo-confirm-pages {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.photo-confirm-pages figure {
+  margin: 0;
+}
+
+.photo-confirm-pages figcaption {
+  margin-top: 4px;
+}
+
 .transcript {
   white-space: pre-wrap;
   background: var(--ts-card);
