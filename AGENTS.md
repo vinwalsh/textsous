@@ -17,24 +17,27 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
 Updated 2026-11-04. Keep this section current: when something ships, say so
 here with the date. Check the code before trusting any doc line about it.
 
-- Live: M1-M6 (TASKS.md) on main at `3e56ebb`. Vercel project
-  `open-textsous` deploys main to https://open.textsous.com on every push.
-  CI runs typecheck, lint, the offline tests and the schema/docs diff gate.
-- Built, not yet on main: M7 on branch `m7` (93 commits after `3e56ebb`,
-  Nov 3-4, docs included): fixes from the Nov 3 review, the cook-along
-  output format, the EU-14 allergen floor, new limits and timeouts, the
-  skills API, the /assistants page, the Cook Along button (embed.js, /embed,
-  /embed-demo), the TextSous brand pass, advisory review judgments, a final
-  round of review fixes and a review of those fixes. 722 offline tests pass
-  with MODEL_API_KEY unset, plus typecheck, lint, build and the schema/docs
-  gate. Live model checks so far: four conversions on a Vercel preview of
-  the core stream, before the merges.
-- What the M7 deploy changes in production:
+- Live: M1-M7 (TASKS.md) on main. Vercel project `open-textsous` deploys
+  main to https://open.textsous.com on every push. CI runs typecheck, lint,
+  the offline tests and the schema/docs diff gate.
+- M7 went live on Nov 4 at 04:17 ET: main fast-forwarded from `3e56ebb` to
+  `f92e0a1` (93 commits, Nov 3-4, docs included). It brought fixes from the
+  Nov 3 review, the cook-along output format, the EU-14 allergen floor, new
+  limits and timeouts, the skills API, the /assistants page, the Cook Along
+  button (embed.js, /embed, /embed-demo), the TextSous brand pass, advisory
+  review judgments, a final round of review fixes and a review of those
+  fixes. CI is green on `f92e0a1`. Live model checks: four conversions on a
+  Vercel preview of the core stream before the merges, one on a preview of
+  the final branch, then the production checks and the 17 fresh conversions
+  of the demo warm (TASKS.md M7.10, O12).
+- What the M7 deploy changed in production:
   - Stage versions moved (canonicalize 2, procedure 4, review 2, compile 2),
-    so most /demo URLs are no longer cached. Warm them after the deploy:
-    `npm run warm -- --base https://open.textsous.com` (about an hour).
-  - The code defaults become 300 live conversions a day and 20 an hour per
-    IP per route (main's default today is 100 a day). Neither
+    so the /demo URLs had to be converted again. All 20 and the /embed-demo
+    post were warmed on Nov 4 (TASKS.md O12). Warm again after any deploy
+    that changes a stage version:
+    `npm run warm -- --base https://open.textsous.com`.
+  - The code defaults are 300 live conversions a day and 20 an hour per IP
+    per route (before M7 the default was 100 a day). Neither
     DAILY_CONVERSION_CAP nor RATE_LIMIT_PER_HOUR is set in Vercel.
   - The secret skills routes answer 503 `not_configured` until
     SKILLS_API_SECRET is set; `GET /api/skills/format` works regardless.
@@ -56,9 +59,9 @@ here with the date. Check the code before trusting any doc line about it.
   they ship, textsous.com/open and /import return 404: test the handoff
   against a local stub or a preview, never against textsous.com.
 - Pending on the owner (TASKS.md owner actions, in order): the skills secret
-  on both projects, the TextSous app merges, the M7 deploy and warm, one Muse
-  end-to-end test, phone checks, the demo video, and the submission by
-  Nov 4, 9:00 PM ET.
+  on both projects, the TextSous app merges, one Muse end-to-end test, phone
+  checks, the demo video, and the submission by Nov 4, 9:00 PM ET. The M7
+  deploy and the demo warm are done.
 - Open decisions (HANDOFF.md, "Open loops"): /embed starts an uncached
   conversion without a tap; closing the overlay does not stop the server's
   conversion, so reopening too soon starts a second one; the skills secret

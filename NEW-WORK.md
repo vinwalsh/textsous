@@ -3,20 +3,23 @@
 ## Hackathon build summary (M5.3; finalize Nov 4)
 Everything in this repo was built inside the window, starting from
 `960fe7a` (Initial, Oct 27): 22 commits on main through `3e56ebb` (Nov 3),
-then M7 on branch `m7`: 92 commits from `295620c` through `2bd547b` (Nov 3,
-22:50 ET to Nov 4, 03:57 ET; two of them are merges and one is the M7 docs
-commit) plus the docs commit that records them. The range extends if
-further commits land before the Nov 4, 9:00 PM ET deadline. M1 foundation +
+then M7: 93 commits from `295620c` through `f92e0a1` (Nov 3, 22:50 ET to
+Nov 4, 04:00 ET; two of them are merges and two are docs), fast-forwarded
+to main and deployed on Nov 4 at 04:17 ET, then a warm-script fix and the
+docs commit that records the deploy. The range extends if further commits
+land before the Nov 4, 9:00 PM ET deadline. M1 foundation +
 first conversion (Oct 27–28), M2 Cook Along pipeline (Oct 28), M3
 adjustments (Oct 29), M4 photo, web flow and artifact handoff (Oct 29–31),
 M5 proof and disclosure (Oct 29–Nov 3), M6 phone-check follow-ups (Nov 1),
 M7 assistants, embed, output format and brand (Nov 3–4).
 Detail is in the dated log below. Proof through M6: 287 offline tests
 green, CI green, production `/api/health` ok on muse-spark-1.3, full eval
-23/23 (739k tokens). Proof for M7: 722 offline tests in 68 files with
-MODEL_API_KEY unset, typecheck, lint, build and the schema/docs gate on
-`m7`, and four live conversions on a Vercel preview of the core stream;
-production checks follow the deploy (TASKS.md M7.10).
+23/23 (739k tokens). Proof for M7: 723 offline tests in 68 files with
+MODEL_API_KEY unset, typecheck, lint, build and the schema/docs gate, CI
+green on main; four live conversions on a Vercel preview of the core
+stream, one on a preview of the final branch, and in production the
+health, page, header and cross-site checks plus 17 fresh conversions while
+warming the 20 /demo URLs and the /embed-demo post (TASKS.md M7.10, O12).
 
 Pre-existing outside this repo: the private TextSous platform (accounts,
 households, weekly meal plans, grocery lists, SOUS over text and MCP — with
@@ -173,3 +176,5 @@ dates above govern. Every entry falls inside the window regardless.
 2026-11-04: Docs for M7: AGENTS.md (Status, Layout, skills and embed rules, advisory checks), TASKS.md (M7 and owner actions O10-O14), README.md (Cook Along button, AI assistants, self-hosting), HANDOFF.md (the TextSous app contract) and this log.
 
 2026-11-04: Review of the final fixes, applied in 9 commits through `2bd547b`: SDK errors are matched by class, not name, because the production build renames the SDK's classes, so a dropped model connection is now retried there and a first-call timeout keeps its daily unit (checked on the built bundle against a local fake model server); a blocked review is always a 422 with the calm copy, whatever words its reasons use; the screen wake lock is asked for again each time the page comes back into view; a slow adjustment says to apply one change at a time; a link to a PDF, an image or a page over 2 MB offers pasting the text instead of "try again"; the per-IP limit copy says to try again within the hour; the Pasted text tab no longer offers a paste button; EMBED.md, HANDOFF.md and AGENTS.md now say closing the overlay ends the reader's wait, not the conversion, and that a page framing /embed can still start conversions of its own recipes. 722/722 offline in 68 files, typecheck, lint, build, schema/docs gate green.
+
+2026-11-04: Shipped M7. A live conversion on a preview of the final branch took 275 s (canonicalize 67 s, procedure 161 s, review 46 s) and its artifact parsed in the TextSous app's Cookbook importer; main then fast-forwarded from `3e56ebb` to `f92e0a1` at 04:17 ET, CI green. Production: `/api/health` ok on muse-spark-1.3 (dailyCap 300, ratePerHour 20, skillsConfigured false until the owner sets the skills secret, signingConfigured true); every page 200 and an unknown path 404; the M7.10 headers on /, /embed and /embed.js; a convert POST marked cross-site gets 403; the secret skills routes answer 503 `not_configured`. Warmed the 20 /demo URLs and the /embed-demo post with three runs in parallel: 17 fresh conversions of 169-276 s, all 200 in the production logs, and a second run printed "cache hit" for all 21; one cached recipe carries an advisory review note (step order), which the review would have blocked before the advisory change. The warm script lost the answer to every request it sent on a kept-alive connection after a long conversion (about 40 s in, while the server kept converting), so it now opens a fresh connection per request, prints the network error, and says the server may still be converting whenever an answer is lost.

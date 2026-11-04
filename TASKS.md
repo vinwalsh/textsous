@@ -385,9 +385,10 @@ C4 MCP tools, C5 embed, C6 design tokens, C7 /assistants, C8 brand.
   `frame-ancestors *` on /embed, and `Cache-Control: public, max-age=300,
   s-maxage=3600` with `Access-Control-Allow-Origin: *` on /embed.js; O12, O13
   and O14 are done.
+  - 2026-11-04: shipped. A preview of the final branch converted a /demo recipe live in 275 s (canonicalize 67 s, procedure 161 s, review 46 s) and its artifact parsed in the TextSous app's Cookbook importer. main fast-forwarded from `3e56ebb` to `f92e0a1` at 04:17 ET; CI green. Production checks: `/api/health` ok on muse-spark-1.3 with `dailyCap` 300, `ratePerHour` 20, `skillsConfigured` false (O10) and `signingConfigured` true; /, /demo, /assistants, /embed-demo, /embed, /embed.js and /api/skills/format answer 200 and an unknown path 404; the headers above match exactly; a convert POST marked cross-site gets 403; the secret skills routes answer 503 `not_configured`. O12 done. Open until O13 and O14.
 
 ## Owner actions (not for the coding agent)
-Order for Nov 4: O10, O11, the M7 deploy (M7.10), O12, O13, O14, O8, O9.
+Order for Nov 4: O10, O11, O13, O14, O8, O9 (the M7 deploy and O12 are done).
 - [x] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and
   Preview, Sensitive) and delete `model_api_key`. Needed for M1.10.
   - 2026-10-28: owner confirmed key set and legacy var deleted; prod /api/health shows hasApiKey true.
@@ -407,6 +408,7 @@ Order for Nov 4: O10, O11, the M7 deploy (M7.10), O12, O13, O14, O8, O9.
   - 2026-11-04: the line is in the Cookbook import PR's privacy page; live when O11 ships it.
 - [ ] O8 Record the three-minute demo video (Nov 3).
   - 2026-11-04: not recorded yet. Record after M7 is live and the cache is warm (O12), so /demo and the /embed-demo overlay open instantly; due with O9.
+  - 2026-11-04: M7 is live and the cache is warm; ready to record.
 - [ ] O9 Submit on the Cerebral Valley platform by Nov 4, 9:00 PM ET, with the
   public repo and a public video link.
   - 2026-11-04: due tonight. NEW-WORK.md (M5.3) is the disclosure of what is new.
@@ -426,7 +428,8 @@ Order for Nov 4: O10, O11, the M7 deploy (M7.10), O12, O13, O14, O8, O9.
   is not 404. If /import is not live when M7 deploys, build open-textsous
   with NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off so "Save to TextSous" stays hidden.
   Needed for O13.
-- [ ] O12 Warm the demo cache after the M7 deploy:
+  - 2026-11-04: the MCP recipe-tools PR is open, stacked on the Cookbook import PR (not merged). M7 deployed with "Save to TextSous" shown, so the button lands on a 404 until this ships.
+- [x] O12 Warm the demo cache after the M7 deploy:
   `npm run warm -- --base https://open.textsous.com`. It converts each /demo
   URL and the /embed-demo post once, one at a time; cache hits are free. A
   fresh conversion takes 3 to 4 minutes, so the first run takes about an
@@ -434,6 +437,7 @@ Order for Nov 4: O10, O11, the M7 deploy (M7.10), O12, O13, O14, O8, O9.
   conversion uses one of that network's 20 hourly conversions); after a 429,
   run it again later and it picks up where it stopped. Done when a second
   run prints "cache hit" for every URL.
+  - 2026-11-04: done by the coding agent from 04:18 ET with three runs in parallel over split lists: 17 fresh conversions (169-276 s each), all 200 in the production logs, the rest cache hits. The script reported 7 of the 17 as failed after about 40 s each time it reused a kept-alive connection after a long conversion, while the server finished and cached them; it now opens a fresh connection per request. A second run printed "cache hit" for all 21 (20 /demo URLs and the /embed-demo post). One cached recipe carries an advisory review note.
 - [ ] O13 Muse end to end (after O10, O11 and the M7 deploy). Add the custom
   connector https://textsous.com/api/mcp in Muse (Settings > Connectors >
   Add custom connector, or ask Muse in a chat to create it, as /assistants

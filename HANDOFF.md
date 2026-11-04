@@ -5,14 +5,16 @@ TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
 
 ## Where things stand
 
-- **M1–M6** are on main (`3e56ebb`) and deployed at
-  https://open.textsous.com. M6.1, M6.3, M6.4 and M6.6 still wait for the
-  owner's phone re-checks (TASKS.md O14).
-- **M7** (TASKS.md M7.1–M7.9) is built on branch `m7`: 93 commits after
-  `3e56ebb`, docs included. It is not deployed yet; M7.10 (ship and verify)
-  is open.
-- Gates on `m7`: 722/722 offline in 68 files with `MODEL_API_KEY` unset,
-  typecheck, lint, build, and `npm run schema && npm run docs` with no diff.
+- **M1–M7** are on main and deployed at https://open.textsous.com. M6.1,
+  M6.3, M6.4 and M6.6 still wait for the owner's phone re-checks (TASKS.md
+  O14).
+- **M7** (TASKS.md M7.1–M7.9) went live on Nov 4 at 04:17 ET: main
+  fast-forwarded from `3e56ebb` to `f92e0a1`, 93 commits, docs included.
+  The production checks passed and the demo cache is warm (O12). M7.10 stays
+  open for the owner's Muse and phone checks (O13, O14).
+- Gates on main: 723/723 offline in 68 files with `MODEL_API_KEY` unset,
+  typecheck, lint, build, and `npm run schema && npm run docs` with no diff;
+  CI green.
 - Other open items: M5.3 (owner review of the NEW-WORK.md summary), M5.5
   (final state), and owner actions O3, O4 and O6–O14. The order for Nov 4 is
   at the top of TASKS.md "Owner actions"; submission is due Nov 4,
@@ -102,16 +104,17 @@ these routes server to server:
 
 ### Owner steps across both sides
 TASKS.md O10 (one secret on both projects), O11 (the Cookbook import PR
-after its database migration, then the MCP recipe-tools change, deployed),
-the M7 deploy (M7.10), O12 (warm the demo cache) and O13 (Muse end to end).
+after its database migration, then the MCP recipe-tools change, deployed)
+and O13 (Muse end to end). The M7 deploy and O12 (warm the demo cache) are
+done.
 
 ## Open loops
 
-- Ship M7 and work through the owner actions (TASKS.md).
+- Work through the remaining owner actions (TASKS.md).
 - textsous.com/open and /import return 404 until O11 ships. That affects
   "Save to TextSous" and the plain "Open with TextSous" link in README.md
-  and docs/EMBED.md. If /import is not live at the M7 deploy, build with
-  `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off`.
+  and docs/EMBED.md. M7 deployed with the button shown; if O11 slips, build
+  with `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off` to hide it.
 - Deferred, owner's call:
   - /embed starts an uncached conversion inside the frame without a tap,
     so an embedding page can start conversions on its visitors'
