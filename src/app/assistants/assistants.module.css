@@ -1,0 +1,133 @@
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+  color: var(--ts-ink, #22201c);
+}
+
+.eyebrow {
+  margin: 0.5rem 0 0;
+  color: var(--ts-action, #b74725);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.lead {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.note,
+.small {
+  margin: 0 0 0.75rem;
+  color: var(--ts-muted, #726a65);
+  font-size: 0.95rem;
+}
+
+.card {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--ts-border, #e2dbd5);
+  border-radius: var(--ts-radius, 10px);
+  background: var(--ts-card, #ffffff);
+}
+
+.promptCard {
+  border-color: var(--ts-accent, #d45a35);
+  background: var(--ts-accent-soft, #f7e9e1);
+}
+
+.cardTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.prompt {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--ts-radius, 10px);
+  background: var(--ts-card, #ffffff);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.steps,
+.others {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.steps li,
+.others li {
+  margin: 0.5rem 0;
+}
+
+.address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.code {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--ts-border, #e2dbd5);
+  border-radius: 6px;
+  background: var(--ts-secondary, #f1ebe4);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.inlineCode {
+  overflow-wrap: anywhere;
+}
+
+.copyWrap {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copyButton {
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  border-radius: var(--ts-pill, 30px);
+  background: var(--ts-action, #b74725);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  background: var(--ts-action-hover, #9d3d20);
+}
+
+.copyButton:focus-visible {
+  outline: 2px solid var(--ts-ink, #22201c);
+  outline-offset: 2px;
+}
+
+.copyStatus {
+  color: var(--ts-muted, #726a65);
+  font-size: 0.9rem;
+}
+
+.page a {
+  color: var(--ts-action, #b74725);
+}
+
+.back {
+  margin-top: 1.5rem;
+}

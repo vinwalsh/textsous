@@ -19,6 +19,21 @@ export default function ErrorBox({
           </button>
         </div>
       ) : null}
+      {error.action === "assistants" && error.href ? (
+        <div className="btn-row">
+          {/* New tab: this box also renders inside the /embed iframe, and
+              /assistants refuses to be framed by other sites. */}
+          <a
+            className="btn btn-primary"
+            href={error.href}
+            target="_blank"
+            rel="noopener"
+            style={{ textDecoration: "none" }}
+          >
+            Continue in your AI assistant
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

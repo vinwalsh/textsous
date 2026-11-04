@@ -94,9 +94,15 @@ export default function ConverterForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = res.data as (ConvertOk & { error?: string }) | null;
+      const data = res.data as (ConvertOk & { error?: string; reason?: string }) | null;
       if (!res.ok || !data || !data.artifact) {
-        setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }));
+        setError(
+          friendlyError(res.status, data?.error ?? "", {
+            timeout: res.timeout,
+            reason: data?.reason,
+            recipeUrl: typeof body.url === "string" ? body.url : undefined,
+          }),
+        );
         setBusy(null);
         return;
       }
@@ -184,9 +190,9 @@ export default function ConverterForm({
     const form = new FormData();
     form.set("photo", upload);
     const res = await apiFetch("/api/photo", { method: "POST", body: form });
-    const data = res.data as (PhotoOk & { error?: string }) | null;
+    const data = res.data as (PhotoOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.recipe) {
-      setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }));
+      setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout, reason: data?.reason }));
       setBusy(null);
       return;
     }

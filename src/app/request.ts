@@ -38,14 +38,28 @@ export interface FriendlyError {
   title: string;
   detail: string;
   /** Follow-up the UI can offer, if any. */
-  action?: "paste-text";
+  action?: "paste-text" | "assistants";
+  /** Link for the "assistants" action. */
+  href?: string;
+}
+
+/** Where people continue when the free daily conversions run out (C7). */
+export function assistantsHref(recipeUrl?: string): string {
+  const url = (recipeUrl ?? "").trim();
+  return /^https?:\/\//i.test(url) ? `/assistants?url=${encodeURIComponent(url)}` : "/assistants";
 }
 
 /** Map API failures to copy a cook can act on. Pure: fully unit-tested. */
 export function friendlyError(
   status: number | null,
   message: string,
-  opts: { timeout?: boolean } = {},
+  opts: {
+    timeout?: boolean;
+    /** The 429 `reason` from the API (C2), when present. */
+    reason?: string;
+    /** The recipe URL being converted, for the assistants link. */
+    recipeUrl?: string;
+  } = {},
 ): FriendlyError {
   if (opts.timeout || status === 504) {
     return {
@@ -115,10 +129,15 @@ export function friendlyError(
     };
   }
   if (status === 429) {
-    if (/daily/i.test(message)) {
+    const dailyCap =
+      opts.reason === "daily_cap" || (opts.reason !== "rate_limited" && /daily/i.test(message));
+    if (dailyCap) {
       return {
-        title: "Today's conversions are used up",
-        detail: "The daily limit is reached. Try again tomorrow.",
+        title: "Today's free conversions are used up",
+        detail:
+          "Keep going in your own AI assistant (Muse, ChatGPT, Claude or Gemini) with a free TextSous account, or try again here tomorrow.",
+        action: "assistants",
+        href: assistantsHref(opts.recipeUrl),
       };
     }
     return {

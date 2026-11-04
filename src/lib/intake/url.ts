@@ -24,6 +24,26 @@ export interface UrlExtraction {
   rawText: string;
   /** Readable notes, e.g. page text cut to the first 60,000 characters. */
   warnings: string[];
+  /**
+   * The page's schema.org Recipe fields (cleaned, instructions flattened to
+   * lines), or null when the page has no Recipe JSON-LD. Optional so older
+   * callers and fixtures stay valid.
+   */
+  jsonLd?: RecipeJsonLd | null;
+}
+
+/** Selected schema.org Recipe fields, as plain JSON. */
+export interface RecipeJsonLd {
+  name?: string;
+  author?: string;
+  recipeYield?: string;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  recipeCuisine?: string[];
+  recipeCategory?: string[];
+  recipeIngredient: string[];
+  recipeInstructions: string[];
 }
 
 // --- SSRF guards: public https only, no private IPs ---
@@ -476,6 +496,14 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
     const author =
       authorName(recipe.author) ?? $('meta[name="author"]').attr("content")?.trim() ?? undefined;
     const ingredientLines = normalizeStringArray(recipe.recipeIngredient);
+    const instructionLines = flattenInstructions(recipe.recipeInstructions);
+    const servingsRaw = normalizeYield(recipe.recipeYield);
+    const optionalText = (value: unknown): string | undefined =>
+      typeof value === "string" && value.trim() ? stripTags(value).trim() : undefined;
+    const optionalList = (value: unknown): string[] | undefined => {
+      const list = normalizeStringArray(value);
+      return list.length > 0 ? list : undefined;
+    };
     return {
       sourceUrl: baseUrl,
       finalUrl: baseUrl,
@@ -485,12 +513,24 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
       title,
       hasJsonLd: true,
       ingredientLines,
-      instructionLines: flattenInstructions(recipe.recipeInstructions),
-      servingsRaw: normalizeYield(recipe.recipeYield),
+      instructionLines,
+      servingsRaw,
       rawText,
       // With JSON-LD ingredient lines the page text is never read, so its cut
       // does not matter; without them the conversion falls back to the text.
       warnings: ingredientLines.length > 0 ? [] : readable.warnings,
+      jsonLd: {
+        name: optionalText(recipe.name),
+        author: authorName(recipe.author),
+        recipeYield: servingsRaw,
+        prepTime: optionalText(recipe.prepTime),
+        cookTime: optionalText(recipe.cookTime),
+        totalTime: optionalText(recipe.totalTime),
+        recipeCuisine: optionalList(recipe.recipeCuisine),
+        recipeCategory: optionalList(recipe.recipeCategory),
+        recipeIngredient: ingredientLines,
+        recipeInstructions: instructionLines,
+      },
     };
   }
   return {
@@ -506,6 +546,7 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
     servingsRaw: undefined,
     rawText,
     warnings: readable.warnings,
+    jsonLd: null,
   };
 }
 

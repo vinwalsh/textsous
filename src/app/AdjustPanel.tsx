@@ -63,9 +63,9 @@ export default function AdjustPanel({
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = res.data as (AdjustOk & { error?: string }) | null;
+    const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.artifact) {
-      setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }));
+      setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout, reason: data?.reason }));
       setApplying(false);
       return;
     }
