@@ -7,17 +7,24 @@ import { inferAllergens, rollUpTraces } from "./allergens";
 /**
  * Progressive conversion (M8). A client that sends
  * `Accept: application/x-ndjson` to POST /api/convert gets status 200 and one
- * JSON event per line as each part of the conversion is ready, in this order:
+ * JSON event per line as each part of the conversion is ready, usually in
+ * this order:
  *
  *   facts -> overview -> recipe -> procedure -> done
  *
- * Any event but the last may be skipped (a cache hit sends only `done`), and
- * `facts` may come again with `recipe` once the recipe is read. A failure
- * after the stream starts ends it with one `error` event carrying the status
- * the JSON route would have answered. Failures found before the stream
- * starts (bad input, a refused page, limits) keep their usual JSON answers
- * and status codes. Clients that do not ask for NDJSON get the JSON answer,
- * unchanged. Client-safe: no Node APIs.
+ * The overview comes from its own fast call and is sent whenever that call
+ * finishes before the cook along is compiled: always after `recipe` on a
+ * `{recipe}` (photo) conversion, after `recipe` or even `procedure` on a URL
+ * or text when it is slower than reading the recipe, or not at all.
+ * `facts` may come more than once but never after `recipe`, which carries
+ * the latest facts. Any event but the last may be skipped (a cache hit sends
+ * only `done`), so clients should accept the events in any order. Blank
+ * lines (a keep-alive every 15 s) carry no event. A failure after the stream
+ * starts ends it with one `error` event carrying the status the JSON route
+ * would have answered. Failures found before the stream starts (bad input, a
+ * refused page, limits) keep their usual JSON answers and status codes.
+ * Clients that do not ask for NDJSON get the JSON answer, unchanged.
+ * Client-safe: no Node APIs.
  */
 export const CONVERT_EVENTS_MEDIA_TYPE = "application/x-ndjson";
 

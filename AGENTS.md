@@ -162,13 +162,15 @@ here with the date. Check the code before trusting any doc line about it.
   the button.
 - Progressive conversion (M8, `src/lib/convert-events.ts` is the contract).
   POST /api/convert with `Accept: application/x-ndjson` answers 200 with
-  one JSON event per line: facts -> overview -> recipe -> procedure -> done,
-  or one `error` event `{status, error}` with the status and message the
-  JSON answer would have had. Every check before live work (cross-site 403,
-  body 400s, page fetch errors, size caps, both 429s) keeps its JSON answer;
-  a cache hit streams one `done`. Facts go out before any model call when
-  the page has a schema.org Recipe, otherwise with the overview; the
-  overview is sent whenever it arrives before compile. A blank line every
+  one JSON event per line, usually facts -> overview -> recipe ->
+  procedure -> done, or one `error` event `{status, error}` with the status
+  and message the JSON answer would have had. Every check before live work
+  (cross-site 403, body 400s, page fetch errors, size caps, both 429s) keeps
+  its JSON answer; a cache hit streams one `done`. Facts go out before any
+  model call when the page has a schema.org Recipe (or with the confirmed
+  recipe on a photo), otherwise with the overview; the overview is sent
+  whenever it arrives before compile, so it can follow `recipe` (always on
+  a photo) or `procedure`, and clients accept any order. A blank line every
   15 s keeps the connection open (readers skip it). A reader who leaves
   does not stop the work (after() keeps the function alive) and URL
   results are still cached. Without the header, JSON answers are unchanged
