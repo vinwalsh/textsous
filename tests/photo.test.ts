@@ -427,9 +427,11 @@ describe("transcribePhoto", () => {
     expect(many.warnings[0]).toMatch(/only the one that starts on the first photo was read/);
     expect(many.transcription).toEqual(TRANSCRIPTION);
     const { client: single } = queueClient([{ ...TRANSCRIPTION_REPLY, otherRecipeSkipped: true }]);
-    expect((await transcribePhoto([page("one")], { client: single })).warnings[0]).toMatch(
-      /^The photo shows more than one recipe/,
-    );
+    // One photo: the recipe read is the first that starts in it, which on a page
+    // that ends one recipe and starts the next is not the first on the page.
+    expect((await transcribePhoto([page("one")], { client: single })).warnings).toEqual([
+      "The photo shows more than one recipe, so only the first one that starts in it was read. Convert the others one at a time.",
+    ]);
   });
 });
 

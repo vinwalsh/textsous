@@ -255,7 +255,7 @@ function transcribeUserText(count: number): string {
 /** Readable warning for a transcription that left another recipe out. */
 export function otherRecipeWarning(count: number): string {
   return count === 1
-    ? "The photo shows more than one recipe, so only the first one was read. Convert the others one at a time."
+    ? "The photo shows more than one recipe, so only the first one that starts in it was read. Convert the others one at a time."
     : "The photos show more than one recipe, so only the one that starts on the first photo was read. Convert the others one at a time.";
 }
 
