@@ -1,61 +1,178 @@
 # Handoff: TextSous Open converter
 
-For the next agent picking up this repo. Last updated: 2026-10-30.
+For the next agent picking up this repo, and for whoever works on the
+TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
 
 ## Where things stand
 
-- **M1–M3** closed, pushed, deployed.
-- **M4** complete: all items closed (M4.6 full-eval numbers
-  2026-11-01, beyond the 3-URL minimum).
-- **M5**: M5.1 (eval 23/23), M5.2 (demo pre-warm), M5.4 (README)
-  closed. M5.3/M5.5 pending (see below).
-- Suite: 275/275 offline green (`MODEL_API_KEY` unset). M6.1 + M6.3 +
-  M6.4 + M6.6 built (owner re-checks pending one push + deploy), M6.2
-  closed, M6.5 blocked (eval 0/23 unknown-error, 0 tokens — owner's run
-  needs a working model setup before it yields fail reasons). Prod
-  (open.textsous.com) deploys `main` on push. Owner pushed 2026-10-31:
-  origin/main has the demo page + photo-picker fix, /demo verified 200.
-  M4.2 re-checks remaining: photo Library choice, Allrecipes paste
-  fallback.
-- Source of truth for status is TASKS.md; NEW-WORK.md is the dated work log;
-  AGENTS.md holds the repo rules. README.md is user-facing.
+- **M1–M6** are on main (`3e56ebb`) and deployed at
+  https://open.textsous.com. M6.1, M6.3, M6.4 and M6.6 still wait for the
+  owner's phone re-checks (TASKS.md O14).
+- **M7** (TASKS.md M7.1–M7.9) is built on branch `m7`: 82 commits after
+  `3e56ebb` plus the docs commit. It is not pushed or deployed yet; M7.10
+  (ship and verify) is open.
+- Gates on `m7`: 711/711 offline in 68 files with `MODEL_API_KEY` unset,
+  typecheck, lint, build, and `npm run schema && npm run docs` with no diff.
+- Other open items: M5.3 (owner review of the NEW-WORK.md summary), M5.5
+  (final state), and owner actions O3, O4 and O6–O14. The order for Nov 4 is
+  at the top of TASKS.md "Owner actions"; submission is due Nov 4,
+  9:00 PM ET.
+- Sources of truth: TASKS.md (status), NEW-WORK.md (dated log), AGENTS.md
+  (rules), README.md (users), docs/SKILLS.md and docs/EMBED.md
+  (integrators), docs/FORMAT.md and docs/schema/ (the format).
+
+## Hand-off to the TextSous app
+
+textsous.com lives in a private repo, and this repo never depends on its
+code. These are the contracts between the two, as of M7.
+
+### Links into this app
+- `https://textsous.com/open?url=<recipe page URL>` (or
+  `?src=<artifact JSON URL>`) redirects to
+  `https://open.textsous.com/?<same query>`. The home route converts `url`
+  (cache first) or loads `src`; extra parameters such as `utm_*` ride along.
+  Bare `/open` is 404 there.
+
+### Save to TextSous: the import link
+- The viewer stores the artifact for 24 hours (`POST /api/artifact`), then
+  opens `https://textsous.com/import?src=<encodeURIComponent(signed artifact URL)>`.
+  Inside the embed overlay it opens in a new tab.
+- The signed artifact URL has exactly this shape, with nothing else in the
+  query:
+  `https://open.textsous.com/api/artifact/<lowercase uuid>?sig=<64 lowercase hex>`.
+  `sig` is an HMAC-SHA256 over `<id>.<expiresAt>` with
+  ARTIFACT_SIGNING_SECRET; the TextSous app holds no copy and needs none.
+- `GET` on it returns the artifact JSON, server to server (no CORS), as
+  many times as needed for 24 hours, because sign-in can interrupt the
+  first try. A bad signature gets 403; an expired or missing artifact 404.
+- The TextSous app accepts only that shape, from origins on its allowlist
+  (https://open.textsous.com by default). A link made on a preview carries
+  the preview's origin, so add the preview to that allowlist before testing
+  imports from it.
+- A build with `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off` hides the button while
+  textsous.com/import is not live.
+
+### Skills API (docs/SKILLS.md)
+The TextSous MCP server (https://textsous.com/api/mcp, OAuth sign-in) calls
+these routes server to server:
+
+| Route | Auth | Success | Errors |
+| --- | --- | --- | --- |
+| `GET /api/skills/format` | public, cached 5 min | `{ skillsVersion: 1, formatVersion: 1, instructions, inputSchema, example }` | none |
+| `POST /api/skills/source` with `{ url }` | secret | `{ ok: true, source: { url, site, author, title, jsonLd, text } }` | 422 `refused_url`, `multiple_recipes`, `fetch_failed` or `not_a_recipe` |
+| `POST /api/skills/cook-along` with the lenient body | secret | `{ ok: true, artifactId, artifactUrl, viewUrl, expiresAt, summary, warnings }` | 422 `{ ok: false, errors: [{ path, code, message }], warnings }`, at most 50 errors |
+
+- Secret: `Authorization: Bearer <secret>`, compared in constant time.
+  SKILLS_API_SECRET here and TEXTSOUS_OPEN_SKILLS_SECRET on the TextSous app
+  hold the same value. Shared failures: 503 `not_configured` (the secret is
+  unset here), 401 `unauthorized`, 413 `too_large` (over 256 KB), 400
+  `invalid_json`, and 429 `rate_limited` with `error.scope`: `"account"`
+  (60 an hour per `X-TextSous-Account`, an opaque per-person hash the caller
+  sends) or `"service"` (600 an hour per secret). The TextSous app can read
+  `error.scope` instead of matching the message wording.
+- `artifactUrl` has the import shape above, built on `PUBLIC_ORIGIN`, else
+  https://open.textsous.com on Vercel production, else the request's own
+  origin. `viewUrl` is `<origin>/?src=<encodeURIComponent(artifactUrl)>`.
+  Both work until `expiresAt` (an ISO time, 24 hours out).
+- `summary`: `title`, `servings`, `totalMinutes` and `handsOnMinutes` (from
+  the code schedule, never from the assistant), `taskCount`, and
+  `allergens` and `traces` (EU-14, after the allergen floor).
+- The server fills ids and defaults, validates with the real zod schemas,
+  schedules, runs the coded checks and compiles. The seven model judgments
+  are recorded as not run, because the person's own assistant wrote the
+  recipe. No skills route calls a model or uses the daily cap.
+- The TextSous side (built, not merged) adds three MCP tools:
+  `get_cook_along_format` (read; caches the format for 10 minutes),
+  `get_recipe_source` (read) and `save_cook_along` (write). The last one
+  imports `artifactUrl` into the person's Cookbook and returns `viewUrl`,
+  `cookbookUrl` (`https://textsous.com/dashboard/cookbook/<id>`),
+  `summary`, `warnings` and `expiresAt`; 422 errors come back as data for
+  the assistant to fix and resend. Its input is never stricter than this
+  API's, and its per-person limits (30 saves and 30 link reads an hour) fit
+  inside the 60-an-hour account limit.
+
+### Format
+- `formatVersion` stays 1. M7 added optional fields only:
+  `recipe.nativeServings`, task `why`, and the artifact's `reviewNotes`. The
+  published docs/schema/*.json leave optional fields out of `required`.
+- The TextSous importer strips unknown keys and checks the version exactly,
+  so M7 artifacts import today. When it next refreshes its copy of
+  docs/schema/artifact.json, it should learn the three fields (or keep
+  stripping them).
+
+### Owner steps across both sides
+TASKS.md O10 (one secret on both projects), O11 (the Cookbook import PR
+after its database migration, then the MCP recipe-tools change, deployed),
+the M7 deploy (M7.10), O12 (warm the demo cache) and O13 (Muse end to end).
 
 ## Open loops
 
-- M5.1 full eval: DONE 23/23 (739k tokens, skimmed clean) after the
-  cheerio/slim fix. Say the word to commit `eval/RESULTS.md` + closure
-  docs (TASKS/NEW-WORK/HANDOFF edits uncommitted).
-- M5.3: final NEW-WORK summary once the commit range is settled, plus the
-  owner's private-repo handoff notes (not visible from here).
-- M5.5: needs a push/deploy; also unresolved: the item says health "reports
-  the Standard tier" but `/api/health` has no tier field — ask the owner
-  what that check wants before closing.
-- Owner items still open: O3 cap sizing (~20–25k tokens/conversion
-  measured), O4 Baseten key, O6 `/open`+`/import` on textsous.com (in
-  progress: /import in dev, /open in design; past Nov 1 due date), O7
-  privacy line, O8 demo video, O9 submission.
-- M6: M6.2 + M6.5 closed; M6.1/M6.3/M6.4/M6.6 built, owner
-  re-checks pending one push + deploy. Attribute tags deferred (owner
-  thinking).
-- Pre-warm evidence lived in `/tmp/prewarm*.log` (scratch, never committed);
-  reproduce via the M5.2 procedure if needed.
+- Ship M7 and work through the owner actions (TASKS.md).
+- textsous.com/open and /import return 404 until O11 ships. That affects
+  "Save to TextSous" and the plain "Open with TextSous" link in README.md
+  and docs/EMBED.md. If /import is not live at the M7 deploy, build with
+  `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off`.
+- Deferred, owner's call:
+  - /embed starts an uncached conversion inside the frame without a tap,
+    so an embedding page can start conversions on its visitors'
+    connections, bounded by the per-IP hourly limit and the daily cap. A
+    "Start" tap for uncached URLs (which needs a cache-only probe on
+    /api/convert) would close that, but it changes the embed's auto-convert
+    behavior, so it waits.
+  - Closing the overlay ends a running conversion; reopening starts again.
+    Keeping it alive needs a busy/idle message from the iframe. EMBED.md
+    documents the behavior.
+  - The skills secret budget stays at 600 requests an hour: raising it
+    would weaken the cap on a leaked secret or a looping caller.
+  - The "Open" pill's text is 4.49:1 on its background, as the brand colors
+    set it; it is part of the wordmark.
+  - On the TextSous app: whether sign-ups that start from an assistant
+    should skip its setup steps (two "Skip" taps today), as /import does.
+- Not exercised yet: no real assistant has called the skills API end to
+  end (needs O10, O11 and the deploy); the cross-origin `data-src` handoff
+  has unit tests only; whether Vercel serves `/embed.js` with the
+  Cache-Control from next.config.ts (check with `curl -I` after the deploy).
+- Old cache entries keep their stored `schedule`. The oven heat-up change
+  moved oven tasks earlier, and the viewer and the skills summary recompute
+  the schedule, but an API client reading `schedule` from /api/convert can
+  see the old minutes.
+- Output gaps seen in the live preview: the stroganoff folds its last
+  simmer into a hands-on task and puts the parsley prep in the base lane;
+  the salmon whisks its glaze in the cook phase; the tacos have no
+  unattended tortilla-warming interval. Code rewording after a swap can
+  read awkwardly ("Brown coconut oil"); each case is listed in What changed,
+  and amounts inside reworded text are not converted to the substitute's.
+- M5.5 asks for health to report "the Standard tier", but `/api/health`
+  has no tier field; `"contributorModel": false` on muse-spark-1.3 is the
+  closest signal. Ask the owner.
+- Pre-warm evidence from M5.2 lived in `/tmp/prewarm*.log` (scratch, never
+  committed); `npm run warm` replaces that procedure.
 
-## Environment quirks (this dev sandbox)
+## Environment notes
 
-- External web fetching FAILS except allowlisted hosts (npm registry, the
-  model API, and open.textsous.com work; blog/recipe pages fail or hang).
-  Anything needing arbitrary web — URL eval runs, URL curation, localhost
-  servers — must run elsewhere. Production fetches fine.
-- The `tsx` CLI fails here (EPERM on its IPC pipe); run scripts locally
-  with `node --import tsx <script>`. Committed `npm run` scripts are
-  unaffected — CI and real machines run them normally.
+Muse Code sandbox (Oct 27 – Nov 3):
+- External web fetching fails except for allowlisted hosts (the npm
+  registry, the model API and open.textsous.com). URL eval runs, URL
+  curation and localhost servers must run elsewhere. Production fetches
+  fine.
+- The `tsx` CLI fails there (EPERM on its IPC pipe); run scripts with
+  `node --import tsx <script>`. Committed `npm run` scripts are unaffected.
 - `npm ci` needs `--cache /tmp/npm-cache` (home dir unwritable).
-- No port binding: verify UI via `renderToString` smokes and production,
-  never a local server.
-- `git push` auth fails here — the owner pushes from their own terminal.
-  Commit only on explicit ask; never push on your own.
-- The local model key lives in `.env.local` (gitignored). Source it for
-  live runs; never print, copy, or commit it.
+- No port binding: verify UI through `renderToString` smokes and
+  production, never a local server.
+- `git push` auth fails there; the owner pushes. Commit only on explicit
+  ask, and never push on your own.
+- The local model key lives in `.env.local` (gitignored). Source it for live
+  runs; never print, copy or commit it.
+
+M7 machine (Nov 3–4):
+- No model key on that machine: live checks ran on a Vercel preview.
+- Headless Chrome lays pages out at least about 500 px wide, so 390 px
+  screenshots need DevTools device emulation or a 390 px iframe.
+- Disk is tight: run `rm -rf .next/cache` after every `next build`.
+- `next dev` used to write a managed block into AGENTS.md; next.config.ts
+  now sets `agentRules: false`. Prefer `next build` + `next start` for
+  screenshots anyway.
 
 ## Key commands
 
@@ -67,6 +184,8 @@ npx tsx src/cli.ts convert <url|file> --out /tmp/x.json [--timeline]
   [--servings n] [--dietary target] [--cuisine name] [--voice sous]
 npm run eval [--fixtures-only] [--limit N] [--out path]   # live $, see M5.1
 npm run schema && npm run docs                   # regen docs (CI gates the diff)
+npm run warm -- --base https://open.textsous.com # live $: warm /demo and /embed-demo after a deploy
+curl -fsS https://open.textsous.com/api/health   # status, model, limits, which secrets are set
 ```
 
 ## Decisions worth knowing
@@ -84,3 +203,26 @@ npm run schema && npm run docs                   # regen docs (CI gates the diff
 - The fetcher keeps its honest `TextSousOpen` user-agent; never impersonate
   a browser to bypass publisher gates — gated pages fail gracefully and the
   UI offers pasting the text instead.
+- Cache hits are served before any limit and cost nothing. A daily unit is
+  reserved just before live model work and given back unless model tokens
+  may have been spent.
+- The cache key holds the model id and the canonicalize, procedure,
+  scheduler, review and compile versions. Bumping any of them makes every
+  URL convert live again, so run `npm run warm` after such a deploy.
+  Dietary, cuisine, scaling and voice versions are not in the key.
+- The allergen floor only adds tags. An allergen named only in an
+  alternative ("or vegan butter") becomes a trace, and "Replaces …" notes
+  on substitutes are skipped.
+- Three review judgments are advisory (AGENTS.md "Review checks"): their
+  failures travel as `reviewNotes`, never as a block.
+- The viewer colors lanes by position from src/lib/lane-palette.ts,
+  whatever color an artifact stored; stored artifacts are never rewritten.
+- Convert, adjust, photo and artifact POSTs that a browser marks
+  `Sec-Fetch-Site: cross-site` get 403. The app's own pages and the /embed
+  iframe are same-origin; curl, scripts and servers send no such header.
+- The embed's same-page rule is a soft guard (Firefox has no
+  `ancestorOrigins`, and a no-referrer host hides itself); the per-IP limit
+  and the daily cap are the real budget guards.
+- The skills API drops unknown body fields with an `unknown_field` warning
+  and maps common allergen words ("dairy", "wheat") to EU-14 slugs with a
+  warning, so assistants get fixable feedback instead of hard refusals.

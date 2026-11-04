@@ -231,6 +231,7 @@ A milestone is done when all of these hold:
   what pre-existed outside this repo, and the exact changes made in the private
   TextSous repo for the handoff.
   Check: owner review.
+  - 2026-11-04: summary in NEW-WORK.md updated through M7 (commit range, the TextSous app's handoff changes, outside-repo work); owner review pending.
 - [x] **M5.4 README.** What it does, a 60-second quickstart, provider setup, the
   spec link, the embed snippet, limits, license, and the credit and takedown
   policy.
@@ -239,6 +240,7 @@ A milestone is done when all of these hold:
 - [ ] **M5.5 Final state.** AGENTS.md Status lists what is built; production
   health reports the Standard tier; HTTPS is valid; CI is green.
   Check: every "Done for every milestone" condition holds.
+  - 2026-11-04: AGENTS.md Status rewritten for M7 (built on branch m7, not yet on main). The production checks wait for the M7 deploy (M7.10). /api/health has no tier field; `"model": "muse-spark-1.3"` with `"contributorModel": false` is the closest signal, so the owner should confirm that reading.
 
 ## M6. Phone-check follow-ups (target: Nov 3)
 - [ ] **M6.1 Viewer reorder.** Move the adjust panel directly under the
@@ -283,7 +285,108 @@ A milestone is done when all of these hold:
   green.
   - 2026-10-31: built (uniform Timer on every step, ±1 min adjust with drift-safe baseline, estimated wording kept; AGENTS display rule amended); 3 tests; 275/275 + typecheck + lint + build green. Owner check pending (needs push + deploy).
 
+## M7. Assistants, embed, output format and brand (target: Nov 4)
+Built Nov 3-4 on branch `m7` in three parallel streams (core, skills, embed),
+then merged, brand-passed, reviewed and fixed; a fourth stream added the MCP
+tools to the TextSous app in its private repo. Code comments name the build
+spec's contracts: C1 artifact compatibility, C2 429 bodies, C3 skills API,
+C4 MCP tools, C5 embed, C6 design tokens, C7 /assistants, C8 brand.
+- [x] **M7.1 Review fixes.** Fix what the Nov 3 status review found: step
+  cards follow dietary and cuisine variants; scaling starts from native
+  servings and rescales only amounts tied to a unit or name; an EU-14
+  allergen floor; cache hits served free before the per-IP limit and the
+  daily cap; model calls and the pipeline bounded under the function limits;
+  a 30-day cache keyed by model id; a 60,000-character input window; URL
+  intake hardening; 256 KB body caps; photos shrunk in the browser; a timer
+  row that fits a 390 px phone; the `--ts-*` design tokens.
+  Check: each finding has a test that fails before its fix; gates green
+  with MODEL_API_KEY unset.
+  - 2026-11-04: core stream, 31 commits (13 fixes, the 8 M7.2 commits, then 10 fixes from its two reviews); 512/512 offline, typecheck, lint, build, schema/docs no diff. Vegan porridge cards name no butter, milk or cheese; the stroganoff shows gluten, fish, milk and mustard plus a celery trace.
+- [x] **M7.2 Cook-along output format.** Procedure prompt v4: mise en place
+  first with one prep task per preparation named in an ingredient line or
+  note, exact amounts in descriptions, a batch as one grouped task, setup
+  split from unattended waiting, the oven preheat first with a 10-minute
+  heat-up, prepared inputs readied, at most one tip and a one-sentence `why`.
+  `src/lib/format.ts` repairs titles, card titles and timing labels; three
+  coded format warnings never block; "What changed" names tasks and steps,
+  never ids; the viewer gains "Before you start" and an Essentials / With
+  tips toggle.
+  Check: live preview conversions show zero format warnings; gates green.
+  - 2026-11-04: preview, procedure v4: beef stroganoff 12 tasks / 43 min, chicken tacos 16 / 52, maple glazed salmon 9 / 37, herby toast text 5 / 12; zero format warnings, clean titles; 164-279 s end to end, so convert got 420 s (deadline 400 s). Low reasoning effort for canonicalize measured 2-3x faster but less faithful: not adopted. 485/485 offline.
+- [x] **M7.3 Skills API.** `GET /api/skills/format` (public),
+  `POST /api/skills/source` and `POST /api/skills/cook-along` (secret), per
+  docs/SKILLS.md: lenient body, strict validation with path-specific errors
+  an assistant can act on, the code schedule and coded checks, compile, a
+  24-hour signed artifact. No model calls, no daily cap.
+  Check: tests for 503, 401, 413 and 429, the example end to end, the import
+  link shape, and a daily cap of 1 left untouched.
+  - 2026-11-04: skills stream, 10 commits (5, then 5 from its reviews); 334/334 offline. Local run on :3103: format 200 with its cache header, 401 without the secret, a real eval URL through source, the example saved (7 tasks, 15 min, gluten and milk). All 20 eval URLs return a source, both Smitten Kitchen pages included.
+- [x] **M7.4 Use in your assistant.** /assistants connects TextSous to Muse,
+  ChatGPT, Claude and Gemini through the TextSous MCP server
+  (https://textsous.com/api/mcp, sign-in with a free TextSous account) and
+  shows a ready-to-copy prompt for `?url=`. The daily-cap 429
+  (`reason: "daily_cap"`) shows "Today's free conversions are used up" with
+  "Continue in your AI assistant" to /assistants?url=<recipe> (bare
+  /assistants for text and photo), in a new tab, from convert, adjust and
+  the embed.
+  Check: render and copy tests.
+  - 2026-11-04: assistants-page, daily-cap-cta, embed-daily-cap and request tests green; the Muse steps say to ask Muse in a chat to create the custom connector, as textsous.com/assistants does.
+- [x] **M7.5 Cook Along button.** public/embed.js puts a Shadow DOM button on
+  recipe pages and opens an on-page overlay with an iframe to /embed; /embed
+  converts one recipe without site chrome under the same-page rule; framing
+  and caching headers in next.config.ts; /embed-demo is a demo blog post
+  built from the CC0 porridge fixture; docs/EMBED.md.
+  Check: unit tests for the script helpers, /embed, the headers and the
+  demo; a browser check of open, Esc, Close, focus and a forged close
+  message.
+  - 2026-11-04: embed stream, 10 commits (6, then 4 from its reviews); 349/349 offline plus one post-merge test. Headless Chrome on :3102: Esc and the in-frame Close close it, focus returns to the button, Tab stays in the dialog while the page is inert, a forged textsous:close is ignored, a second include adds no extra buttons, and a recipe from another site shows the mismatch message.
+- [x] **M7.6 Integration.** Merge the three streams into `m7`; the skills API
+  takes the converter's optional `why`, the 10-minute oven heat-up wait and
+  its format warnings.
+  Check: gates green at the merge.
+  - 2026-11-04: merges 95b0c55 and c3a059c plus 0e7d053; 624/624 offline in 59 files at c3a059c (rerun 2026-11-04), typecheck, lint, build, schema/docs no diff.
+- [x] **M7.7 Brand pass.** Inter for the UI, a Fredoka "TextSous" wordmark
+  with an "Open" pill, a site header (Demo, Use in your assistant, GitHub)
+  and footer (MIT, SOUS AI LLC, Privacy, Takedowns), one 720 px column, white
+  cards, Cook Along cards edged in the lane color with phase bands, the
+  earth-tone lane palette, a light 404, and embed.js chrome in the same look.
+  Check: screenshots of every page at 390 and 1280 px; no sideways scroll at
+  390 px.
+  - 2026-11-04: 6 commits; 645/645 offline in 61 files; stored artifacts, prompts, schemas and the cache key untouched; /embed still hides the header and footer.
+- [x] **M7.8 Advisory review judgments.** equipment_capacity,
+  source_relationships and tips_and_voice no longer block compile: a failed
+  or missing judgment becomes a readable `reviewNotes` entry, shown under
+  "Notes on this conversion" after convert, on cache hits, after adjust, for
+  `?src=` links and in the embed. The other four judgments and the five coded
+  checks still block, and a blocked review shows one calm sentence with the
+  reasons behind "Details".
+  Check: tests for the notes, compile, convert (an advisory failure gives
+  200 with notes; a blocking or missing fidelity judgment gives 422), cache
+  hits and adjust.
+  - 2026-11-04: a687578 and f7b0d95; docs/schema/artifact.json and FORMAT.md regenerated for the optional field; no prompt, stage version or cache-key change.
+- [x] **M7.9 Final review fixes.** From the contracts, security, readiness and
+  visual-QA reviews: cross-site POSTs refused (403); input ceilings for one
+  daily unit; "took too long" 503s instead of page-fetch errors; one retry of
+  a quick upstream 429, 5xx or dropped connection under a deadline; a screen
+  wake lock during conversions; the oven heat-up counted from the preheat;
+  skills `summary.traces`, `error.scope` on 429s and capped error lists;
+  DAILY_CONVERSION_CAP=0 pauses live conversions; health reports
+  ratePerHour, skillsConfigured and signingConfigured;
+  NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off hides Save to TextSous; `next dev` leaves
+  AGENTS.md alone; 44 px tap targets and AA contrast.
+  Check: each finding has a test that fails before its fix; full gates.
+  - 2026-11-04: 22 commits; 21 of 22 review findings and 12 of 13 visual-QA findings applied (the skills secret budget and the wordmark pill's colors kept by decision); 711/711 offline in 68 files with MODEL_API_KEY unset, typecheck, lint, build, schema/docs no diff. Rerun in the docs session: 711/711, typecheck and lint clean, schema and docs unchanged.
+- [ ] **M7.10 Ship and verify.** `m7` reaches main and deploys; the demo
+  cache is warmed (O12); the owner checks Muse (O13) and phones (O14).
+  Check: production `/api/health` is ok on muse-spark-1.3 and reports
+  `ratePerHour` and `skillsConfigured`; `curl -I` shows
+  `frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN` on /, only
+  `frame-ancestors *` on /embed, and `Cache-Control: public, max-age=300,
+  s-maxage=3600` with `Access-Control-Allow-Origin: *` on /embed.js; O12, O13
+  and O14 are done.
+
 ## Owner actions (not for the coding agent)
+Order for Nov 4: O10, O11, the M7 deploy (M7.10), O12, O13, O14, O8, O9.
 - [x] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and
   Preview, Sensitive) and delete `model_api_key`. Needed for M1.10.
   - 2026-10-28: owner confirmed key set and legacy var deleted; prod /api/health shows hasApiKey true.
@@ -292,12 +395,55 @@ A milestone is done when all of these hold:
   - 2026-10-28: owner connected store textsous_cache + manual UPSTASH_* vars; prod health confirms upstashConfigured true.
 - [ ] O3 Set DAILY_CONVERSION_CAP and the rate limit once M1 reports tokens per
   conversion.
+  - 2026-11-04: optional now. After the M7 deploy the code defaults are 300 live conversions a day (DAILY_CONVERSION_CAP; 0 pauses live conversions while cache hits keep working) and 20 an hour per IP for each of convert, adjust and photo (RATE_LIMIT_PER_HOUR, at least 1). Set either in Vercel (Production and Preview) only to change them; `/api/health` shows `dailyCap` and `ratePerHour`.
 - [ ] O4 Add the Baseten key if credits are approved (optional fallback).
 - [x] O5 Choose the takedown and privacy contact address. Needed for M4.5.
   - 2026-10-29: owner chose privacy@textsous.com; footer shipped in M4.5.
 - [ ] O6 Build /open and /import on textsous.com in the private repo by Nov 1.
   - 2026-11-03: in progress, past due date — /import in development (done soon), /open still being designed (owner may ask for design help).
+  - 2026-11-04: built in the TextSous app's Cookbook import PR: /open redirects to https://open.textsous.com with the query kept (bare /open is 404), and /import?src= signs the person up or in and saves the recipe to their Cookbook. Its preview worked against open.textsous.com. Live once it merges and deploys (O11).
 - [ ] O7 Add the imported-recipes line to the textsous.com privacy policy.
+  - 2026-11-04: the line is in the Cookbook import PR's privacy page; live when O11 ships it.
 - [ ] O8 Record the three-minute demo video (Nov 3).
+  - 2026-11-04: not recorded yet. Record after M7 is live and the cache is warm (O12), so /demo and the /embed-demo overlay open instantly; due with O9.
 - [ ] O9 Submit on the Cerebral Valley platform by Nov 4, 9:00 PM ET, with the
   public repo and a public video link.
+  - 2026-11-04: due tonight. NEW-WORK.md (M5.3) is the disclosure of what is new.
+- [ ] O10 Skills secret. Generate one value (`openssl rand -hex 32`). Set it
+  as SKILLS_API_SECRET on the open-textsous Vercel project (Production and
+  Preview, Sensitive) and as TEXTSOUS_OPEN_SKILLS_SECRET on the TextSous
+  app's project, then redeploy both. Until then the two secret skills routes
+  answer 503 `not_configured` and the MCP recipe tools say recipe skills are
+  not set up. Done when production `/api/health` (after the M7 deploy) shows
+  `"skillsConfigured": true`. Needed for O13.
+- [ ] O11 TextSous app merges. Run the Cookbook import PR's database migration
+  on production, merge that PR, then merge the MCP recipe-tools PR stacked on
+  it, and deploy. Leave TEXTSOUS_OPEN_ORIGIN unset in production (it
+  defaults to https://open.textsous.com). Done when
+  `curl -sI "https://textsous.com/open?url=https%3A%2F%2Fexample.com%2Fsoup"`
+  redirects to open.textsous.com and `curl -sI https://textsous.com/import`
+  is not 404. If /import is not live when M7 deploys, build open-textsous
+  with NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off so "Save to TextSous" stays hidden.
+  Needed for O13.
+- [ ] O12 Warm the demo cache after the M7 deploy:
+  `npm run warm -- --base https://open.textsous.com`. It converts each /demo
+  URL and the /embed-demo post once, one at a time; cache hits are free. A
+  fresh conversion takes 3 to 4 minutes, so the first run takes about an
+  hour. Run it from a network you are not using for demos (each fresh
+  conversion uses one of that network's 20 hourly conversions); after a 429,
+  run it again later and it picks up where it stopped. Done when a second
+  run prints "cache hit" for every URL.
+- [ ] O13 Muse end to end (after O10, O11 and the M7 deploy). Add the custom
+  connector https://textsous.com/api/mcp in Muse (Settings > Connectors >
+  Add custom connector, or ask Muse in a chat to create it, as /assistants
+  says), sign in with a TextSous account, then send a recipe link and ask
+  for a cook along. Done when Muse calls get_cook_along_format,
+  get_recipe_source and save_cook_along, the viewUrl opens on
+  open.textsous.com, and the recipe is in the Cookbook. If Muse's steps
+  differ from /assistants, correct the page.
+- [ ] O14 Phone checks on production after the M7 deploy: a cached and a
+  fresh /demo recipe, pasted text, a photo (picker, confirm, convert), an
+  adjustment (servings, then vegan: no butter, milk or cheese left on the
+  cards), the Cook Along button on /embed-demo (open, Close, Esc), and
+  /assistants?url=<recipe>. This also covers the M6.1, M6.3, M6.4 and M6.6
+  re-checks.

@@ -18,7 +18,7 @@ export MODEL_API_KEY=your-key-here
 npx tsx src/cli.ts convert eval/fixtures/herby-white-bean-toast.txt --out /tmp/herby.json
 ```
 
-That converts one of the bundled sample recipes (about two minutes of model
+That converts one of the bundled sample recipes (about three minutes of model
 time) and writes the Cook Along artifact to `/tmp/herby.json`. Add
 `--timeline` to print the cooking timeline, or `--servings 4 --dietary vegan`
 to adjust it. `npx tsx src/cli.ts convert --help` lists every flag.
@@ -59,26 +59,77 @@ npm run docs     # docs/FORMAT.md
 
 CI fails when the committed copies differ from a fresh run.
 
-## Embed on your site
+## Cook Along button for recipe sites
 
-Food bloggers can send readers to TextSous with one link per recipe page (see
-[`docs/EMBED.md`](docs/EMBED.md)):
+Recipe sites can add a "Cook along with TextSous" button. A tap opens the
+Cook Along in an overlay on the same page, so readers never leave the site:
 
 ```html
-<a href="https://textsous.com/open?url=YOUR_RECIPE_URL&utm_source=open-textsous&utm_medium=embed">Open with TextSous</a>
+<script src="https://open.textsous.com/embed.js" async></script>
+<div data-textsous-cook-along></div>
 ```
+
+The button converts the page's canonical address (or `data-recipe-url`), only
+for recipes on the site that embeds it, or shows a Cook Along you converted
+ahead of time with the CLI (`data-src`). Try it on
+https://open.textsous.com/embed-demo. [`docs/EMBED.md`](docs/EMBED.md) covers
+the attributes, privacy, caching, and a plain "Open with TextSous" link for
+readers without JavaScript.
+
+## Use TextSous from your AI assistant
+
+Connect Muse, ChatGPT, Claude or Gemini to the TextSous MCP server at
+`https://textsous.com/api/mcp` and sign in with a free TextSous account (steps
+at https://open.textsous.com/assistants). Then send your assistant a recipe
+link, pasted text or a photo and ask for a cook along. The assistant writes
+the Cook Along with its own model, so it is not limited by this site's daily
+free conversions; TextSous checks it, schedules it, and gives you a link that
+opens on open.textsous.com plus a copy in your TextSous Cookbook. When the
+site's free conversions run out, its error message links to those steps.
+
+The MCP tools call this repo's skills API ([`docs/SKILLS.md`](docs/SKILLS.md)):
+a public format guide for assistants, plus two secret routes that fetch a
+recipe page and that validate, schedule and store an assistant's cook along.
+No skills route calls a model.
+
+## Self-hosting
+
+Beyond the provider variables above, the web app reads:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ARTIFACT_SIGNING_SECRET` | (unset) | Signs saved artifact links ("Save to TextSous", skills API) |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | local files and memory | Cache, limits and saved artifacts in Redis |
+| `DAILY_CONVERSION_CAP` | `300` | Live conversions per UTC day; `0` pauses them |
+| `RATE_LIMIT_PER_HOUR` | `20` | Live requests per IP per hour, for each of convert, adjust and photo |
+| `SKILLS_API_SECRET` | (unset) | Turns on the two secret skills routes |
+| `PUBLIC_ORIGIN` | see `docs/SKILLS.md` | Origin used in skills API links |
+| `NEXT_PUBLIC_SAVE_TO_TEXTSOUS` | on | `off` at build time hides "Save to TextSous" |
+
+The skills API needs no model key. `GET /api/skills/format` is always public;
+`POST /api/skills/source` and `POST /api/skills/cook-along` answer 503 until
+`SKILLS_API_SECRET` is set, then expect it as `Authorization: Bearer <secret>`.
+Give the same value to your own MCP server or agent, and never send it from a
+browser.
 
 ## Limits
 
 - Recipe URLs must be public `https` pages; private addresses, credentials,
   and non-HTML content are refused.
 - One recipe per page: roundups and collections are rejected, not guessed at.
-- Photos must be PNG, JPEG, or WebP under 5 MB, processed in memory only.
-- Servings rescale from 0.5× to 12; timers and the one-cook schedule never
-  change under adjustments.
-- Live conversions are rate-limited per IP with a daily global cap
-  (`DAILY_CONVERSION_CAP`, default 100).
+- Pasted text can be up to 60,000 characters.
+- Photos must be PNG, JPEG, or WebP. The browser shrinks large phone photos
+  before upload; the server takes up to 5 MB and processes it in memory only.
+- A fresh conversion takes 3 to 4 minutes; a recipe converted before opens
+  from the cache right away.
+- Servings rescale from 0.5× to 12. Adjustments never change a step's timing;
+  removing an ingredient can drop a step that only handled it.
+- Live conversions are limited per IP to 20 an hour each for converting,
+  adjusting and photos (`RATE_LIMIT_PER_HOUR`), and all of them share a daily
+  global cap (`DAILY_CONVERSION_CAP`, default 300). Cache hits are free.
 - Saved artifacts live 24 hours under unguessable signed URLs.
+- Allergen lists ("Contains", "May contain") can miss things: always check
+  the labels.
 - No nutrition or health claims anywhere: the converter structures recipes, it
   does not advise on them.
 
@@ -98,9 +149,11 @@ npm test          # offline suite (no key needed)
 npm run typecheck
 npm run lint
 npm run smoke     # one tiny live model call per provider
+npm run warm -- --base https://your-deployment   # convert the /demo recipes once (live, uses daily units)
 ```
 
-`AGENTS.md` holds the full contributor rules; `TASKS.md` tracks the build.
+`AGENTS.md` holds the full contributor rules; `TASKS.md` tracks the build;
+`HANDOFF.md` sums up the current state and the TextSous app contract.
 
 ## License
 

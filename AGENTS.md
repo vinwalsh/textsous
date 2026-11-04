@@ -7,48 +7,60 @@ assistant over MCP. This repo holds the platform's open-source tools, starting
 with a TypeScript library, CLI and web app that convert any recipe (URL, pasted
 text, cookbook photo) into the TextSous Cook Along format: a canonical recipe
 JSON, a component-lane cooking timeline, and adjustable variants (servings,
-dietary, cuisine infusion, SOUS voice). The app is meant to run at
-https://open.textsous.com and hand finished recipes to https://textsous.com
+dietary, cuisine infusion, SOUS voice). The app runs at
+https://open.textsous.com and hands finished recipes to https://textsous.com
 ("Open with TextSous", "Save to TextSous"). Started at the Meta Global AI
 Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
 2026 is hackathon work; NEW-WORK.md records it.
 
 ## Status (read first)
-- On Oct 27, 2026 this repo holds only LICENSE, README.md, TASKS.md and this
-  file. Nothing described below is built yet. The sections below are the rules
-  and the target design. Never assume a module, script, route, env var or
-  deployment exists until you have created it or checked for it.
-- Vercel project `open-textsous` (team Sous) deploys this repo's main branch.
-  Until package.json exists, its ignored-build-step rule skips every build.
-  open.textsous.com is attached and its DNS points to Vercel; it serves
-  nothing until the first deploy.
-  Env vars set in Vercel: MODEL_BASE_URL, MODEL_ID (muse-spark-1.3),
-  ARTIFACT_SIGNING_SECRET. Not set yet: MODEL_API_KEY (see TASKS.md O1),
-  Upstash, the daily cap.
-- The rest of the TextSous platform lives in separate private repos. It already
-  handles accounts, households, weekly meal plans, grocery lists and SOUS over
-  text and MCP. It has no public recipe import: the /open and /import routes in
-  "Handoff" are planned and will be built there separately. Until they exist,
-  test the handoff against a local stub, never against textsous.com.
-- Cuisine infusion doesn't exist anywhere yet, and the format has never been
-  published before.
-- 2026-10-27: scaffolded (package.json, Next.js 16 app, CI, vercel.json) and
-  built slice 1: canonical schema, model client, URL/text intake, canonicalize
-  stage, CLI, /api/health + /api/convert, 3 original fixtures, offline tests.
-  Gates green; live smoke + 3 fixture converts pass (2026-10-27, Development
-  key). Pinned to Node 22 everywhere (.nvmrc, CI, engines, types).
-- 2026-10-28: M1 items all closed (TASKS.md): fake-transport, fetch-guard,
-  fixture-text and recorded-response tests (40/40 green, key unset), --record
-  flag + 3 recordings + 1 doctored; prod /api/health green (muse-spark-1.3,
-  key + Upstash true). M1.4-M1.7 code not yet pushed.
-- 2026-10-29: M3 adjustments complete (TASKS.md): amounts/scaling math,
-  dietary + cuisine variants, SOUS voice, composition flags + /api/adjust.
-  180/180 green, key unset. Not yet pushed.
-- 2026-10-29: M4 built (TASKS.md): photo intake, web flow, artifact handoff,
-  generated docs + CI gate, hardening, fixture perf. 240/240 green, key
-  unset. Not yet pushed. M4.2 owner phone check and M4.6 URL numbers still
-  pending (need push/deploy and a networked env).
-- Keep this section current. When something ships, say so here with the date.
+Updated 2026-11-04. Keep this section current: when something ships, say so
+here with the date. Check the code before trusting any doc line about it.
+
+- Live: M1-M6 (TASKS.md) on main at `3e56ebb`. Vercel project
+  `open-textsous` deploys main to https://open.textsous.com on every push.
+  CI runs typecheck, lint, the offline tests and the schema/docs diff gate.
+- Built, not yet on main: M7 on branch `m7` (82 commits after `3e56ebb`,
+  Nov 3-4): fixes from the Nov 3 review, the cook-along output format, the
+  EU-14 allergen floor, new limits and timeouts, the skills API, the
+  /assistants page, the Cook Along button (embed.js, /embed, /embed-demo),
+  the TextSous brand pass, advisory review judgments and a final round of
+  review fixes. 711 offline tests pass with MODEL_API_KEY unset, plus
+  typecheck, lint, build and the schema/docs gate. Live model checks so far:
+  four conversions on a Vercel preview of the core stream, before the merges.
+- What the M7 deploy changes in production:
+  - Stage versions moved (canonicalize 2, procedure 4, review 2, compile 2),
+    so most /demo URLs are no longer cached. Warm them after the deploy:
+    `npm run warm -- --base https://open.textsous.com` (about an hour).
+  - The code defaults become 300 live conversions a day and 20 an hour per
+    IP per route (main's default today is 100 a day). Neither
+    DAILY_CONVERSION_CAP nor RATE_LIMIT_PER_HOUR is set in Vercel.
+  - The secret skills routes answer 503 `not_configured` until
+    SKILLS_API_SECRET is set; `GET /api/skills/format` works regardless.
+  - "Save to TextSous" opens textsous.com/import, which is 404 until the
+    TextSous app's Cookbook import PR ships. A build with
+    NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off hides the button.
+- Vercel env today: MODEL_API_KEY, MODEL_BASE_URL, MODEL_ID,
+  ARTIFACT_SIGNING_SECRET, UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN;
+  Baseten values on Preview and Development only. Not set: SKILLS_API_SECRET,
+  DAILY_CONVERSION_CAP, RATE_LIMIT_PER_HOUR, PUBLIC_ORIGIN. Preview and
+  production share one Upstash database (cache, limits, daily counter).
+- The rest of the TextSous platform lives in private repos: accounts,
+  households, weekly meal plans, grocery lists, SOUS over text, and the
+  TextSous MCP server at https://textsous.com/api/mcp (OAuth sign-in, live).
+  Its side of the handoff is written but not merged: a Cookbook import PR
+  (the /open redirect, the /import funnel, the imported-recipes privacy line)
+  and an MCP recipe-tools change stacked on it (get_cook_along_format,
+  get_recipe_source and save_cook_along, which call the skills API). Until
+  they ship, textsous.com/open and /import return 404: test the handoff
+  against a local stub or a preview, never against textsous.com.
+- Pending on the owner (TASKS.md owner actions, in order): the skills secret
+  on both projects, the TextSous app merges, the M7 deploy and warm, one Muse
+  end-to-end test, phone checks, the demo video, and the submission by
+  Nov 4, 9:00 PM ET.
+- Open decisions (HANDOFF.md, "Open loops"): /embed starts an uncached
+  conversion without a tap; closing the overlay ends a running conversion;
+  the skills secret budget stays at 600 requests an hour.
 
 ## Names (use exactly)
 - TextSous: the public name of the platform and of this project, in UI copy,
@@ -65,9 +77,9 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   ~/sous-worktrees. The platform's code is private, and this repo is a
   clean-room build from the spec below.
 - The textsous.com side of the handoff is built separately, in a private repo
-  you cannot see. Its contract is the "Handoff" section below plus the
-  generated JSON Schemas in docs/schema/. Call out any change to either in
-  your report.
+  you cannot see. Its contract is the "Handoff" section below, the generated
+  JSON Schemas in docs/schema/ and the skills API in docs/SKILLS.md, which
+  its MCP server calls. Call out any change to any of them in your report.
 - Never open, print or commit .env* files or API keys. Refer to variables by
   name only.
 
@@ -92,7 +104,9 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   re-prompt with the validation errors up to 2 times, never loosen the schema.
 - JSON Schema is generated from zod with `zodToJsonSchema(s, { $refStrategy:
   "none" })`: `additionalProperties: false`, every field in `required`, `enum`
-  for closed sets, no recursive $ref (the API returns 400).
+  for closed sets, no recursive $ref (the API returns 400). That is the
+  model-facing schema; the published docs/schema/*.json leave optional fields
+  out of `required`.
 - Structured data is the source of truth. The model proposes; code validates and
   computes. Scaling math, the timeline schedule, allergen roll-ups and unit
   handling are code, never prose.
@@ -101,7 +115,10 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   a "source" timing carries one exact quote from the source.
 - Safety. Missing allergen declarations mean unknown, never allergen-free.
   Dietary swaps list `packageRequirements` the cook must verify on the label.
-  No nutrition or health claims anywhere in prompts, UI or docs.
+  No nutrition or health claims anywhere in prompts, UI or docs. A
+  deterministic EU-14 floor (`src/lib/allergens.ts`) adds the allergens an
+  ingredient's name plainly implies, and possible ones as traces ("May
+  contain"); it never removes a tag.
 - Rights and privacy. A converted recipe is private to the person who requested
   it; it is never listed, indexed or shared. Every recipe card shows credit:
   site name, author and a "View original" link for URLs; book title, author and
@@ -111,14 +128,39 @@ Developer Hackathon on Meta Model API. Everything built from Oct 27 to Nov 4,
   attribution; third-party recipes are stored as URLs and fetched at run time.
   Never commit third-party HTML, text or images.
 - Production. The app deploys to Vercel on every push to main. Conversions are
-  cached by normalized URL + stage versions (Upstash Redis in prod, filesystem in
-  dev). Per-IP rate limit on live conversions, a daily global conversion cap from
-  env, `/api/health`, structured logs without PII, friendly error states.
+  cached for 30 days by normalized URL + stage versions + model id (Upstash
+  Redis in prod, filesystem in dev); cache hits are served first and are free.
+  Live work sits behind a per-IP hourly limit per route (RATE_LIMIT_PER_HOUR,
+  default 20) and a global daily cap (DAILY_CONVERSION_CAP, default 300; 0
+  pauses live conversions); a daily unit is kept only once model tokens may
+  have been spent. POSTs a browser marks `Sec-Fetch-Site: cross-site` get
+  403. Route deadlines stay under the function limits (convert 420 s, adjust
+  and photo 300 s). `/api/health`, structured logs without PII, friendly
+  error states.
+- Skills API (docs/SKILLS.md). `GET /api/skills/format` is public.
+  `POST /api/skills/source` and `POST /api/skills/cook-along` need
+  `Authorization: Bearer <SKILLS_API_SECRET>`, compared in constant time; with
+  the secret unset they answer 503 `not_configured`, never open access. The
+  secret is shared only with the TextSous app, server to server (where it is
+  TEXTSOUS_OPEN_SKILLS_SECRET); never send it to a browser or put it in
+  client code. Skills routes never call a model and never use the daily cap;
+  they have their own limits (600 requests an hour per secret, 60 an hour
+  per `X-TextSous-Account`).
+- Embed (docs/EMBED.md). Only `/embed` may be framed by other sites
+  (`frame-ancestors *`); every other route sends `frame-ancestors 'self'` and
+  `X-Frame-Options: SAMEORIGIN`. Same-page rule: `/embed` converts a `?url=`
+  only when its host matches the embedding page's (from
+  `location.ancestorOrigins`, else the referrer; `www.` ignored, a subdomain
+  of the same site counts) and proceeds when the browser reports neither. It
+  is a soft guard, not access control. Every link inside `/embed` opens in a
+  new tab. embed.js sets no cookies and sends nothing until a reader taps
+  the button.
 - The voice stage changes wording only; numeric tokens stay unchanged, in order.
 - Stages are pure, versioned functions (JSON in, JSON out).
 - Tests: vitest fixture tests per stage. Tests never call a live model; they
   use recorded responses under eval/recordings/, so CI runs without a key. Live
-  calls happen only through `npm run smoke` and the CLI. `npm test`,
+  calls happen only through `npm run smoke`, `npm run eval` and the CLI;
+  `npm run warm` spends live conversions on a deployed site. `npm test`,
   `npm run typecheck` and `npm run lint` pass before any task is reported done.
   Next.js 16 has no `next lint`; `npm run lint` runs `eslint .`.
 - Dependencies allowed without asking: next, react, react-dom, openai, zod,
@@ -172,6 +214,13 @@ Variant transform (dietary and cuisine share it, `src/lib/schema/variant.ts`):
   Dietary targets: dairy-free, egg-free, gluten-free, nut-free, soy-free,
   vegetarian, vegan. Cuisine targets: free text (e.g. "Italian", "Thai").
 
+Optional fields added since the draft (nullish; formatVersion stays 1): on the
+artifact, `recipe.nativeServings` and `reviewNotes: [{ check, status:
+"failed"|"not_judged", detail }]`; on timeline tasks, `why` (one sentence); on
+the variant transform, `taskOverrides: [{ taskId, label?, description?,
+completionCue?, checkpoints? }]`. docs/FORMAT.md, generated from the zod
+schemas, lists every field.
+
 ## Procedure rules (model must honor, code must check)
 - Mise en place first: all prep tasks finish before the first cook task starts.
 - One lane per component (sauce, protein, base, side, garnish) plus a kitchen lane.
@@ -182,11 +231,36 @@ Variant transform (dietary and cuisine share it, `src/lib/schema/variant.ts`):
 - Resource holds for pans, burners and the oven; waits in multiples of 60 s.
 - The scheduler (code) turns tasks, dependencies and holds into start and end
   minutes under the one-cook constraint. The model never schedules.
+- Output format (M7, procedure v4): one prep task per preparation named in an
+  ingredient line or note; the oven preheat is the first prep task, and the
+  first oven task after it waits 10 minutes from the preheat's end; task
+  descriptions carry exact amounts with unit and ingredient, while card
+  titles never carry amounts, times or temperatures; a batch is one grouped
+  task (rounds x per-round time, an estimate with a range); short hands-on
+  setup is split from unattended waiting; prepared inputs (cooked pasta,
+  rice) get a task in their lane; at most one tip and an optional
+  one-sentence `why` per task. `src/lib/format.ts` repairs titles, card
+  titles and timing labels after the model.
 
 ## Review checks
 source_fidelity, ingredient_coverage, quantities, dietary_conditions,
 method_and_safety, equipment_capacity, task_schedule, source_timing,
 atomic_attention, mise_en_place, source_relationships, tips_and_voice.
+- Five are coded (ingredient_coverage, task_schedule, source_timing,
+  atomic_attention, mise_en_place); one model call judges the other seven.
+- Blocking: the five coded checks and the source_fidelity, quantities,
+  dietary_conditions and method_and_safety judgments. A failed or missing
+  judgment blocks compile; the web app shows one calm sentence with the
+  reasons behind "Details".
+- Advisory (since M7): equipment_capacity, source_relationships and
+  tips_and_voice. A failed or missing judgment becomes a readable note in the
+  artifact's optional `reviewNotes`, shown under "Notes on this conversion";
+  it never blocks compile.
+- A recipe an AI assistant writes through the skills API gets the coded
+  checks only: the seven judgments are recorded as not run (`notRun`) and
+  never block.
+- Format warnings (prep_not_covered, amount_missing, batch_round_timing) are
+  coded and never block.
 
 ## Handoff to textsous.com (the other side is private; this is the contract)
 - Entry links: https://textsous.com/open?url=<recipe page URL> or
@@ -200,15 +274,35 @@ atomic_attention, mise_en_place, source_relationships, tips_and_voice.
   URL works for 24 hours and may be fetched more than once, because sign-in can
   interrupt the first attempt. It returns 404 once expired. textsous.com fetches
   it server to server, so no CORS.
+- Skills API (docs/SKILLS.md): the TextSous MCP server calls
+  `POST /api/skills/source` and `POST /api/skills/cook-along` server to server
+  with the shared secret, then imports the returned `artifactUrl` into the
+  person's Cookbook. `artifactUrl` keeps exactly the import shape
+  `<origin>/api/artifact/<lowercase uuid>?sig=<64 lowercase hex>`, with
+  nothing else in the query; textsous.com accepts no other shape.
 - `npm run schema` regenerates docs/schema/*.json from the zod schemas. Run it
   after any schema change and keep the output committed: textsous.com validates
   against those files.
 
 ## Layout
 Node 22, Next.js 16 App Router, TypeScript, ESM.
-src/lib/ (pure TS, no Next imports: schema, model, intake, stages, scheduler,
-scaling)  src/app/ (Next.js routes and UI)  src/cli.ts  eval/  docs/FORMAT.md
-docs/EMBED.md  docs/schema/  NEW-WORK.md  TASKS.md
+- src/lib/ (pure TS, no Next imports): schema/, model/ (client, route
+  budgets), intake/, stages/, scheduler/, scaling/, skills/ (the skills API:
+  guide, input schema, normalize, validate, cook-along, source, http),
+  format.ts (post-model format helpers and warnings), allergens.ts (EU-14
+  floor), pipeline.ts, cache.ts, limits.ts, artifact-store.ts, handoff.ts,
+  embed.ts, lane-palette.ts, review-notes.ts, variant-apply.ts,
+  variant-text.ts, gantt.ts, eval-label.ts, log.ts.
+- src/app/ (Next.js routes and UI): / (converter and viewer), /demo,
+  /assistants, /embed (chrome-less, the only route other sites may frame),
+  /embed-demo, api/convert, api/adjust, api/photo, api/artifact, api/health,
+  api/skills/{format,source,cook-along}, api/helpers.ts.
+- public/embed.js: the host-page script for recipe sites (plain JS, no build
+  step).
+- src/cli.ts; scripts/ (generate-schema, generate-format, eval, warm-demo).
+- docs/FORMAT.md and docs/schema/ (generated), docs/EMBED.md, docs/SKILLS.md.
+- eval/ (fixtures, recordings, urls.txt, RESULTS.md); tests/ (vitest, offline).
+- README.md, HANDOFF.md, NEW-WORK.md, TASKS.md.
 
 ## Working style
 TASKS.md is the build plan and the definition of done. Follow the rules at its
