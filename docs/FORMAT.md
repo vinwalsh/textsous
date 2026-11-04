@@ -6,7 +6,8 @@ cooking timeline, and adjustable variants. This is draft version 1.
 
 The normative definitions are the JSON Schemas in `docs/schema/*.json`,
 generated from the same zod schemas by `npm run schema`; textsous.com
-validates imports against those files. Every field below has a line.
+validates imports against those files. Every field below has a line;
+fields marked optional may be absent (absent and null mean the same).
 
 ## Canonical recipe (`docs/schema/canonical.json`)
 
@@ -17,28 +18,28 @@ One recipe exactly as the source states it: ingredients, ordered steps, equipmen
 - `title`: string (min length 1)
 - `source`: object
 - `source.kind`: string (one of: url, text, photo)
-- `source.url`: string or null
-- `source.site`: string or null
-- `source.author`: string or null
-- `source.book`: string or null
-- `source.page`: integer or null (> 0)
-- `source.license`: string or null
-- `cuisine`: string or null
+- `source.url`: string or null, optional
+- `source.site`: string or null, optional
+- `source.author`: string or null, optional
+- `source.book`: string or null, optional
+- `source.page`: integer or null, optional (> 0)
+- `source.license`: string or null, optional
+- `cuisine`: string or null, optional
 - `nativeServings`: number (> 0)
-- `servingsLarge`: number or null (> 0)
-- `scalingNotes`: string or null
+- `servingsLarge`: number or null, optional (> 0)
+- `scalingNotes`: string or null, optional
 - `ingredients`: array of object (min 1 items)
 - `ingredients[].id`: string (min length 1)
 - `ingredients[].name`: string (min length 1)
 - `ingredients[].quantity`: string
 - `ingredients[].unit`: string
-- `ingredients[].quantity4`: number or null
-- `ingredients[].scaleRule`: string or null (one of: linear, sublinear, flat, superlinear, to-taste)
-- `ingredients[].cookQuantity`: string or null
-- `ingredients[].buyQuantity`: string or null
+- `ingredients[].quantity4`: number or null, optional
+- `ingredients[].scaleRule`: string or null, optional (one of: linear, sublinear, flat, superlinear, to-taste)
+- `ingredients[].cookQuantity`: string or null, optional
+- `ingredients[].buyQuantity`: string or null, optional
 - `ingredients[].allergens`: array of string (one of: celery, gluten, crustaceans, egg, fish, lupin, milk, molluscs, mustard, nuts, peanuts, sesame, soy, sulphites)
 - `ingredients[].allergenTraces`: array of string (one of: celery, gluten, crustaceans, egg, fish, lupin, milk, molluscs, mustard, nuts, peanuts, sesame, soy, sulphites)
-- `ingredients[].note`: string or null
+- `ingredients[].note`: string or null, optional
 - `steps`: array of object (min 1 items)
 - `steps[].id`: string (min length 1)
 - `steps[].kind`: string (one of: prep, active)
@@ -66,19 +67,19 @@ The component-lane cooking plan: lanes, phases, timed tasks, resources and the s
 - `tasks[].description`: string (min length 1)
 - `tasks[].completionCue`: string (min length 1)
 - `tasks[].minutes`: integer (>= 1; <= 180)
-- `tasks[].range`: object or null
+- `tasks[].range`: object or null, optional
 - `tasks[].range.low`: integer (>= 1; <= 180)
 - `tasks[].range.high`: integer (>= 1; <= 180)
 - `tasks[].timingBasis`: string (one of: source, estimate)
-- `tasks[].sourceQuote`: string or null
+- `tasks[].sourceQuote`: string or null, optional
 - `tasks[].attention`: string (one of: hands-on, unattended)
 - `tasks[].timerEnabledByDefault`: boolean
 - `tasks[].laneIds`: array of string (min 1 items)
 - `tasks[].dependencies`: array of string
 - `tasks[].sourceStepIds`: array of string (min 1 items)
 - `tasks[].checkpoints`: array of string
-- `tasks[].tip`: string or null
-- `tasks[].equipmentEvent`: string or null (one of: oven-on, oven-off)
+- `tasks[].tip`: string or null, optional
+- `tasks[].equipmentEvent`: string or null, optional (one of: oven-on, oven-off)
 - `tasks[].scheduling`: object
 - `tasks[].scheduling.waits`: array of integer
 - `tasks[].scheduling.resourceIds`: array of string
@@ -101,19 +102,19 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `recipe`: object
 - `recipe.title`: string (min length 1)
 - `recipe.servings`: number (> 0)
-- `recipe.nativeServings`: number or null (> 0)
+- `recipe.nativeServings`: number or null, optional (> 0)
 - `recipe.ingredients`: array of object (min 1 items)
 - `recipe.ingredients[].id`: string (min length 1)
 - `recipe.ingredients[].name`: string (min length 1)
 - `recipe.ingredients[].quantity`: string
 - `recipe.ingredients[].unit`: string
-- `recipe.ingredients[].quantity4`: number or null
-- `recipe.ingredients[].scaleRule`: string or null (one of: linear, sublinear, flat, superlinear, to-taste)
-- `recipe.ingredients[].cookQuantity`: string or null
-- `recipe.ingredients[].buyQuantity`: string or null
+- `recipe.ingredients[].quantity4`: number or null, optional
+- `recipe.ingredients[].scaleRule`: string or null, optional (one of: linear, sublinear, flat, superlinear, to-taste)
+- `recipe.ingredients[].cookQuantity`: string or null, optional
+- `recipe.ingredients[].buyQuantity`: string or null, optional
 - `recipe.ingredients[].allergens`: array of string (one of: celery, gluten, crustaceans, egg, fish, lupin, milk, molluscs, mustard, nuts, peanuts, sesame, soy, sulphites)
 - `recipe.ingredients[].allergenTraces`: array of string (one of: celery, gluten, crustaceans, egg, fish, lupin, milk, molluscs, mustard, nuts, peanuts, sesame, soy, sulphites)
-- `recipe.ingredients[].note`: string or null
+- `recipe.ingredients[].note`: string or null, optional
 - `recipe.equipment`: array of string
 - `recipe.steps`: array of object (min 1 items)
 - `recipe.steps[].id`: string (min length 1)
@@ -125,12 +126,12 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `recipe.methodNotice`: string
 - `recipe.credit`: object
 - `recipe.credit.kind`: string (one of: url, text, photo)
-- `recipe.credit.site`: string or null
-- `recipe.credit.author`: string or null
-- `recipe.credit.url`: string or null
-- `recipe.credit.book`: string or null
-- `recipe.credit.page`: integer or null (> 0)
-- `recipe.credit.license`: string or null
+- `recipe.credit.site`: string or null, optional
+- `recipe.credit.author`: string or null, optional
+- `recipe.credit.url`: string or null, optional
+- `recipe.credit.book`: string or null, optional
+- `recipe.credit.page`: integer or null, optional (> 0)
+- `recipe.credit.license`: string or null, optional
 - `timelineDefinition`: object
 - `timelineDefinition.lanes`: array of object (min 1 items)
 - `timelineDefinition.lanes[].id`: string (min length 1)
@@ -148,19 +149,19 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `timelineDefinition.tasks[].description`: string (min length 1)
 - `timelineDefinition.tasks[].completionCue`: string (min length 1)
 - `timelineDefinition.tasks[].minutes`: integer (>= 1; <= 180)
-- `timelineDefinition.tasks[].range`: object or null
+- `timelineDefinition.tasks[].range`: object or null, optional
 - `timelineDefinition.tasks[].range.low`: integer (>= 1; <= 180)
 - `timelineDefinition.tasks[].range.high`: integer (>= 1; <= 180)
 - `timelineDefinition.tasks[].timingBasis`: string (one of: source, estimate)
-- `timelineDefinition.tasks[].sourceQuote`: string or null
+- `timelineDefinition.tasks[].sourceQuote`: string or null, optional
 - `timelineDefinition.tasks[].attention`: string (one of: hands-on, unattended)
 - `timelineDefinition.tasks[].timerEnabledByDefault`: boolean
 - `timelineDefinition.tasks[].laneIds`: array of string (min 1 items)
 - `timelineDefinition.tasks[].dependencies`: array of string
 - `timelineDefinition.tasks[].sourceStepIds`: array of string (min 1 items)
 - `timelineDefinition.tasks[].checkpoints`: array of string
-- `timelineDefinition.tasks[].tip`: string or null
-- `timelineDefinition.tasks[].equipmentEvent`: string or null (one of: oven-on, oven-off)
+- `timelineDefinition.tasks[].tip`: string or null, optional
+- `timelineDefinition.tasks[].equipmentEvent`: string or null, optional (one of: oven-on, oven-off)
 - `timelineDefinition.tasks[].scheduling`: object
 - `timelineDefinition.tasks[].scheduling.waits`: array of integer
 - `timelineDefinition.tasks[].scheduling.resourceIds`: array of string
@@ -186,24 +187,24 @@ Dietary and cuisine adjustments as ingredient swaps, step overrides and techniqu
 
 - `kind`: string (one of: dietary, cuisine)
 - `target`: string (min length 1)
-- `titleOverride`: string or null
+- `titleOverride`: string or null, optional
 - `swaps`: array of object
 - `swaps[].fromIngredientId`: string (min length 1)
-- `swaps[].to`: object or null
+- `swaps[].to`: object or null, optional
 - `swaps[].to.name`: string (min length 1)
 - `swaps[].to.quantity`: string
 - `swaps[].to.unit`: string
-- `swaps[].omitReason`: string or null
+- `swaps[].omitReason`: string or null, optional
 - `swaps[].reason`: string (min length 1)
 - `swaps[].packageRequirements`: array of string
 - `stepOverrides`: array of object
 - `stepOverrides[].stepId`: string (min length 1)
 - `stepOverrides[].text`: string (min length 1)
-- `taskOverrides`: array of object or null
+- `taskOverrides`: array of object or null, optional
 - `taskOverrides[].taskId`: string (min length 1)
-- `taskOverrides[].label`: string or null (min length 1)
-- `taskOverrides[].description`: string or null (min length 1)
-- `taskOverrides[].completionCue`: string or null (min length 1)
-- `taskOverrides[].checkpoints`: array of string or null
+- `taskOverrides[].label`: string or null, optional (min length 1)
+- `taskOverrides[].description`: string or null, optional (min length 1)
+- `taskOverrides[].completionCue`: string or null, optional (min length 1)
+- `taskOverrides[].checkpoints`: array of string or null, optional
 - `techniqueChanges`: array of string
 - `rationale`: array of string

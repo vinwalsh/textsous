@@ -235,17 +235,13 @@
           "description",
           "completionCue",
           "minutes",
-          "range",
           "timingBasis",
-          "sourceQuote",
           "attention",
           "timerEnabledByDefault",
           "laneIds",
           "dependencies",
           "sourceStepIds",
           "checkpoints",
-          "tip",
-          "equipmentEvent",
           "scheduling"
         ],
         "additionalProperties": false

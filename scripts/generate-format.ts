@@ -3,7 +3,7 @@ import { CookAlongArtifactSchema } from "../src/lib/schema/artifact";
 import { CanonicalRecipeSchema } from "../src/lib/schema/canonical";
 import { TimelineDefinitionSchema } from "../src/lib/schema/timeline";
 import { VariantTransformSchema } from "../src/lib/schema/variant";
-import { toResponseJsonSchema } from "../src/lib/schema/json";
+import { toConsumerJsonSchema } from "../src/lib/schema/json";
 
 // Regenerates docs/FORMAT.md from the zod schemas: every field gets a line.
 // Deterministic: no timestamps, fields in schema order. CI fails when the
@@ -62,16 +62,21 @@ function constraintText(schema: Record<string, unknown>): string {
   return constraints.length > 0 ? ` (${constraints.join("; ")})` : "";
 }
 
-function describeNode(path: string, node: unknown, out: string[]): void {
+function requiredOf(schema: Record<string, unknown>): Set<string> {
+  return new Set(Array.isArray(schema.required) ? (schema.required as string[]) : []);
+}
+
+function describeNode(path: string, node: unknown, out: string[], optional = false): void {
   const { schema, nullable } = unwrap(node);
   const type = schema.type;
-  const suffix = nullable ? " or null" : "";
+  const suffix = `${nullable ? " or null" : ""}${optional ? ", optional" : ""}`;
 
   if (type === "object") {
     const props = isObject(schema.properties) ? schema.properties : {};
     if (path) out.push(`- \`${path}\`: object${suffix}${constraintText(schema)}`);
+    const required = requiredOf(schema);
     for (const [key, child] of Object.entries(props)) {
-      describeNode(path ? `${path}.${key}` : key, child, out);
+      describeNode(path ? `${path}.${key}` : key, child, out, !required.has(key));
     }
     return;
   }
@@ -91,8 +96,9 @@ function describeNode(path: string, node: unknown, out: string[]): void {
     out.push(line);
     if (itemType === "object") {
       const props = isObject(items.schema.properties) ? items.schema.properties : {};
+      const required = requiredOf(items.schema);
       for (const [key, child] of Object.entries(props)) {
-        describeNode(`${path}[].${key}`, child, out);
+        describeNode(`${path}[].${key}`, child, out, !required.has(key));
       }
     }
     return;
@@ -105,27 +111,27 @@ const documents = [
   {
     title: "Canonical recipe",
     file: "canonical.json",
-    schema: toResponseJsonSchema(CanonicalRecipeSchema),
+    schema: toConsumerJsonSchema(CanonicalRecipeSchema),
     blurb:
       "One recipe exactly as the source states it: ingredients, ordered steps, equipment and credit.",
   },
   {
     title: "Timeline definition",
     file: "timeline.json",
-    schema: toResponseJsonSchema(TimelineDefinitionSchema),
+    schema: toConsumerJsonSchema(TimelineDefinitionSchema),
     blurb:
       "The component-lane cooking plan: lanes, phases, timed tasks, resources and the serve task.",
   },
   {
     title: "Cook Along artifact",
     file: "artifact.json",
-    schema: toResponseJsonSchema(CookAlongArtifactSchema),
+    schema: toConsumerJsonSchema(CookAlongArtifactSchema),
     blurb: "The handoff document: recipe, timeline, equipment profile and the change record.",
   },
   {
     title: "Variant transform",
     file: "variant.json",
-    schema: toResponseJsonSchema(VariantTransformSchema),
+    schema: toConsumerJsonSchema(VariantTransformSchema),
     blurb:
       "Dietary and cuisine adjustments as ingredient swaps, step overrides and technique changes.",
   },
@@ -140,7 +146,8 @@ const lines = [
   "",
   "The normative definitions are the JSON Schemas in `docs/schema/*.json`,",
   "generated from the same zod schemas by `npm run schema`; textsous.com",
-  "validates imports against those files. Every field below has a line.",
+  "validates imports against those files. Every field below has a line;",
+  "fields marked optional may be absent (absent and null mean the same).",
   "",
 ];
 

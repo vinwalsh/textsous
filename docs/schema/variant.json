@@ -77,8 +77,6 @@
         },
         "required": [
           "fromIngredientId",
-          "to",
-          "omitReason",
           "reason",
           "packageRequirements"
         ],
@@ -166,11 +164,7 @@
               }
             },
             "required": [
-              "taskId",
-              "label",
-              "description",
-              "completionCue",
-              "checkpoints"
+              "taskId"
             ],
             "additionalProperties": false
           }
@@ -198,10 +192,8 @@
   "required": [
     "kind",
     "target",
-    "titleOverride",
     "swaps",
     "stepOverrides",
-    "taskOverrides",
     "techniqueChanges",
     "rationale"
   ],

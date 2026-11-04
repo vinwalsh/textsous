@@ -145,13 +145,8 @@
               "name",
               "quantity",
               "unit",
-              "quantity4",
-              "scaleRule",
-              "cookQuantity",
-              "buyQuantity",
               "allergens",
-              "allergenTraces",
-              "note"
+              "allergenTraces"
             ],
             "additionalProperties": false
           },
@@ -278,13 +273,7 @@
             }
           },
           "required": [
-            "kind",
-            "site",
-            "author",
-            "url",
-            "book",
-            "page",
-            "license"
+            "kind"
           ],
           "additionalProperties": false
         }
@@ -292,7 +281,6 @@
       "required": [
         "title",
         "servings",
-        "nativeServings",
         "ingredients",
         "equipment",
         "steps",
@@ -539,17 +527,13 @@
               "description",
               "completionCue",
               "minutes",
-              "range",
               "timingBasis",
-              "sourceQuote",
               "attention",
               "timerEnabledByDefault",
               "laneIds",
               "dependencies",
               "sourceStepIds",
               "checkpoints",
-              "tip",
-              "equipmentEvent",
               "scheduling"
             ],
             "additionalProperties": false

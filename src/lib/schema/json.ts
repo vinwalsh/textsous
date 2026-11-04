@@ -16,22 +16,37 @@ import { zodToJsonSchema } from "zod-to-json-schema";
  * zod-to-json-schema cannot represent them.
  */
 export function toResponseJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  return convert(schema, true);
+}
+
+/**
+ * Consumer-facing JSON Schema for docs/schema/*.json: same shape as the
+ * model-facing one, except optional (nullish) fields are NOT in `required`,
+ * matching how artifacts serialize (an absent cookQuantity is valid). The
+ * strict model-facing schema above is unchanged.
+ */
+export function toConsumerJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  return convert(schema, false);
+}
+
+function convert(schema: z.ZodTypeAny, requireAll: boolean): Record<string, unknown> {
   const raw = zodToJsonSchema(schema, { $refStrategy: "none" }) as unknown;
-  const fixed = strictify(raw);
+  const fixed = strictify(raw, requireAll);
   if (typeof fixed !== "object" || fixed === null || Array.isArray(fixed)) {
     throw new Error("toResponseJsonSchema: top-level schema must be an object");
   }
   return fixed as Record<string, unknown>;
 }
 
-function strictify(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(strictify);
+function strictify(node: unknown, requireAll: boolean): unknown {
+  if (Array.isArray(node)) return node.map((item) => strictify(item, requireAll));
   if (typeof node !== "object" || node === null) return node;
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node)) {
     if (key === "$schema" || key === "$ref" || key === "definitions") continue;
     if (key === "additionalProperties") continue; // re-applied below for objects
-    out[key] = strictify(value);
+    // "required" is a list of names, never a schema; keep it verbatim.
+    out[key] = key === "required" ? value : strictify(value, requireAll);
   }
   if ("const" in out) {
     const value = out.const;
@@ -40,7 +55,14 @@ function strictify(node: unknown): unknown {
   }
   if (typeof out.properties === "object" && out.properties !== null) {
     out.additionalProperties = false;
-    out.required = Object.keys(out.properties as Record<string, unknown>);
+    const names = Object.keys(out.properties as Record<string, unknown>);
+    if (requireAll) {
+      out.required = names;
+    } else {
+      // zod-to-json-schema already leaves optional fields out of required.
+      const listed = Array.isArray(out.required) ? (out.required as string[]) : [];
+      out.required = names.filter((name) => listed.includes(name));
+    }
   }
   return out;
 }

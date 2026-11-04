@@ -71,13 +71,7 @@
         }
       },
       "required": [
-        "kind",
-        "url",
-        "site",
-        "author",
-        "book",
-        "page",
-        "license"
+        "kind"
       ],
       "additionalProperties": false
     },
@@ -218,13 +212,8 @@
           "name",
           "quantity",
           "unit",
-          "quantity4",
-          "scaleRule",
-          "cookQuantity",
-          "buyQuantity",
           "allergens",
-          "allergenTraces",
-          "note"
+          "allergenTraces"
         ],
         "additionalProperties": false
       },
@@ -276,10 +265,7 @@
     "id",
     "title",
     "source",
-    "cuisine",
     "nativeServings",
-    "servingsLarge",
-    "scalingNotes",
     "ingredients",
     "steps",
     "equipment",
