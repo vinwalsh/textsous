@@ -201,6 +201,17 @@ describe("pipeline progress events", () => {
     expect(result.artifact.recipe.title).toBe("Charred Corn and Lime Salad");
   });
 
+  it("skips page facts it cannot read instead of failing", async () => {
+    const events: ConvertEvent[] = [];
+    const result = await convertToArtifact(corn.input, {
+      clients: clients(),
+      jsonLd: { name: 42, recipeIngredient: [], recipeInstructions: [] } as never,
+      onEvent: (e) => events.push(e),
+    });
+    expect(result.artifact.recipe.title).toBe("Charred Corn and Lime Salad");
+    expect(events.map((e) => e.type)).toEqual(["facts", "overview", "recipe", "procedure"]);
+  });
+
   it("starts the photo-confirm path with the recipe's facts and the recipe", async () => {
     const events: ConvertEvent[] = [];
     const calls: string[] = [];

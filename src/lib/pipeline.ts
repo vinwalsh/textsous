@@ -151,33 +151,47 @@ class ConversionProgress {
     }
   }
 
-  sourceFacts(facts: RecipeFacts): void {
-    if (!this.active) return;
-    this.facts = facts;
-    this.emit({ type: "facts", facts });
+  /** Progress is best effort: nothing here may fail a conversion. */
+  private safely(work: () => void): void {
+    if (!this.active || this.closed) return;
+    try {
+      work();
+    } catch {
+      // Skip this event; the conversion goes on.
+    }
+  }
+
+  sourceFacts(read: () => RecipeFacts): void {
+    this.safely(() => {
+      const facts = read();
+      this.facts = facts;
+      this.emit({ type: "facts", facts });
+    });
   }
 
   overview(result: OverviewResult): void {
-    if (this.closed) return;
-    if (!this.recipeSent) {
-      const merged = fillFacts(this.facts, result.facts);
-      if (JSON.stringify(merged) !== JSON.stringify(this.facts)) {
-        this.facts = merged;
-        this.emit({ type: "facts", facts: merged });
+    this.safely(() => {
+      if (!this.recipeSent) {
+        const merged = fillFacts(this.facts, result.facts);
+        if (JSON.stringify(merged) !== JSON.stringify(this.facts)) {
+          this.facts = merged;
+          this.emit({ type: "facts", facts: merged });
+        }
       }
-    }
-    this.emit({ type: "overview", overview: result.overview });
+      this.emit({ type: "overview", overview: result.overview });
+    });
   }
 
   recipe(recipe: CanonicalRecipe): void {
-    if (!this.active) return;
-    this.facts = mergeFacts(this.facts, factsFromRecipe(recipe));
-    this.recipeSent = true;
-    this.emit({ type: "recipe", recipe, facts: this.facts });
+    this.safely(() => {
+      this.recipeSent = true;
+      this.facts = mergeFacts(this.facts, factsFromRecipe(recipe));
+      this.emit({ type: "recipe", recipe, facts: this.facts });
+    });
   }
 
   procedure(timeline: TimelineDefinition): void {
-    this.emit({ type: "procedure", timeline });
+    this.safely(() => this.emit({ type: "procedure", timeline }));
   }
 
   close(): void {
@@ -248,9 +262,10 @@ export async function convertToArtifact(
   };
   let overviewReport: OverviewReport | undefined;
   try {
-    if (opts.jsonLd) {
-      progress.sourceFacts(
-        factsFromJsonLd(opts.jsonLd, { url: input.source.url ?? null, site: input.source.site ?? null }),
+    const jsonLd = opts.jsonLd;
+    if (jsonLd) {
+      progress.sourceFacts(() =>
+        factsFromJsonLd(jsonLd, { url: input.source.url ?? null, site: input.source.site ?? null }),
       );
     }
     if (progress.active) {
@@ -342,7 +357,7 @@ export async function convertRecipeToArtifact(
   let overviewReport: OverviewReport | undefined;
   try {
     if (progress.active) {
-      progress.sourceFacts(factsFromRecipe(recipe));
+      progress.sourceFacts(() => factsFromRecipe(recipe));
       progress.recipe(recipe);
       efforts.overview = effortFor("overview", opts.efforts);
       overviewReport = startOverview({ recipe }, opts, efforts.overview, progress);
