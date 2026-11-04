@@ -4,6 +4,7 @@ import { CookAlongArtifactSchema } from "../../../lib/schema/artifact";
 import { adjustArtifact } from "../../../lib/pipeline";
 import { checkRateLimit, MAX_ADJUST_ARTIFACT_CHARS, reserveDailyUnit } from "../../../lib/limits";
 import { MAX_CUISINE_CHARS } from "../../../lib/schema/variant";
+import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../../../lib/scaling/servings";
 import { logEvent } from "../../../lib/log";
 import { reviewNoteTexts } from "../../../lib/review-notes";
 import {
@@ -88,6 +89,11 @@ export async function POST(req: Request) {
     if (cuisine !== undefined && cuisine.trim().length > MAX_CUISINE_CHARS) {
       return fail(ROUTE, 400, {
         error: `Cuisine style is too long (${MAX_CUISINE_CHARS} characters max). Name a cuisine, like Italian.`,
+      });
+    }
+    if (servings !== undefined && !servingsInRange(servings)) {
+      return fail(ROUTE, 400, {
+        error: `Servings must be between ${MIN_SERVINGS} and ${MAX_SERVINGS}.`,
       });
     }
     const rate = await checkRateLimit(`adjust:${clientIp(req)}`);

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import type { CookAlongArtifact } from "../lib/schema/artifact";
 import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
+import { MAX_SERVINGS } from "../lib/scaling/servings";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
@@ -135,7 +136,7 @@ export default function AdjustPanel({
               <input
                 type="number"
                 min={1}
-                max={12}
+                max={MAX_SERVINGS}
                 step={1}
                 value={servings}
                 disabled={applying}
@@ -146,8 +147,8 @@ export default function AdjustPanel({
                 type="button"
                 className="btn"
                 aria-label="One more serving"
-                disabled={applying || servings >= 12}
-                onClick={() => setServings((s) => Math.min(12, s + 1))}
+                disabled={applying || servings >= MAX_SERVINGS}
+                onClick={() => setServings((s) => Math.min(MAX_SERVINGS, s + 1))}
               >
                 +
               </button>

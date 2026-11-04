@@ -76,7 +76,7 @@ program
   .option("--provider <name>", "meta|baseten", "meta")
   .option("--record", "save the model responses to eval/recordings (fixtures only)")
   .option("--timeline", "print a text Gantt of the timeline")
-  .option("--servings <n>", "rescale to n servings (0.5-12)")
+  .option("--servings <n>", "rescale to n servings (0.5-36)")
   .option("--dietary <target>", "apply a dietary variant")
   .option("--cuisine <name>", "infuse a cuisine")
   .option("--voice <name>", 'rewrite in a voice ("sous")')

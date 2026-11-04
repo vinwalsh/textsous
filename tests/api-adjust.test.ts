@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CookAlongArtifact } from "../src/lib/schema/artifact";
 import { POST } from "../src/app/api/adjust/route";
+import { resetMemoryLimits } from "../src/lib/limits";
 
 function makeArtifact(): CookAlongArtifact {
   return {
@@ -106,6 +107,29 @@ describe("POST /api/adjust", () => {
     expect(
       (await POST(req({ artifact, servings: 99 }, "10.7.7.2"))).status,
     ).toBe(400);
+  });
+
+  it("takes up to 36 servings and refuses 37 before any limit or model call", async () => {
+    process.env.RATE_LIMIT_PER_HOUR = "1";
+    resetMemoryLimits();
+    try {
+      for (const servings of [37, 36.5, 0.25, 37]) {
+        const res = await POST(req({ artifact: makeArtifact(), servings }, "10.7.7.4"));
+        expect(res.status, String(servings)).toBe(400);
+        expect(((await res.json()) as { error: string }).error).toBe(
+          "Servings must be between 0.5 and 36.",
+        );
+      }
+      // 36 passes validation and reaches the model step (no key here), and
+      // it is the IP's first counted request: the refusals above used none.
+      const ok = await POST(req({ artifact: makeArtifact(), servings: 36 }, "10.7.7.4"));
+      expect(ok.status).toBe(500);
+      expect(((await ok.json()) as { error: string }).error).toMatch(/model api key/i);
+      expect((await POST(req({ artifact: makeArtifact(), servings: 36 }, "10.7.7.4"))).status).toBe(429);
+    } finally {
+      delete process.env.RATE_LIMIT_PER_HOUR;
+      resetMemoryLimits();
+    }
   });
 
   it("fails before any model call without a key", async () => {

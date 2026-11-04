@@ -122,7 +122,7 @@ browser.
   before upload; the server takes up to 5 MB and processes it in memory only.
 - A fresh conversion takes 3 to 4 minutes; a recipe converted before opens
   from the cache right away.
-- Servings rescale from 0.5× to 12. Adjustments never change a step's timing;
+- Servings rescale from 0.5 to 36. Adjustments never change a step's timing;
   removing an ingredient can drop a step that only handled it.
 - Live conversions are limited per IP to 20 an hour each for converting,
   adjusting and photos (`RATE_LIMIT_PER_HOUR`), and all of them share a daily
