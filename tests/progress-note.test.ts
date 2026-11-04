@@ -14,6 +14,8 @@ describe("progress copy", () => {
 
   it("describes transcribing and adjusting honestly", () => {
     expect(progressCopy("transcribe")).toContain("reading the photo");
+    // Transcribe plus canonicalize runs 1-2 minutes, not "under a minute".
+    expect(progressCopy("transcribe")).toContain("Usually 1 to 2 minutes");
     expect(progressCopy("adjust")).toContain("applying your changes");
   });
 
