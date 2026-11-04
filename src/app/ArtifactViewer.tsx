@@ -15,6 +15,7 @@ import { apiFetch, friendlyError, type FriendlyError } from "./request";
 import AdjustPanel, { adjustingLine, hasAdjustment, type AdjustChoices } from "./AdjustPanel";
 import { adjustedSections, type SectionKey } from "./section-states";
 import { PreAdjustMark } from "./SectionStatus";
+import { FinishLine } from "./CookingLine";
 import TimelineView from "./TimelineView";
 import Timer from "./Timer";
 
@@ -458,6 +459,7 @@ export default function ArtifactViewer({
   overview = null,
   queuedAdjustments = null,
   onQueuedApplied,
+  built = false,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -474,6 +476,8 @@ export default function ArtifactViewer({
   queuedAdjustments?: AdjustChoices | null;
   /** Called once the queued adjustments were applied, or failed to apply. */
   onQueuedApplied?: () => void;
+  /** Just written on this page: the top line says Ready for a moment. */
+  built?: boolean;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -561,6 +565,7 @@ export default function ArtifactViewer({
 
   return (
     <article aria-label="Cook Along recipe">
+      <FinishLine adjusting={adjusting !== null} built={built} />
       <div className="recipe-head">
         <p className="label">Your Cook Along</p>
         <h2 className="recipe-title">{recipe.title}</h2>

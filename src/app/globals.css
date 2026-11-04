@@ -927,13 +927,71 @@ details summary {
 /* ---------- Progressive conversion (M8): cooking line, facts, overview ---------- */
 
 /* One line of cooking icons that take turns, left to right, over a thin
-   moving line. Nine icons share the width, so the line fits 320 px. */
+   moving line. Nine icons share the width, so the line fits 320 px. It
+   sticks to the top of the screen (of the overlay's frame inside /embed)
+   while the cook along is written or adjusted, on a solid background with
+   a soft shadow, so the reader always sees whether it is still working. */
 .cooking-line {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   margin: 8px 0 16px;
-  padding: 14px 16px 12px;
+  padding: 10px 14px 8px;
   background: var(--ts-card);
   border: 1px solid var(--ts-border);
   border-radius: var(--ts-radius);
+  box-shadow: 0 6px 14px -8px rgba(34, 32, 28, 0.35);
+}
+
+/* Keyboard focus and in-page jumps land below the stuck line. */
+html:has(.cooking-line) {
+  scroll-padding-top: 112px;
+}
+
+/* "Your Cook Along is ready": a moment on top of the finished page, then it
+   fades and goes (CookingLine.tsx FinishLine). */
+.cooking-line-ready {
+  padding: 10px 14px;
+  animation: ts-line-out 0.4s ease-in 2.2s forwards;
+}
+
+.cooking-line-ready .cooking-line-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cooking-line-check {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ts-action);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1;
+}
+
+@keyframes ts-line-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .cooking-line-icons {
+    font-size: 19px;
+  }
+
+  .cooking-line-track {
+    margin: 7px 0;
+  }
+
+  html:has(.cooking-line) {
+    scroll-padding-top: 100px;
+  }
 }
 
 .cooking-line-icons {
@@ -1280,6 +1338,11 @@ details summary {
   /* Spinners stand still (a ring with one dark arc); Ready stays put. */
   .ts-spinner,
   .section-ready {
+    animation: none;
+  }
+
+  /* The Ready line goes without fading. */
+  .cooking-line-ready {
     animation: none;
   }
 }

@@ -46,6 +46,8 @@ export type EmbedState =
       notices: string[];
       /** The quick read from a streamed conversion, when there was one. */
       overview?: RecipeOverview | null;
+      /** Just converted in this overlay (not a ?src= artifact): the top line says Ready. */
+      built?: boolean;
     };
 
 /** The conversion as it streams in, and the adjustments queued meanwhile. */
@@ -335,7 +337,13 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
       const final = await startConversion({ url });
       if (!final) return;
       if (final.status === "done" && final.artifact) {
-        setState({ kind: "ready", artifact: final.artifact, notices: final.notices, overview: final.overview });
+        setState({
+          kind: "ready",
+          artifact: final.artifact,
+          notices: final.notices,
+          overview: final.overview,
+          built: true,
+        });
         return;
       }
       // Same copy as the JSON answers: the 429 reason, the recipe URL, "may still finish".
@@ -440,6 +448,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
             overview={state.overview ?? null}
             queuedAdjustments={queuedNow}
             onQueuedApplied={onQueuedApplied}
+            built={state.built === true}
             embedded
             onClose={onClose}
             onStartOver={() => {
