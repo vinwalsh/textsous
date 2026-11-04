@@ -124,7 +124,7 @@ bring to a boil") and an unattended task ("Simmer") that depends on it.
 pot or timer does the work. There is one cook: TextSous never overlaps two
 hands-on tasks, and runs unattended tasks alongside them.
 
-**Timing.** \`minutes\` is a whole number from 1 to 180. \`timingBasis\` is
+**Timing.** \`minutes\` is a whole number from 1 to 720 (a 4-hour simmer is one task of 240). \`timingBasis\` is
 "source" **only** when the source states that exact duration; then
 \`sourceQuote\` is the exact words that state it ("simmer 6 minutes"), copied
 character for character from one step's text (which itself is verbatim from

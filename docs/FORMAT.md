@@ -66,10 +66,10 @@ The component-lane cooking plan: lanes, phases, timed tasks, resources and the s
 - `tasks[].cardTitle.context`: string
 - `tasks[].description`: string (min length 1)
 - `tasks[].completionCue`: string (min length 1)
-- `tasks[].minutes`: integer (>= 1; <= 180)
+- `tasks[].minutes`: integer (>= 1; <= 720)
 - `tasks[].range`: object or null, optional
-- `tasks[].range.low`: integer (>= 1; <= 180)
-- `tasks[].range.high`: integer (>= 1; <= 180)
+- `tasks[].range.low`: integer (>= 1; <= 720)
+- `tasks[].range.high`: integer (>= 1; <= 720)
 - `tasks[].timingBasis`: string (one of: source, estimate)
 - `tasks[].sourceQuote`: string or null, optional
 - `tasks[].attention`: string (one of: hands-on, unattended)
@@ -149,10 +149,10 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `timelineDefinition.tasks[].cardTitle.context`: string
 - `timelineDefinition.tasks[].description`: string (min length 1)
 - `timelineDefinition.tasks[].completionCue`: string (min length 1)
-- `timelineDefinition.tasks[].minutes`: integer (>= 1; <= 180)
+- `timelineDefinition.tasks[].minutes`: integer (>= 1; <= 720)
 - `timelineDefinition.tasks[].range`: object or null, optional
-- `timelineDefinition.tasks[].range.low`: integer (>= 1; <= 180)
-- `timelineDefinition.tasks[].range.high`: integer (>= 1; <= 180)
+- `timelineDefinition.tasks[].range.low`: integer (>= 1; <= 720)
+- `timelineDefinition.tasks[].range.high`: integer (>= 1; <= 720)
 - `timelineDefinition.tasks[].timingBasis`: string (one of: source, estimate)
 - `timelineDefinition.tasks[].sourceQuote`: string or null, optional
 - `timelineDefinition.tasks[].attention`: string (one of: hands-on, unattended)

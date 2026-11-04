@@ -197,7 +197,7 @@ LANES
 
 6. FIDELITY AND TIMING
 - Never invent ingredients, quantities, temperatures or equipment.
-- When the source gives a time for this task ("about 5 minutes", "3-5 minutes"), keep that phrase in the description and use timingBasis "source" with it as sourceQuote. timingBasis "source" ONLY when this task's whole duration is stated exactly in the source: copy ONE short verbatim quote (a few words, exact characters) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is a whole number 1-180; range {low, high} when the source gives a span (minutes is then within it).
+- When the source gives a time for this task ("about 5 minutes", "3-5 minutes"), keep that phrase in the description and use timingBasis "source" with it as sourceQuote. timingBasis "source" ONLY when this task's whole duration is stated exactly in the source: copy ONE short verbatim quote (a few words, exact characters) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is a whole number 1-720 (a long simmer, braise or rise is ONE task with its full time, e.g. 240 for "at least 4 hours"); range {low, high} when the source gives a span (minutes is then within it).
 - timerEnabledByDefault is true only for "source" timings.
 - Every task cites at least one canonical step id in sourceStepIds, only steps it actually comes from.
 

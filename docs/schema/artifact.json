@@ -384,7 +384,7 @@
               "minutes": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 180
+                "maximum": 720
               },
               "range": {
                 "anyOf": [
@@ -394,12 +394,12 @@
                       "low": {
                         "type": "integer",
                         "minimum": 1,
-                        "maximum": 180
+                        "maximum": 720
                       },
                       "high": {
                         "type": "integer",
                         "minimum": 1,
-                        "maximum": 180
+                        "maximum": 720
                       }
                     },
                     "required": [

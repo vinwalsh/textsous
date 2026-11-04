@@ -95,7 +95,7 @@ export const SkillsTaskSchema = z.object({
   cardTitle: SkillsCardTitleSchema.nullish().describe("Card title. Derived from label when missing."),
   description: text("What to do, with exact amounts, units and ingredient names."),
   completionCue: text("An observable sign the task is done: color, texture, smell, sound or temperature."),
-  minutes: z.number().describe("Whole minutes, 1 to 180."),
+  minutes: z.number().describe("Whole minutes, 1 to 720."),
   range: z
     .object({ low: z.number(), high: z.number() })
     .nullish()

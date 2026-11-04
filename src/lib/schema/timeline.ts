@@ -20,9 +20,16 @@ export const CardTitleSchema = z.strictObject({
   context: z.string(),
 });
 
+/**
+ * Longest single task, in minutes: 12 hours, so a 4-hour simmer or an
+ * overnight braise is one task. (It was 180: the model then had to write a
+ * 4-hour simmer as 180 minutes and the fidelity review blocked it.)
+ */
+export const MAX_TASK_MINUTES = 720;
+
 export const TaskRangeSchema = z.strictObject({
-  low: z.number().int().min(1).max(180),
-  high: z.number().int().min(1).max(180),
+  low: z.number().int().min(1).max(MAX_TASK_MINUTES),
+  high: z.number().int().min(1).max(MAX_TASK_MINUTES),
 });
 
 export const TaskSchedulingSchema = z.strictObject({
@@ -39,7 +46,7 @@ export const TimelineTaskSchema = z.strictObject({
   cardTitle: CardTitleSchema,
   description: z.string().min(1),
   completionCue: z.string().min(1),
-  minutes: z.number().int().min(1).max(180),
+  minutes: z.number().int().min(1).max(MAX_TASK_MINUTES),
   range: TaskRangeSchema.nullish(),
   timingBasis: TimingBasisSchema,
   // Exactly one verbatim source quote when timingBasis is "source", else null.

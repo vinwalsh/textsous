@@ -398,9 +398,9 @@ describe("actionable errors", () => {
     expect(errors).toContainEqual(expect.objectContaining({ path: "timeline.tasks[0].checkpoints", code: "needs_checkpoints" }));
   });
 
-  it("rejects minutes over 180 with a split hint", async () => {
+  it("rejects minutes over 720 with a split hint", async () => {
     const errors = await errorsFor((b) => {
-      b.timeline.tasks[3].minutes = 240;
+      b.timeline.tasks[3].minutes = 800;
     });
     expect(errors).toContainEqual(expect.objectContaining({ path: "timeline.tasks[3].minutes" }));
     expect(errors.find((e) => e.path === "timeline.tasks[3].minutes")?.message).toMatch(/split/);
