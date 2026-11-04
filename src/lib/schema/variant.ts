@@ -15,6 +15,9 @@ export const DIETARY_TARGETS = [
 
 export const DietaryTargetSchema = z.enum(DIETARY_TARGETS);
 
+/** Longest cuisine target an adjustment accepts ("Italian", "Thai street food"). */
+export const MAX_CUISINE_CHARS = 80;
+
 export const VariantSwapToSchema = z.strictObject({
   name: z.string().min(1),
   quantity: z.string(),

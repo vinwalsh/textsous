@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { CookAlongArtifact } from "../lib/schema/artifact";
-import { DIETARY_TARGETS } from "../lib/schema/variant";
+import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
@@ -162,6 +162,7 @@ export default function AdjustPanel({
             <input
               type="text"
               placeholder="Can you make this dish more Italian-style?"
+              maxLength={MAX_CUISINE_CHARS}
               value={cuisine}
               disabled={applying}
               onChange={(e) => setCuisine(e.target.value)}

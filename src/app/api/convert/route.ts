@@ -10,7 +10,7 @@ import { CanonicalRecipeSchema } from "../../../lib/schema/canonical";
 import type { CookAlongArtifact } from "../../../lib/schema/artifact";
 import { fetchAndExtract, normalizeUrl } from "../../../lib/intake/url";
 import { extractFromText } from "../../../lib/intake/text";
-import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
+import { checkRateLimit, MAX_RECIPE_JSON_CHARS, reserveDailyUnit } from "../../../lib/limits";
 import { logEvent } from "../../../lib/log";
 import { isContributorModel, resolveProvider } from "../../../lib/model";
 import { applyArtifactAllergenFloor } from "../../../lib/allergens";
@@ -217,6 +217,10 @@ export async function POST(request: Request) {
       const valid = CanonicalRecipeSchema.safeParse(parsed.data.recipe);
       if (!valid.success) {
         return fail(ROUTE, 400, { error: "Invalid recipe." });
+      }
+      // Same window as pasted text, before any limit or daily unit.
+      if (JSON.stringify(valid.data).length > MAX_RECIPE_JSON_CHARS) {
+        return fail(ROUTE, 400, { error: "Recipe is too long (60,000 characters max)." });
       }
       const gate = await liveGate(request);
       if (gate) return gate;

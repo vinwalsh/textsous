@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { CookAlongArtifactSchema } from "../../../lib/schema/artifact";
 import { adjustArtifact } from "../../../lib/pipeline";
-import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
+import { checkRateLimit, MAX_ADJUST_ARTIFACT_CHARS, reserveDailyUnit } from "../../../lib/limits";
+import { MAX_CUISINE_CHARS } from "../../../lib/schema/variant";
 import { logEvent } from "../../../lib/log";
 import { reviewNoteTexts } from "../../../lib/review-notes";
 import {
@@ -79,6 +80,15 @@ export async function POST(req: Request) {
     const valid = CookAlongArtifactSchema.safeParse(parsed.data.artifact);
     if (!valid.success) {
       return fail(ROUTE, 400, { error: "Invalid artifact." });
+    }
+    // Size checks before any limit or daily unit: one unit, one real recipe.
+    if (JSON.stringify(valid.data).length > MAX_ADJUST_ARTIFACT_CHARS) {
+      return fail(ROUTE, 400, { error: "This cook along is too large to adjust here (64 KB max)." });
+    }
+    if (cuisine !== undefined && cuisine.trim().length > MAX_CUISINE_CHARS) {
+      return fail(ROUTE, 400, {
+        error: `Cuisine style is too long (${MAX_CUISINE_CHARS} characters max). Name a cuisine, like Italian.`,
+      });
     }
     const rate = await checkRateLimit(`adjust:${clientIp(req)}`);
     if (!rate.allowed) return limited(ROUTE, "rate_limited");

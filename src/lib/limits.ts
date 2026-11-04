@@ -5,6 +5,16 @@ const WINDOW_MS = 60 * 60 * 1000;
 export const DEFAULT_RATE_LIMIT_PER_HOUR = 20;
 export const DEFAULT_DAILY_CONVERSION_CAP = 300;
 
+/**
+ * Input ceilings for one daily unit, checked before a unit is reserved. The
+ * daily cap counts requests, not tokens, so these keep each paid request
+ * near the size of a real recipe (live artifacts are 7-21 KB; a canonical
+ * recipe is a few KB). Pasted text has its own 60,000-character limit and
+ * the cuisine target its own (MAX_CUISINE_CHARS in schema/variant.ts).
+ */
+export const MAX_ADJUST_ARTIFACT_CHARS = 64 * 1024;
+export const MAX_RECIPE_JSON_CHARS = 60_000;
+
 export type LimitReason = "rate_limited" | "daily_cap";
 
 export interface LimitResult {
