@@ -259,3 +259,11 @@ describe("the finished page's Cook Along body", () => {
     expect(html).toContain("<h3>Timeline</h3>");
   });
 });
+
+describe("/cook-along-demo", () => {
+  it("serves the committed fixture artifact, current with the fixture", () => {
+    const committed = JSON.parse(readFileSync("src/app/cook-along-demo/artifact.json", "utf8"));
+    expect(committed).toEqual(JSON.parse(JSON.stringify(fixtureArtifact("toasted-oat-porridge"))));
+    expect(cookingPilotInput(CookAlongArtifactSchema.parse(committed))).not.toBeNull();
+  });
+});

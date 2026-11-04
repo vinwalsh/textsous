@@ -62,6 +62,9 @@ export default function DemoPage() {
         Or try <Link href="/demo-sites">Adjust with SOUS on four demo recipe blogs</Link>.
       </p>
       <p className="meta">
+        No time to wait? <Link href="/cook-along-demo">Open a finished Cook Along</Link> instantly.
+      </p>
+      <p className="meta">
         <Link href="/">Back to the converter</Link>
       </p>
     </main>

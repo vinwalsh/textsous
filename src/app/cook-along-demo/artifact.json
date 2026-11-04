@@ -1,0 +1,454 @@
+{
+  "formatVersion": 1,
+  "id": "art-4620f4756b0c",
+  "recipe": {
+    "title": "Toasted Oat Porridge with Brown Butter Apples",
+    "servings": 2,
+    "nativeServings": 2,
+    "ingredients": [
+      {
+        "id": "ing-1",
+        "name": "rolled oats",
+        "quantity": "1",
+        "unit": "cup",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [
+          "gluten"
+        ],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-2",
+        "name": "whole milk",
+        "quantity": "2",
+        "unit": "cups",
+        "quantity4": 4,
+        "scaleRule": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-3",
+        "name": "unsalted butter",
+        "quantity": "1",
+        "unit": "tablespoon",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-4",
+        "name": "medium apple",
+        "quantity": "1",
+        "unit": "",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "diced"
+      },
+      {
+        "id": "ing-5",
+        "name": "brown sugar",
+        "quantity": "2",
+        "unit": "tablespoons",
+        "quantity4": 4,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-6",
+        "name": "ground cinnamon",
+        "quantity": "1/4",
+        "unit": "teaspoon",
+        "quantity4": 0.5,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-7",
+        "name": "fine sea salt",
+        "quantity": "1",
+        "unit": "pinch",
+        "quantity4": 2,
+        "scaleRule": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      }
+    ],
+    "equipment": [
+      "saucepan",
+      "small skillet",
+      "bowls"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "kind": "active",
+        "text": "Toast the rolled oats in a dry saucepan over medium heat for 2 minutes, until fragrant."
+      },
+      {
+        "id": "step-2",
+        "kind": "active",
+        "text": "Melt the butter in a small skillet until it foams and smells nutty."
+      },
+      {
+        "id": "step-3",
+        "kind": "active",
+        "text": "Add the diced apple, brown sugar, and cinnamon; cook 5 minutes until soft."
+      },
+      {
+        "id": "step-4",
+        "kind": "active",
+        "text": "Pour the milk over the oats, add the salt, and simmer 6 minutes, stirring often."
+      },
+      {
+        "id": "step-5",
+        "kind": "active",
+        "text": "Spoon into bowls and top with the brown butter apples."
+      }
+    ],
+    "allergens": [
+      "gluten",
+      "milk"
+    ],
+    "originalMethod": "toast",
+    "methodLabel": "Toasted",
+    "methodNotice": "",
+    "credit": {
+      "kind": "url",
+      "site": "TextSous Fixtures",
+      "author": "TextSous Kitchen",
+      "url": "https://example.com/recipes/toasted-oat-porridge",
+      "book": null,
+      "page": null,
+      "license": null
+    }
+  },
+  "timelineDefinition": {
+    "lanes": [
+      {
+        "id": "lane-base",
+        "label": "Porridge Base",
+        "color": "#E8B44A",
+        "kind": "component"
+      },
+      {
+        "id": "lane-garnish",
+        "label": "Brown Butter Apples",
+        "color": "#C96A2B",
+        "kind": "component"
+      },
+      {
+        "id": "lane-kitchen",
+        "label": "Kitchen",
+        "color": "#9AA0A6",
+        "kind": "kitchen"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "task-dice-apple",
+        "phase": "prep",
+        "label": "Dice apple",
+        "cardTitle": {
+          "action": "Dice",
+          "subject": "apple",
+          "context": "for topping"
+        },
+        "description": "Dice the apple into small even pieces. Keep ready for the skillet.",
+        "completionCue": "Apple in even small dice, ready to cook.",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-garnish"
+        ],
+        "dependencies": [],
+        "sourceStepIds": [
+          "step-3"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-4"
+          ]
+        }
+      },
+      {
+        "id": "task-toast-oats",
+        "phase": "cook",
+        "label": "Toast oats",
+        "cardTitle": {
+          "action": "Toast",
+          "subject": "oats",
+          "context": "in saucepan"
+        },
+        "description": "Toast the rolled oats in a dry saucepan over medium heat, stirring, until fragrant.",
+        "completionCue": "Oats smell fragrant and look lightly golden.",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "for 2 minutes",
+        "attention": "hands-on",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-base"
+        ],
+        "dependencies": [
+          "task-dice-apple"
+        ],
+        "sourceStepIds": [
+          "step-1"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-saucepan"
+          ],
+          "ingredientIds": [
+            "ing-1"
+          ]
+        }
+      },
+      {
+        "id": "task-melt-butter",
+        "phase": "cook",
+        "label": "Brown butter",
+        "cardTitle": {
+          "action": "Melt",
+          "subject": "butter",
+          "context": "in skillet"
+        },
+        "description": "Melt the butter in a small skillet until it foams and smells nutty.",
+        "completionCue": "Butter foams and smells nutty.",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-garnish"
+        ],
+        "dependencies": [
+          "task-toast-oats"
+        ],
+        "sourceStepIds": [
+          "step-2"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-skillet"
+          ],
+          "ingredientIds": [
+            "ing-3"
+          ]
+        }
+      },
+      {
+        "id": "task-cook-apples",
+        "phase": "cook",
+        "label": "Cook apples",
+        "cardTitle": {
+          "action": "Cook",
+          "subject": "apples",
+          "context": "with sugar"
+        },
+        "description": "Add the diced apple, brown sugar, and cinnamon to the brown butter and cook until soft.",
+        "completionCue": "Apples are soft and glazed.",
+        "minutes": 5,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "cook 5 minutes",
+        "attention": "hands-on",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-garnish"
+        ],
+        "dependencies": [
+          "task-melt-butter"
+        ],
+        "sourceStepIds": [
+          "step-3"
+        ],
+        "checkpoints": [
+          "Apples soften at edges",
+          "Sugar melted into glaze coating apples"
+        ],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-skillet"
+          ],
+          "ingredientIds": [
+            "ing-4",
+            "ing-5",
+            "ing-6"
+          ]
+        }
+      },
+      {
+        "id": "task-simmer-porridge",
+        "phase": "cook",
+        "label": "Simmer porridge",
+        "cardTitle": {
+          "action": "Simmer",
+          "subject": "porridge",
+          "context": "with milk"
+        },
+        "description": "Pour the milk over the toasted oats, add the salt, and simmer, stirring often, until creamy.",
+        "completionCue": "Porridge is thick and creamy, oats tender.",
+        "minutes": 6,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "simmer 6 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-base"
+        ],
+        "dependencies": [
+          "task-toast-oats"
+        ],
+        "sourceStepIds": [
+          "step-4"
+        ],
+        "checkpoints": [
+          "Stir to prevent sticking",
+          "Thickened and creamy"
+        ],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-saucepan"
+          ],
+          "ingredientIds": [
+            "ing-1",
+            "ing-2",
+            "ing-7"
+          ]
+        }
+      },
+      {
+        "id": "task-serve",
+        "phase": "finish",
+        "label": "Serve bowls",
+        "cardTitle": {
+          "action": "Top",
+          "subject": "porridge",
+          "context": "with apples"
+        },
+        "description": "Spoon the porridge into bowls and top with the brown butter apples.",
+        "completionCue": "Bowls filled with hot porridge topped with apples.",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-base",
+          "lane-garnish",
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "task-cook-apples",
+          "task-simmer-porridge"
+        ],
+        "sourceStepIds": [
+          "step-5"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": []
+        }
+      }
+    ],
+    "resources": [
+      {
+        "id": "res-saucepan",
+        "label": "Saucepan",
+        "kind": "pan"
+      },
+      {
+        "id": "res-skillet",
+        "label": "Small Skillet",
+        "kind": "pan"
+      }
+    ],
+    "resourceHolds": [
+      {
+        "taskId": "task-toast-oats",
+        "resourceId": "res-saucepan"
+      },
+      {
+        "taskId": "task-simmer-porridge",
+        "resourceId": "res-saucepan"
+      },
+      {
+        "taskId": "task-melt-butter",
+        "resourceId": "res-skillet"
+      },
+      {
+        "taskId": "task-cook-apples",
+        "resourceId": "res-skillet"
+      }
+    ],
+    "serveTaskId": "task-serve"
+  },
+  "equipmentProfile": {
+    "burners": 4,
+    "oven": true
+  },
+  "changes": [
+    {
+      "kind": "estimate",
+      "detail": "Timing for Dice apple is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Brown butter is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Serve bowls is an estimate; the recipe does not give one."
+    }
+  ]
+}
