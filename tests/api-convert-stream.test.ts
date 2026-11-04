@@ -314,7 +314,7 @@ describe("POST /api/convert as NDJSON events", () => {
       kind: "text",
       cached: false,
       stream: true,
-      efforts: { overview: "minimal", canonicalize: "low", procedure: "low", review: "low" },
+      efforts: { overview: "minimal", canonicalize: "low", procedure: "minimal", review: "low" },
       timings: {
         canonicalizeMs: expect.any(Number),
         procedureMs: expect.any(Number),

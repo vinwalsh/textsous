@@ -38,7 +38,10 @@ export const REASONING_EFFORTS: readonly ReasoningEffort[] = [
 export const DEFAULT_EFFORTS: Readonly<Record<EffortStage, ReasoningEffort>> = {
   overview: "minimal",
   canonicalize: "low",
-  procedure: "low",
+  // Measured on a preview (Nov 4): minimal writes the steps about twice as
+  // fast as low (11-23 s vs 37-40 s) and its cook alongs passed the low-effort
+  // review; a minimal review falsely blocked one, so review stays low.
+  procedure: "minimal",
   review: "low",
   scaling: "minimal",
   dietary: "low",

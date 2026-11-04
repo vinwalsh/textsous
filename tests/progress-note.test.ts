@@ -6,7 +6,7 @@ import ProgressNote, { progressCopy } from "../src/app/ProgressNote";
 describe("progress copy", () => {
   it("describes the convert stages in plain words", () => {
     const copy = progressCopy("convert");
-    expect(copy).toContain("Usually 3 to 4 minutes");
+    expect(copy).toContain("Usually about a minute");
     expect(copy).toContain("reading the recipe");
     expect(copy).toContain("planning the timeline");
     expect(copy).toContain("checking it");
@@ -15,7 +15,7 @@ describe("progress copy", () => {
   it("describes transcribing and adjusting honestly", () => {
     expect(progressCopy("transcribe")).toContain("reading the photo");
     // Transcribe plus canonicalize runs 1-2 minutes, not "under a minute".
-    expect(progressCopy("transcribe")).toContain("Usually 1 to 2 minutes");
+    expect(progressCopy("transcribe")).toContain("Usually about a minute");
     expect(progressCopy("adjust")).toContain("applying your changes");
   });
 

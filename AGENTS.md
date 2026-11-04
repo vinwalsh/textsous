@@ -180,7 +180,7 @@ here with the date. Check the code before trusting any doc line about it.
   cached, never in the artifact; nothing waits for it and its failure never
   fails a conversion. Its tokens count once it finished.
 - Reasoning effort per stage (`src/lib/model/efforts.ts`). Code defaults:
-  overview and scaling `minimal`; canonicalize, procedure, review, dietary,
+  overview, procedure and scaling `minimal`; canonicalize, review, dietary,
   cuisine, voice and transcribe `low`. `REASONING_EFFORT_<STAGE>` (e.g.
   `REASONING_EFFORT_PROCEDURE=minimal`) overrides one stage; values other
   than minimal, low, medium, high and xhigh are ignored. `high` is Meta's

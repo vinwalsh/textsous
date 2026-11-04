@@ -98,7 +98,7 @@ describe("reasoning effort per stage", () => {
     expect(DEFAULT_EFFORTS).toEqual({
       overview: "minimal",
       canonicalize: "low",
-      procedure: "low",
+      procedure: "minimal",
       review: "low",
       scaling: "minimal",
       dietary: "low",
@@ -140,7 +140,7 @@ describe("reasoning effort per stage", () => {
   it("every model stage sends its effort; env and per-request overrides apply", async () => {
     expect(await effortsSent()).toEqual({
       canonicalize: "low",
-      procedure: "low",
+      procedure: "minimal",
       review: "low",
       scaling: "minimal",
       dietary: "low",

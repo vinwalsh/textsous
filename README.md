@@ -39,7 +39,7 @@ Model access goes through one client with config from the environment:
 | `MODEL_ID`       | `muse-spark-1.3`           | Model to convert with          |
 | `BASETEN_API_KEY`| falls back to `MODEL_API_KEY` | Optional Baseten fallback key |
 | `BASETEN_BASE_URL` | falls back to `MODEL_BASE_URL` | Optional Baseten endpoint  |
-| `REASONING_EFFORT_<STAGE>` | `low` (`minimal` for overview and scaling) | reasoning_effort for one stage, e.g. `REASONING_EFFORT_PROCEDURE=minimal` |
+| `REASONING_EFFORT_<STAGE>` | `low` (`minimal` for overview, procedure and scaling) | reasoning_effort for one stage, e.g. `REASONING_EFFORT_PROCEDURE=minimal` |
 
 The Baseten profile always uses `meta-models/muse-spark-open-1026`. Never
 commit keys: copy them into `.env.local`, which is git-ignored.

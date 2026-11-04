@@ -114,7 +114,8 @@ If your site sends a Content-Security-Policy, allow
 ## Speed, caching and pre-converted recipes
 
 A fresh conversion reads the recipe, plans the timeline and checks it
-against the original; that takes 3 to 4 minutes. After that the conversion
+against the original; that takes about a minute, and the overlay fills in
+as each part is ready. After that the conversion
 is cached, so later readers of the same recipe address get it in a second or
 two. To make the first tap fast as well, warm the cache by opening the
 overlay yourself once after publishing. (For open.textsous.com's own

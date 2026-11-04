@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   callStructured,
+  effortFor,
   type ChatContentPart,
   type ProviderName,
   type ReasoningEffort,
@@ -27,7 +28,7 @@ export const PHOTO_SCHEMA_NAME = "photo_transcription";
  * page needs little reasoning, and the default (high) made the photo wait
  * long before canonicalize could start.
  */
-export const TRANSCRIBE_REASONING_EFFORT: ReasoningEffort = "low";
+export const TRANSCRIBE_REASONING_EFFORT: ReasoningEffort = effortFor("transcribe");
 
 export type PhotoImageType = "png" | "jpeg" | "webp";
 
@@ -285,7 +286,8 @@ export async function transcribePhoto(
       provider: opts.provider,
       client: opts.client,
       schemaName: PHOTO_SCHEMA_NAME,
-      reasoningEffort: TRANSCRIBE_REASONING_EFFORT,
+      // Low by default; REASONING_EFFORT_TRANSCRIBE overrides it.
+      reasoningEffort: effortFor("transcribe"),
     },
   );
   const t = result.data;
