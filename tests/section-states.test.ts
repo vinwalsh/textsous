@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { AdjustChoices } from "../src/app/AdjustPanel";
+import { adjustingLine, adjustSummary, type AdjustChoices } from "../src/app/AdjustPanel";
+import ArtifactViewer from "../src/app/ArtifactViewer";
 import { initialConversionState, reduceConversion, type ConversionAction, type ConversionState } from "../src/app/conversion";
 import ProgressiveView from "../src/app/ProgressiveView";
 import {
@@ -212,6 +213,46 @@ describe("before your changes", () => {
   it("explains the badge where the queued changes are listed", () => {
     const html = render(withRecipe, queued);
     expect(html).toContain("Until they apply, the parts they change are marked “Before your changes”.");
+  });
+});
+
+describe("adjusting the finished cook along", () => {
+  const artifact = fixtureArtifact();
+  const base = artifact.recipe.servings;
+  const queued: AdjustChoices = { servings: base + 16, dietary: "vegan", cuisine: "Italian", sousVoice: false };
+
+  function render(props: Record<string, unknown>) {
+    return renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: () => {}, ...props }));
+  }
+
+  it("reads like the queued note: Adjusting: serves 2 → 18 · Vegan · Italian style…", () => {
+    expect(adjustingLine(2, { ...queued, servings: 18 })).toBe("Adjusting: serves 2 → 18 · Vegan · Italian style…");
+    expect(adjustingLine(base, queued)).toBe(`Adjusting: ${adjustSummary(base, queued)}…`);
+  });
+
+  it("marks the sections a queued adjustment rewrites, with the adjustment spinner, while it applies", () => {
+    const html = render({ queuedAdjustments: queued });
+    const mark = `<p class="pre-adjust"><span class="pre-adjust-badge">Before your changes</span><span class="adjusting-note"><span class="ts-spinner ts-spinner-adjust" aria-hidden="true"></span> ${adjustingLine(base, queued)}</span></p>`;
+    expect(html.split(mark)).toHaveLength(6);
+    // The servings line, ingredients, prep, steps and the timeline, in that order.
+    const at = (marker: string, from = 0) => html.indexOf(marker, from);
+    expect(at(mark)).toBeGreaterThan(at(`Serves ${base}`));
+    expect(at(mark, at(">Ingredients<"))).toBeLessThan(at("<ul class=\"ingredients\">"));
+    expect(at(mark, at("<h3>Timeline</h3>"))).toBeGreaterThan(at("<h3>Timeline</h3>"));
+    // The panel says it is applying them.
+    expect(html).toContain("Adjusting…");
+  });
+
+  it("shows no marks without an adjustment on its way", () => {
+    expect(render({})).not.toContain("Before your changes");
+    const same: AdjustChoices = { servings: base, dietary: "", cuisine: "", sousVoice: false };
+    expect(render({ queuedAdjustments: same })).not.toContain("Before your changes");
+  });
+
+  it("marks only the prep, steps and timeline for SOUS voice", () => {
+    const html = render({ queuedAdjustments: { servings: base, dietary: "", cuisine: "", sousVoice: true } });
+    expect(html.match(/>Before your changes</g)).toHaveLength(3);
+    expect(html).toContain("Adjusting: SOUS voice…");
   });
 });
 

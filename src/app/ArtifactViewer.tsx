@@ -12,7 +12,9 @@ import { formatQuantityWithUnit } from "../lib/scaling/units";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
-import AdjustPanel, { type AdjustChoices } from "./AdjustPanel";
+import AdjustPanel, { adjustingLine, hasAdjustment, type AdjustChoices } from "./AdjustPanel";
+import { adjustedSections, type SectionKey } from "./section-states";
+import { PreAdjustMark } from "./SectionStatus";
 import TimelineView from "./TimelineView";
 import Timer from "./Timer";
 
@@ -483,6 +485,11 @@ export default function ArtifactViewer({
   const [saveError, setSaveError] = useState<FriendlyError | null>(null);
   const [importUrl, setImportUrl] = useState<string | null>(null);
   const [tipsMode, setTipsMode] = useState<TipsMode>(readTipsMode);
+  // The adjustment being applied (queued ones start at once): the sections
+  // it rewrites say "Before your changes" until the adjusted cook along shows.
+  const [adjusting, setAdjusting] = useState<AdjustChoices | null>(() =>
+    queuedAdjustments && hasAdjustment(queuedAdjustments, floored.recipe.servings) ? queuedAdjustments : null,
+  );
 
   function chooseTipsMode(mode: TipsMode) {
     setTipsMode(mode);
@@ -499,6 +506,9 @@ export default function ArtifactViewer({
 
   const recipe = current.recipe;
   const timeline = current.timelineDefinition;
+  const rewriting = new Set<SectionKey>(adjustedSections(adjusting, recipe.servings));
+  const adjustingText = adjusting ? adjustingLine(recipe.servings, adjusting) : null;
+  const before = (key: SectionKey) => (rewriting.has(key) ? <PreAdjustMark adjusting={adjustingText} /> : null);
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
 
@@ -559,6 +569,7 @@ export default function ArtifactViewer({
           {totalMinutes !== null ? ` · About ${totalMinutes} minutes` : ""}
           {recipe.methodLabel ? ` · Method: ${recipe.methodLabel}` : ""}
         </p>
+        {before("facts")}
       </div>
 
       <Credit credit={recipe.credit} />
@@ -593,17 +604,24 @@ export default function ArtifactViewer({
         onReset={handleReset}
         autoApply={queuedAdjustments}
         onAutoApplied={onQueuedApplied}
+        onApplyingChange={setAdjusting}
       />
 
-      <IngredientsCard ingredients={recipe.ingredients} />
+      <IngredientsCard ingredients={recipe.ingredients} status={before("ingredients")} />
 
       <BeforeYouStart equipment={recipe.equipment} timeline={timeline} totalMinutes={totalMinutes} />
 
       <TipsToggle mode={tipsMode} onChange={chooseTipsMode} />
 
-      <PrepSection timeline={timeline} tipsMode={tipsMode} done={prepDone} onToggle={togglePrep} />
+      <PrepSection
+        timeline={timeline}
+        tipsMode={tipsMode}
+        done={prepDone}
+        onToggle={togglePrep}
+        status={before("prep")}
+      />
 
-      <StepsSection timeline={timeline} tipsMode={tipsMode} />
+      <StepsSection timeline={timeline} tipsMode={tipsMode} status={before("steps")} />
 
       {current.changes.length > 0 ? (
         <details>
@@ -621,6 +639,7 @@ export default function ArtifactViewer({
       <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
 
       <h3>Timeline</h3>
+      {before("timeline")}
       <TimelineView timeline={timeline} />
 
       {saveError ? <ErrorBox error={saveError} /> : null}

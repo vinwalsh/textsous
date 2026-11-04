@@ -126,6 +126,14 @@ export function adjustSummary(baseServings: number, choices: AdjustChoices): str
   return parts.join(" · ");
 }
 
+/**
+ * The line on each section an adjustment is rewriting, while it applies:
+ * "Adjusting: serves 2 → 18 · Vegan…" (the queued note's wording). Pure.
+ */
+export function adjustingLine(baseServings: number, choices: AdjustChoices): string {
+  return `Adjusting: ${adjustSummary(baseServings, choices)}\u2026`;
+}
+
 /** POST /api/adjust for these choices, keeping the screen on. */
 export function requestAdjustment(artifact: CookAlongArtifact, choices: AdjustChoices): Promise<ApiResult> {
   return withScreenOn(() =>
@@ -153,6 +161,7 @@ export default function AdjustPanel({
   pending,
   autoApply,
   onAutoApplied,
+  onApplyingChange,
 }: {
   /** The finished cook along; null while it is being written (queued mode, see `pending`). */
   artifact: CookAlongArtifact | null;
@@ -164,6 +173,8 @@ export default function AdjustPanel({
   autoApply?: AdjustChoices | null;
   /** Called once the autoApply choices were applied, or failed to apply. */
   onAutoApplied?: () => void;
+  /** The choices being applied while a request is out, then null (applied or failed). */
+  onApplyingChange?: (choices: AdjustChoices | null) => void;
 }) {
   const base = artifact ? artifact.recipe.servings : (pending?.servings ?? 1);
   const preset = artifact ? autoApply : pending?.queued;
@@ -186,11 +197,13 @@ export default function AdjustPanel({
     if (!artifact) return;
     setApplying(true);
     setError(null);
+    onApplyingChange?.(choices);
     const res = await requestAdjustment(artifact, choices);
     const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.artifact) {
       setError(adjustFailure(res, data, artifact));
       setApplying(false);
+      onApplyingChange?.(null);
       return;
     }
     const nextSummary = adjustSummary(artifact.recipe.servings, choices);
@@ -202,7 +215,9 @@ export default function AdjustPanel({
     setCuisine("");
     setSousVoice(false);
     setApplying(false);
+    // One render: the adjusted cook along shows as the marks on its sections go.
     onAdjusted?.(data.artifact, nextSummary, data.scaleFlags);
+    onApplyingChange?.(null);
   }
 
   // Choices queued while the cook along was being written: apply them once.
