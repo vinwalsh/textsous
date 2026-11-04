@@ -108,6 +108,20 @@ describe("URL page text fallback", () => {
     expect(extracted.warnings[0]).toMatch(/only the first 60,000 were kept/);
   });
 
+  it("warns about the cut when JSON-LD has no ingredient lines and the text is used", () => {
+    const body = `<article>${"word ".repeat(15_000)}</article>`;
+    const ld = (recipe: Record<string, unknown>): string =>
+      `<script type="application/ld+json">${JSON.stringify({ "@type": "Recipe", name: "Soup", ...recipe })}</script>`;
+    const bare = extractFromHtml(`<html><head>${ld({})}</head><body>${body}</body></html>`, "https://example.com/a");
+    expect(bare.hasJsonLd).toBe(true);
+    expect(bare.warnings[0]).toMatch(/only the first 60,000 were kept/);
+    const full = extractFromHtml(
+      `<html><head>${ld({ recipeIngredient: ["1 cup water"] })}</head><body>${body}</body></html>`,
+      "https://example.com/b",
+    );
+    expect(full.warnings).toEqual([]);
+  });
+
   it("records no warning for a normal page", () => {
     const extracted = extractFromHtml(
       "<html><body><article>Short recipe.</article></body></html>",

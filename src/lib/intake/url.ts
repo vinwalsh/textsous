@@ -475,6 +475,7 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
       undefined;
     const author =
       authorName(recipe.author) ?? $('meta[name="author"]').attr("content")?.trim() ?? undefined;
+    const ingredientLines = normalizeStringArray(recipe.recipeIngredient);
     return {
       sourceUrl: baseUrl,
       finalUrl: baseUrl,
@@ -483,12 +484,13 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
       author,
       title,
       hasJsonLd: true,
-      ingredientLines: normalizeStringArray(recipe.recipeIngredient),
+      ingredientLines,
       instructionLines: flattenInstructions(recipe.recipeInstructions),
       servingsRaw: normalizeYield(recipe.recipeYield),
       rawText,
-      // JSON-LD conversions never read the page text, so no warning.
-      warnings: [],
+      // With JSON-LD ingredient lines the page text is never read, so its cut
+      // does not matter; without them the conversion falls back to the text.
+      warnings: ingredientLines.length > 0 ? [] : readable.warnings,
     };
   }
   return {
