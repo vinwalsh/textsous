@@ -181,6 +181,15 @@ describe("HUD", () => {
     expect(hud({ guide: { elapsedMs: 60_000, startedAt: null } })).toContain(">Start guide<");
   });
 
+  it("is inert while Details covers it, so focus stays in Details", () => {
+    expect(hud({ inert: true })).toMatch(/<section class="g-screen g-hud" aria-label="Cook along" inert="">/);
+    expect(hud()).not.toContain("inert");
+    const panel = renderToStaticMarkup(
+      createElement(InstallPanel, { pageUrl: "https://open.textsous.com/glasses", inert: true }),
+    );
+    expect(panel).toContain('inert=""');
+  });
+
   it("shows the voice toggle state", () => {
     expect(hud({ voice: true })).toContain('aria-pressed="true"');
     expect(hud({ voice: false })).toContain("Voice off");

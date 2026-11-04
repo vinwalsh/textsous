@@ -237,11 +237,13 @@ export default function GlassesApp({
       {state.kind === "ready" ? (
         <GlassesCookAlong artifact={state.artifact} escapeRef={escapeRef} />
       ) : (
-        <div className="g-screen">
-          <GlassesStatus state={state} demos={demos} />
-        </div>
+        <>
+          <div className="g-screen">
+            <GlassesStatus state={state} demos={demos} />
+          </div>
+          <InstallPanel />
+        </>
       )}
-      <InstallPanel />
     </div>
   );
 }
@@ -323,6 +325,8 @@ export interface HudProps {
   onJump: (taskId: string) => void;
   onToggleVoice: () => void;
   onStartOver?: () => void;
+  /** True while Details covers the HUD: nothing behind it can take focus. */
+  inert?: boolean;
   mainButtonRef?: Ref<HTMLButtonElement>;
   detailsButtonRef?: Ref<HTMLButtonElement>;
   timerButtonRef?: Ref<HTMLButtonElement>;
@@ -349,6 +353,7 @@ export function GlassesHud({
   onJump,
   onToggleVoice,
   onStartOver,
+  inert,
   mainButtonRef,
   detailsButtonRef,
   timerButtonRef,
@@ -374,7 +379,7 @@ export function GlassesHud({
     return other ? [taskHeading(other)] : [];
   });
   return (
-    <section className="g-screen g-hud" aria-label="Cook along">
+    <section className="g-screen g-hud" aria-label="Cook along" inert={inert}>
       <header className="g-top">
         <span className="g-step">
           Step {current + 1} of {order.length} · {PHASES[task.phase] ?? task.phase}
@@ -584,7 +589,9 @@ function GlassesCookAlong({
   const [guide, setGuide] = useState<GuideClock>(GUIDE_IDLE);
   const [timers, setTimers] = useState<TaskTimer[]>([]);
   const [now, setNow] = useState(0);
-  const [details, setDetails] = useState(false);
+  // Details shows the task it opened on until Back, even if the guide moves on.
+  const [detailsId, setDetailsId] = useState<string | null>(null);
+  const details = detailsId !== null;
   const [voice, setVoice] = useState(true);
   const [announcement, setAnnouncement] = useState("");
   const [announced, setAnnounced] = useState<ReadonlySet<string>>(() => new Set());
@@ -737,7 +744,7 @@ function GlassesCookAlong({
   }, []);
 
   const closeDetails = useCallback(() => {
-    setDetails(false);
+    setDetailsId(null);
     if (pushedDetails.current) {
       pushedDetails.current = false;
       try {
@@ -762,7 +769,7 @@ function GlassesCookAlong({
     function onPop() {
       if (!pushedDetails.current) return;
       pushedDetails.current = false;
-      setDetails(false);
+      setDetailsId(null);
       setTimeout(() => detailsButton.current?.focus(), 0);
     }
     window.addEventListener("popstate", onPop);
@@ -770,7 +777,7 @@ function GlassesCookAlong({
   }, []);
 
   function openDetails() {
-    setDetails(true);
+    setDetailsId(order[current].task.id);
     try {
       window.history.pushState({ textsousGlassesDetails: true }, "");
       pushedDetails.current = true;
@@ -852,6 +859,8 @@ function GlassesCookAlong({
     }
   }
 
+  const detailsIndex = detailsId === null ? -1 : order.findIndex((o) => o.task.id === detailsId);
+
   function jump(taskId: string) {
     const index = order.findIndex((o) => o.task.id === taskId);
     if (index >= 0) goTo(index);
@@ -879,19 +888,21 @@ function GlassesCookAlong({
         onJump={jump}
         onToggleVoice={toggleVoice}
         onStartOver={startOver}
+        inert={details}
         mainButtonRef={mainButton}
         detailsButtonRef={detailsButton}
         timerButtonRef={timerButton}
       />
-      {details ? (
+      {detailsIndex >= 0 ? (
         <GlassesDetails
           artifact={artifact}
-          item={order[current]}
-          number={current + 1}
+          item={order[detailsIndex]}
+          number={detailsIndex + 1}
           count={order.length}
           onBack={closeDetails}
         />
       ) : null}
+      <InstallPanel inert={details} />
     </>
   );
 }
@@ -900,7 +911,7 @@ function GlassesCookAlong({
  * On a phone or computer: the link that puts this page on Meta Ray-Ban
  * Display. Hidden on the 600 x 600 glasses screen by CSS.
  */
-export function InstallPanel({ pageUrl: given }: { pageUrl?: string }) {
+export function InstallPanel({ pageUrl: given, inert }: { pageUrl?: string; inert?: boolean }) {
   const [pageUrl, setPageUrl] = useState(given ?? "");
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -921,7 +932,7 @@ export function InstallPanel({ pageUrl: given }: { pageUrl?: string }) {
   }
 
   return (
-    <aside className="g-install" aria-label="Put this on your glasses">
+    <aside className="g-install" aria-label="Put this on your glasses" inert={inert}>
       <h2 className="g-install-title">Put this on your glasses</h2>
       <p className="g-muted">
         Turn on Developer Mode in the Meta AI app (Settings, App Info, tap the version number five
