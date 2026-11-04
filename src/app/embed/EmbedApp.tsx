@@ -68,12 +68,14 @@ export function initialEmbedState(request: EmbedRequest): EmbedState {
  */
 export function requestedChoices(adjust: EmbedAdjust | null | undefined, base: number | null): AdjustChoices | null {
   if (!adjust || base === null) return null;
-  return {
+  const choices: AdjustChoices = {
     servings: adjust.servings ?? base,
     dietary: adjust.dietary ?? "",
     cuisine: adjust.cuisine ?? "",
     sousVoice: false,
   };
+  // Nothing to change (the menu's servings already are the recipe's): no queue.
+  return hasAdjustment(choices, base) ? choices : null;
 }
 
 /** Where the overlay is: still working, showing the cook along, or stopped (error, mismatch, none). */

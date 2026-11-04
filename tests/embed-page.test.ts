@@ -177,6 +177,8 @@ describe("/embed with an adjustment from the Adjust with SOUS menu", () => {
     expect(requestedChoices({ servings: 18 }, null)).toBeNull();
     expect(requestedChoices(null, 4)).toBeNull();
     expect(requestedChoices({ servings: 18 }, 12)).toEqual({ servings: 18, dietary: "", cuisine: "", sousVoice: false });
+    // The menu's stepper starts at the recipe's own servings: tapping "Show it" unchanged queues nothing.
+    expect(requestedChoices({ servings: 12 }, 12)).toBeNull();
     expect(requestedChoices({ dietary: "vegan" }, 12)).toEqual({ servings: 12, dietary: "vegan", cuisine: "", sousVoice: false });
     expect(requestedChoices({ cuisine: "Italian" }, 4)?.cuisine).toBe("Italian");
   });
