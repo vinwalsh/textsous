@@ -9,6 +9,9 @@ export interface ScaledAmounts {
   scaled: boolean;
 }
 
+/** Superlinear amounts never pass this multiple of the linear amount. */
+export const SUPERLINEAR_CAP = 1.5;
+
 /** Rule curves: how a servings factor translates to an amount multiplier. */
 export function effectiveFactor(rule: ScaleRule, factor: number): number {
   switch (rule) {
@@ -19,7 +22,9 @@ export function effectiveFactor(rule: ScaleRule, factor: number): number {
     case "flat":
       return 1;
     case "superlinear":
-      return factor ** 1.5;
+      // factor^1.5 runs away on big batches (2 -> 36 servings would be x76):
+      // past x2.25 it holds at half again the linear amount (x18 -> x27).
+      return Math.min(factor ** 1.5, factor * SUPERLINEAR_CAP);
     case "to-taste":
       return 1;
   }
