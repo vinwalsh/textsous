@@ -7,6 +7,10 @@ overlay on top of your page, so the reader never leaves your site.
 
 See it working on the demo post: https://open.textsous.com/embed-demo
 
+A second button, "Adjust with SOUS", lets the reader choose first: change
+the servings, make it dairy-free or vegan, make it more Italian, or open
+the plain Cook Along. See [Adjust with SOUS](#adjust-with-sous) below.
+
 ## Quick start
 
 Paste this where the button should appear:
@@ -55,6 +59,90 @@ Example with two recipes on one page:
 There is also a small script API: `TextSousEmbed.open({ url })`,
 `TextSousEmbed.open({ src })` and `TextSousEmbed.close()`.
 
+## Adjust with SOUS
+
+Paste this where the button should appear:
+
+```html
+<script src="https://open.textsous.com/embed.js" async></script>
+<div data-textsous-adjust></div>
+```
+
+A tap opens a small menu under the button, titled "What would you like?":
+
+- **Change servings**: a stepper from 1 to 36 and "Show it". It starts at
+  the first whole number of your page's schema.org Recipe `recipeYield`
+  (JSON-LD at the top level, in a list, in `@graph` or as `mainEntity`),
+  kept within 1-36, or at 4 when the page has none.
+- **Make it…**: Dairy-free, Egg-free, Gluten-free, Nut-free, Soy-free,
+  Vegetarian or Vegan, one button each.
+- **Make it more…**: free text up to 80 characters ("Italian", "Thai
+  street food") and "Show it".
+- **Cook along**: the plain Cook Along, the same as the Cook Along button.
+
+Each choice opens the same overlay as the Cook Along button (focus inside,
+Esc and Close, focus back to the button afterwards), and the choice is
+applied as soon as the cook along is ready. The menu works by keyboard
+(Enter in a field means "Show it") and closes on Esc (focus returns to the
+button), on a click outside it, or when focus moves out of it. Only one
+menu is open at a time. Nothing in it is a form or a link, so it never
+submits or navigates your page. On a narrow screen it moves left to stay
+inside the window.
+
+`data-textsous-adjust` placements are repeatable and take the same
+`data-recipe-url`, `data-src` and `data-label` attributes as Cook Along
+placements. `data-label` defaults to "Adjust with SOUS"; the script tag's
+`data-label` applies to Adjust buttons only when the tag also has
+`data-mode="adjust"`. `data-autoopen` applies to Cook Along buttons only.
+Both kinds of placement can share a page.
+
+On the script tag only:
+
+| Attribute | What it does |
+|---|---|
+| `data-mode="adjust"` | With no placement on the page, the default button (right after the script tag) is "Adjust with SOUS" instead of "Cook along with TextSous". |
+| `data-floating` | With no placement on the page, the default button is fixed at the bottom right of the window instead, and its menu opens upward. The bookmarklet uses this. |
+
+A page with any `data-textsous-adjust` placement gets no default button.
+
+### What the overlay receives
+
+`/embed` takes three optional parameters next to `url` or `src`:
+
+| Parameter | Accepted values |
+|---|---|
+| `servings` | A number from 0.5 to 36 (the adjust range). The menu sends whole numbers from 1 to 36. |
+| `dietary` | `dairy-free`, `egg-free`, `gluten-free`, `nut-free`, `soy-free`, `vegetarian` or `vegan` (any letter case). |
+| `cuisine` | 1 to 80 characters once trimmed; control characters and runs of spaces become one space. |
+
+A value that doesn't fit is ignored, never an error, and the rest still
+applies. A menu choice opens, for example,
+`/embed?url=<recipe>&servings=18&utm_source=<your host>&utm_medium=embed`.
+
+While it works, the overlay shows one line at the top: "Scaling to 18
+servings…", "Making it vegan…" or "Making it more Italian…", until the
+adjusted cook along shows (or the adjustment fails, which the adjust panel
+explains). The adjustment takes the same path as changes a reader queues
+while a cook along is being written: one `/api/adjust` call as soon as the
+cook along is ready, on a cache hit too. The adjust panel then shows what
+changed and offers "Back to the original". If the reader changes the queued
+choices in the panel while the recipe converts, theirs replace the menu's.
+
+## Bookmarklet: try it on any recipe page
+
+The /embed-demo post has a "Try it on any recipe page" link. Drag it to
+your bookmarks bar, then click the bookmark on any recipe page. It adds
+`embed.js` from the demo page's own origin (https://open.textsous.com on
+production) with `data-floating` and `data-mode="adjust"`, so one Adjust
+with SOUS button appears at the bottom right of that page. It runs only in
+your own browser and changes nothing on the site; clicking it again on the
+same page adds nothing more. On a page that already has TextSous
+placements, it adds nothing either.
+
+The overlay converts the page's own recipe (its canonical link, else its
+address), so the same-page rule holds. Some sites block outside scripts
+with a Content-Security-Policy; on those, the button doesn't appear.
+
 ## How the overlay keeps readers on your page
 
 - The button and the overlay chrome live in a Shadow DOM, so your CSS cannot
@@ -98,7 +186,9 @@ recipe on open.textsous.com in a new tab instead.
 ## Privacy
 
 - embed.js sets no cookies, stores nothing and loads no trackers. It sends
-  nothing until a reader taps the button.
+  nothing until a reader taps the button. Opening the Adjust with SOUS menu
+  sends nothing either (the servings start from your page's own JSON-LD);
+  only a choice in it opens the overlay.
 - On a tap, the overlay receives the recipe address and your site's host
   name (as `utm_source`). Converted recipes are private to the reader:
   never listed, indexed or shared. TextSous keeps a cached copy of a
@@ -175,8 +265,14 @@ link.
 ## For contributors
 
 - `public/embed.js`: the host-page script (plain JS, no build step). Its
-  helpers are unit-tested in `tests/embed-script.test.ts`.
-- `src/app/embed/`: the `/embed` page; `src/lib/embed.ts`: its pure helpers.
+  helpers are unit-tested in `tests/embed-script.test.ts`: URL and target
+  resolution, the overlay address with an adjustment, recipeYield parsing,
+  menu input checks and placement, and its diet list against
+  `DIETARY_TARGETS`.
+- `src/app/embed/`: the `/embed` page; `src/lib/embed.ts`: its pure helpers
+  (`parseEmbedRequest` reads `servings`, `dietary` and `cuisine`;
+  `adjustLine` writes the calm line; `buildEmbedUrl` mirrors embed.js's
+  `buildFrameUrl`).
 - `next.config.ts`: `/embed` sends `Content-Security-Policy: frame-ancestors *`;
   every other route sends `frame-ancestors 'self'` and
   `X-Frame-Options: SAMEORIGIN`; `/embed.js` sends
@@ -194,7 +290,9 @@ link.
   `NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off` hides the button (on the site and in the
   overlay) until that page is live.
 - `src/app/embed-demo/`: the demo post, built from the original CC0 fixture
-  `eval/fixtures/toasted-oat-porridge.html`.
+  `eval/fixtures/toasted-oat-porridge.html`. `Bookmarklet.tsx` is its "Try
+  it on any recipe page" section; React refuses `javascript:` addresses, so
+  the link gets its `href` after it mounts.
   `/embed-demo?src=<this site's /api/artifact link>&autoopen=1` opens the
   overlay on a saved artifact.
 - Testing the demo: plain `/embed-demo` (no `?src=`) converts the demo
