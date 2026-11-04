@@ -461,3 +461,71 @@ details summary {
     font-size: inherit;
   }
 }
+
+/* Before you start + Essentials / With tips (output-format pass; the brand
+   pass restyles later). */
+.before-start h4 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ts-muted);
+}
+
+.before-start-summary {
+  font-weight: 600;
+}
+
+.component-list,
+.equipment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+}
+
+.component-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.equipment-list li::after {
+  content: "·";
+  margin-left: 0.9rem;
+  color: var(--ts-muted);
+}
+
+.equipment-list li:last-child::after {
+  content: "";
+  margin: 0;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-pill);
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+
+.mode-option {
+  border: 0;
+  background: var(--ts-card);
+  color: var(--ts-ink);
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode-option.mode-active {
+  background: var(--ts-action);
+  color: #fff;
+}
+
+.why,
+.tip {
+  color: var(--ts-muted);
+}

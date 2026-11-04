@@ -47,6 +47,111 @@ function Credit({ artifact }: { artifact: CookAlongArtifact }) {
   );
 }
 
+/** "With tips" shows tips and the why line; "Essentials" hides both. */
+export type TipsMode = "tips" | "essentials";
+export const TIPS_MODE_KEY = "textsous:tips-mode";
+
+/** Remembered choice, default "tips". Storage can be missing or blocked. */
+export function readTipsMode(): TipsMode {
+  try {
+    if (typeof window === "undefined") return "tips";
+    return window.localStorage.getItem(TIPS_MODE_KEY) === "essentials" ? "essentials" : "tips";
+  } catch {
+    return "tips";
+  }
+}
+
+function storeTipsMode(mode: TipsMode): void {
+  try {
+    window.localStorage.setItem(TIPS_MODE_KEY, mode);
+  } catch {
+    // Private windows and blocked storage: the choice lasts for this view only.
+  }
+}
+
+/** Minutes the cook is busy: hands-on tasks never overlap (one cook). */
+export function handsOnMinutes(tasks: Array<{ attention: string; minutes: number }>): number {
+  return tasks.filter((t) => t.attention === "hands-on").reduce((sum, t) => sum + t.minutes, 0);
+}
+
+function BeforeYouStart({
+  artifact,
+  totalMinutes,
+}: {
+  artifact: CookAlongArtifact;
+  totalMinutes: number | null;
+}) {
+  const timeline = artifact.timelineDefinition;
+  const components = timeline.lanes.filter((lane) => lane.kind === "component");
+  const busy = handsOnMinutes(timeline.tasks);
+  const equipment = artifact.recipe.equipment;
+  return (
+    <section className="card before-start" aria-label="Before you start">
+      <h3>Before you start</h3>
+      <p className="before-start-summary">
+        {totalMinutes !== null ? `About ${totalMinutes} min to serve · ` : ""}
+        {busy} min hands-on · One cook
+      </p>
+      {components.length > 0 ? (
+        <>
+          <h4>What you are cooking</h4>
+          <ul className="component-list">
+            {components.map((lane) => (
+              <li key={lane.id}>
+                <span className="lane-dot" style={{ backgroundColor: lane.color }} aria-hidden="true" />
+                {lane.label}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      <h4>Equipment</h4>
+      {equipment.length > 0 ? (
+        <ul className="equipment-list">
+          {equipment.map((item, i) => (
+            <li key={`${item}-${i}`}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="meta">No equipment listed.</p>
+      )}
+    </section>
+  );
+}
+
+function TipsToggle({ mode, onChange }: { mode: TipsMode; onChange: (mode: TipsMode) => void }) {
+  return (
+    <div className="mode-toggle" role="group" aria-label="How much detail to show">
+      <button
+        type="button"
+        className={mode === "essentials" ? "mode-option mode-active" : "mode-option"}
+        aria-pressed={mode === "essentials"}
+        onClick={() => onChange("essentials")}
+      >
+        Essentials
+      </button>
+      <button
+        type="button"
+        className={mode === "tips" ? "mode-option mode-active" : "mode-option"}
+        aria-pressed={mode === "tips"}
+        onClick={() => onChange("tips")}
+      >
+        With tips
+      </button>
+    </div>
+  );
+}
+
+function TaskNotes({ task, mode }: { task: { tip?: string | null; why?: string | null }; mode: TipsMode }) {
+  if (mode === "essentials") return null;
+  return (
+    <>
+      {task.why ? <p className="why">Why: {task.why}</p> : null}
+      {task.tip ? <p className="tip">Tip: {task.tip}</p> : null}
+    </>
+  );
+}
+
 function formatAmount(quantity: string, unit: string): string {
   return `${quantity} ${unit}`.trim();
 }
@@ -66,6 +171,12 @@ export default function ArtifactViewer({
   const [prepDone, setPrepDone] = useState<Set<string>>(new Set());
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState<FriendlyError | null>(null);
+  const [tipsMode, setTipsMode] = useState<TipsMode>(readTipsMode);
+
+  function chooseTipsMode(mode: TipsMode) {
+    setTipsMode(mode);
+    storeTipsMode(mode);
+  }
 
   const totalMinutes = useMemo(() => {
     try {
@@ -159,6 +270,8 @@ export default function ArtifactViewer({
         onReset={handleReset}
       />
 
+      <BeforeYouStart artifact={current} totalMinutes={totalMinutes} />
+
       <h3>Ingredients</h3>
       <ul className="ingredients">
         {recipe.ingredients.map((ing) => (
@@ -175,11 +288,7 @@ export default function ArtifactViewer({
           </li>
         ))}
       </ul>
-      <p className="meta">
-        {recipe.equipment.length > 0
-          ? `Equipment: ${recipe.equipment.join(", ")}`
-          : "No equipment listed."}
-      </p>
+      <TipsToggle mode={tipsMode} onChange={chooseTipsMode} />
 
       <h3>Mise en Place</h3>
       {prepTasks.length > 0 ? (
@@ -196,6 +305,7 @@ export default function ArtifactViewer({
                   <strong>{task.label}</strong> <span className="meta">· {task.minutes} min</span>
                   <br />
                   {task.description}
+                  <TaskNotes task={task} mode={tipsMode} />
                 </span>
               </label>
             </li>
@@ -234,7 +344,7 @@ export default function ArtifactViewer({
               ))}
             </ul>
           ) : null}
-          {task.tip ? <p>Tip: {task.tip}</p> : null}
+          <TaskNotes task={task} mode={tipsMode} />
           <Timer minutes={task.minutes} label={task.label} />
         </div>
       ))}
