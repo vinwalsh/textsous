@@ -9,6 +9,10 @@ import { COMPILE_VERSION } from "./stages/compile";
 import { PROCEDURE_VERSION } from "./stages/procedure";
 import { REVIEW_VERSION } from "./stages/review";
 import { SCHEDULER_VERSION } from "./scheduler/schedule";
+import { META_DEFAULT_MODEL, resolveProvider } from "./model/profiles";
+
+/** Conversions stay cached for 30 days (judging runs past a 7-day TTL). */
+export const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export interface StageVersions {
   canonicalize: number;
@@ -43,8 +47,28 @@ export function upstash(): Redis | null {
   return new Redis({ url, token });
 }
 
-/** Cache key binds the normalized URL to the stage versions. */
-export function cacheKeyForUrl(normalizedUrl: string): string {
+/** Model the live conversion route uses (MODEL_ID, default muse-spark-1.3). */
+export function cacheModelId(): string {
+  return resolveProvider("meta").model;
+}
+
+/** Cache key binds the normalized URL to the stage versions and the model id. */
+export function cacheKeyForUrl(normalizedUrl: string, modelId = cacheModelId()): string {
+  const v = stageVersions();
+  const hash = createHash("sha256")
+    .update(
+      `model:${modelId}:canonicalize:v${v.canonicalize}:procedure:v${v.procedure}:scheduler:v${v.scheduler}:review:v${v.review}:compile:v${v.compile}:${normalizedUrl}`,
+    )
+    .digest("hex");
+  return `textsous:convert:v3:${hash}`;
+}
+
+/**
+ * Key used before the model id joined the key (always the default model in
+ * production). Read once as a fallback so the warm cache survives the key
+ * change; a hit is copied to the new key with the new TTL.
+ */
+export function legacyCacheKeyForUrl(normalizedUrl: string): string {
   const v = stageVersions();
   const hash = createHash("sha256")
     .update(
@@ -56,8 +80,7 @@ export function cacheKeyForUrl(normalizedUrl: string): string {
 
 const DEV_DIR = ".cache/convert";
 
-export async function getCachedConversion(normalizedUrl: string): Promise<CachedConversion | null> {
-  const key = cacheKeyForUrl(normalizedUrl);
+async function readKey(key: string): Promise<CachedConversion | null> {
   const redis = upstash();
   if (redis) {
     return (await redis.get<CachedConversion>(key)) ?? null;
@@ -70,16 +93,30 @@ export async function getCachedConversion(normalizedUrl: string): Promise<Cached
   }
 }
 
-export async function setCachedConversion(
-  normalizedUrl: string,
-  value: CachedConversion,
-): Promise<void> {
-  const key = cacheKeyForUrl(normalizedUrl);
+async function writeKey(key: string, value: CachedConversion): Promise<void> {
   const redis = upstash();
   if (redis) {
-    await redis.set(key, value, { ex: 60 * 60 * 24 * 7 });
+    await redis.set(key, value, { ex: CACHE_TTL_SECONDS });
     return;
   }
   await mkdir(DEV_DIR, { recursive: true });
   await writeFile(path.join(DEV_DIR, `${key}.json`), JSON.stringify(value));
+}
+
+export async function getCachedConversion(normalizedUrl: string): Promise<CachedConversion | null> {
+  const modelId = cacheModelId();
+  const hit = await readKey(cacheKeyForUrl(normalizedUrl, modelId));
+  if (hit) return hit;
+  if (modelId !== META_DEFAULT_MODEL) return null;
+  const legacy = await readKey(legacyCacheKeyForUrl(normalizedUrl));
+  if (!legacy) return null;
+  await writeKey(cacheKeyForUrl(normalizedUrl, modelId), legacy).catch(() => {});
+  return legacy;
+}
+
+export async function setCachedConversion(
+  normalizedUrl: string,
+  value: CachedConversion,
+): Promise<void> {
+  await writeKey(cacheKeyForUrl(normalizedUrl), value);
 }
