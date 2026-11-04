@@ -11,7 +11,7 @@ import {
 import { POST as convert } from "../src/app/api/convert/route";
 import { POST as adjust, maxDuration as adjustMax } from "../src/app/api/adjust/route";
 import { POST as storeArtifact, maxDuration as artifactMax } from "../src/app/api/artifact/route";
-import { maxDuration as convertMax } from "../src/app/api/convert/route";
+import { CONVERT_DEADLINE_MS, maxDuration as convertMax } from "../src/app/api/convert/route";
 import { maxDuration as photoMax } from "../src/app/api/photo/route";
 import { maxDuration as artifactGetMax } from "../src/app/api/artifact/[id]/route";
 import { runLive } from "../src/app/api/helpers";
@@ -146,13 +146,14 @@ describe("request size and durations", () => {
     }
   });
 
-  it("exports maxDuration 300 on model routes and 30 on artifact routes", () => {
-    expect([convertMax, adjustMax, photoMax]).toEqual([300, 300, 300]);
+  it("exports maxDuration 420 on convert, 300 on the other model routes and 30 on artifact routes", () => {
+    expect([convertMax, adjustMax, photoMax]).toEqual([420, 300, 300]);
+    expect(CONVERT_DEADLINE_MS).toBeLessThanOrEqual(convertMax * 1000 - 15_000);
     expect([artifactMax, artifactGetMax]).toEqual([30, 30]);
   });
 
-  it("the browser waits longer than the server's 300 s limit", () => {
-    expect(API_TIMEOUT_MS).toBeGreaterThanOrEqual(305_000);
+  it("the browser waits longer than the longest server limit", () => {
+    expect(API_TIMEOUT_MS).toBeGreaterThanOrEqual(convertMax * 1000 + 5_000);
   });
 });
 

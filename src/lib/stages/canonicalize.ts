@@ -22,7 +22,10 @@ export const CANONICALIZE_VERSION = 2;
  * reasoning_effort for canonicalize (transcription). Undefined sends nothing,
  * so the provider default applies. Procedure never lowers its effort.
  */
-export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = "low";
+// Measured 2026-11-04 on the preview: "low" cut canonicalize from 59 s to
+// 22 s (salmon) and 71 s to 18 s (pasted text) but split "salt and pepper"
+// into two ingredients and dropped "to taste" notes, so the default stays.
+export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = undefined;
 
 /**
  * Source text the model reads when there is no JSON-LD (pasted text, page

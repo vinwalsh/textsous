@@ -9,7 +9,7 @@ import { polishTimeline, sourceTimingPool } from "../format";
 
 // Bumped on every prompt round deployed: preview and production share one
 // conversion cache, keyed by stage versions.
-export const PROCEDURE_VERSION = 3;
+export const PROCEDURE_VERSION = 4;
 export const PROCEDURE_MAX_TOKENS = 24000;
 
 export type ProcedureCheckName =
@@ -170,7 +170,7 @@ LANES
 - Every description names each ingredient it uses with its exact amount, unit and name the first time that ingredient appears in the task, copied from the ingredient list: "Season the beef all over with 1 1/2 teaspoons kosher salt." "Dice 1 medium yellow onion."
 - Write amounts the way a cook says them: amount, unit, size, name ("1 small garlic clove", "2 thick slices sourdough bread", "1 (15-ounce) can white beans"). Never paste the ingredient note after the name as a comma list; once an ingredient is prepped, call it by its prepared form ("the grated garlic").
 - Divided ingredients show only the portion this task uses, as the source splits them: "the remaining 1/2 teaspoon salt", "1 tablespoon of the olive oil".
-- Ingredients with no amount ("salt to taste") are named plainly.
+- Ingredients with no amount ("salt to taste") are named plainly. Free-text amounts read naturally mid-sentence ("half a red onion", "a handful of cilantro").
 - A finished mixture or an earlier result is named directly, without amounts: "the prepared sauce", "the seared beef".
 - cardTitle {action, subject, context} and label are short and NEVER carry amounts, times or temperatures: {action: "Sear", subject: "the beef", context: "in batches"}. context may be "".
 
@@ -189,7 +189,7 @@ LANES
 
 6. FIDELITY AND TIMING
 - Never invent ingredients, quantities, temperatures or equipment.
-- timingBasis "source" ONLY when this task's whole duration is stated exactly in the source: copy ONE short verbatim quote (a few words, exact characters) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is a whole number 1-180; range {low, high} when the source gives a span (minutes is then within it).
+- When the source gives a time for this task ("about 5 minutes", "3-5 minutes"), keep that phrase in the description and use timingBasis "source" with it as sourceQuote. timingBasis "source" ONLY when this task's whole duration is stated exactly in the source: copy ONE short verbatim quote (a few words, exact characters) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is a whole number 1-180; range {low, high} when the source gives a span (minutes is then within it).
 - timerEnabledByDefault is true only for "source" timings.
 - Every task cites at least one canonical step id in sourceStepIds, only steps it actually comes from.
 

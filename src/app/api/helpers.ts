@@ -108,9 +108,11 @@ export async function runLive<T>(
   fn: () => Promise<T>,
   /** Request start (epoch ms): the deadline counts the page fetch too. */
   startedAt?: number,
+  /** Route deadline; defaults to PIPELINE_DEADLINE_MS (300 s routes). */
+  deadlineMs: number = PIPELINE_DEADLINE_MS,
 ): Promise<T> {
   const elapsed = startedAt === undefined ? 0 : Math.max(0, Date.now() - startedAt);
-  const { budget, result } = runWithModelBudget(fn, { deadlineMs: PIPELINE_DEADLINE_MS - elapsed });
+  const { budget, result } = runWithModelBudget(fn, { deadlineMs: deadlineMs - elapsed });
   try {
     return await result;
   } catch (error) {

@@ -8,10 +8,11 @@ export interface ApiResult {
 }
 
 /**
- * Client wait for convert, adjust and photo: longer than the server's 300 s
- * function limit, so the server's own friendly error arrives first.
+ * Client wait for convert, adjust and photo: longer than the longest server
+ * function limit (convert, 420 s), so the server's own friendly error
+ * arrives first.
  */
-export const API_TIMEOUT_MS = 310_000;
+export const API_TIMEOUT_MS = 430_000;
 
 /** fetch with an abort timeout and a forgiving JSON parse. Never throws. */
 export async function apiFetch(

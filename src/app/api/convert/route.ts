@@ -24,9 +24,12 @@ import {
   TOO_LARGE_MESSAGE,
 } from "../helpers";
 
-// A fresh conversion takes 1-4 minutes (eval/RESULTS.md); the pipeline
-// stops itself at about 280 s.
-export const maxDuration = 300;
+// A fresh conversion takes 2-4 minutes with the cook-along format rules
+// (scratch timings 158-217 s at low canonicalize effort); the pipeline stops
+// itself at CONVERT_DEADLINE_MS, under this limit.
+export const maxDuration = 420;
+/** Pipeline deadline for conversions, counted from the request start. */
+export const CONVERT_DEADLINE_MS = 400_000;
 
 const ROUTE = "convert";
 
@@ -163,6 +166,7 @@ export async function POST(request: Request) {
       const result = await runLive(reservation, () =>
         convertToArtifact(input, { provider: "meta" }),
         started,
+        CONVERT_DEADLINE_MS,
       );
       const checksPassed =
         result.canonicalize.checks.every((c) => c.passed) &&
@@ -215,6 +219,7 @@ export async function POST(request: Request) {
       const result = await runLive(reservation, () =>
         convertRecipeToArtifact(valid.data, { provider: "meta" }),
         started,
+        CONVERT_DEADLINE_MS,
       );
       const checksPassed =
         result.procedure.checks.every((c) => c.passed) &&
@@ -259,6 +264,7 @@ export async function POST(request: Request) {
         { provider: "meta" },
       ),
       started,
+      CONVERT_DEADLINE_MS,
     );
     const checksPassed =
       result.canonicalize.checks.every((c) => c.passed) &&
