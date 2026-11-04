@@ -26,4 +26,13 @@ describe("progress copy", () => {
     expect(html).toContain("reading the recipe");
     expect(html).not.toContain("%");
   });
+
+  it("announces the explainer once, never the ticking time", () => {
+    const html = renderToString(createElement(ProgressNote, { kind: "adjust" })).replace(/<!-- -->/g, "");
+    // Only the explainer is a live region; the time updates every second outside it.
+    expect(html.match(/aria-live/g)).toHaveLength(1);
+    const live = /<span role="status" aria-live="polite">([^<]*)<\/span>/.exec(html);
+    expect(live?.[1]).toBe(progressCopy("adjust"));
+    expect(html.slice(html.indexOf("</span>"))).toContain(" Elapsed 0:00.");
+  });
 });

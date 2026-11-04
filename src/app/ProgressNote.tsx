@@ -26,7 +26,10 @@ export function formatElapsed(totalSeconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** Ticking elapsed time plus the honest stage explainer. */
+/**
+ * Ticking elapsed time plus the honest stage explainer. Only the explainer
+ * is a live region: screen readers hear it once, not the time every second.
+ */
 export default function ProgressNote({ kind }: { kind: ProgressKind }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -38,8 +41,11 @@ export default function ProgressNote({ kind }: { kind: ProgressKind }) {
     return () => clearInterval(id);
   }, []);
   return (
-    <p className="meta" aria-live="polite">
-      {progressCopy(kind)} Elapsed {formatElapsed(elapsed)}.
+    <p className="meta">
+      <span role="status" aria-live="polite">
+        {progressCopy(kind)}
+      </span>{" "}
+      Elapsed {formatElapsed(elapsed)}.
     </p>
   );
 }
