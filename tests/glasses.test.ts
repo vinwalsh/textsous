@@ -3,6 +3,7 @@ import { glassesDemos, slugTitle, EMBED_DEMO_POST_URL } from "../src/app/glasses
 import {
   arrowDirection,
   dueIndex,
+  dueTasks,
   formatCountdown,
   formatElapsed,
   glassesArtifactSrc,
@@ -12,11 +13,13 @@ import {
   glassesStorageKey,
   GUIDE_IDLE,
   guideElapsedMs,
+  guideLine,
   hudOrder,
   laneName,
   newlyDone,
   parseSaved,
   pauseGuide,
+  resumeGuide,
   spatialTarget,
   startGuide,
   taskHeading,
@@ -71,6 +74,52 @@ describe("which task is due at a guide minute", () => {
 
   it("is the first task before anything starts", () => {
     expect(dueIndex([{ start: 2 }, { start: 5 }], 0)).toBe(0);
+  });
+});
+
+describe("what the running guide announces", () => {
+  // Melt butter and Simmer porridge start in the same minute.
+  const tasks = [
+    { task: { id: "toast" }, start: 0 },
+    { task: { id: "butter" }, start: 3 },
+    { task: { id: "porridge" }, start: 3 },
+    { task: { id: "serve" }, start: 10 },
+  ];
+
+  it("names every task whose start has come and was not announced, two in one minute together", () => {
+    expect(dueTasks(tasks, 0, new Set())).toEqual([0]);
+    expect(dueTasks(tasks, 3, new Set(["toast"]))).toEqual([1, 2]);
+    expect(dueTasks(tasks, 4, new Set(["toast", "butter"]))).toEqual([2]);
+    expect(dueTasks(tasks, 9, new Set(["toast", "butter", "porridge"]))).toEqual([]);
+  });
+
+  it("says them all in one line", () => {
+    expect(guideLine(["Melt butter"])).toBe("Now: Melt butter");
+    expect(guideLine(["Melt butter", "Simmer porridge"])).toBe("Now: Melt butter. Also start: Simmer porridge");
+    expect(guideLine(["Melt butter", "Simmer porridge", "Toast oats"])).toBe(
+      "Now: Melt butter. Also start: Simmer porridge and Toast oats",
+    );
+    expect(guideLine([])).toBe("");
+  });
+
+  it("starts from the task on screen at 0:00, with any task starting in its minute", () => {
+    const started = resumeGuide(tasks, 2, GUIDE_IDLE, new Set(), 1_000);
+    expect(guideElapsedMs(started.clock, 1_000)).toBe(3 * MIN);
+    expect(started.clock.startedAt).toBe(1_000);
+    expect(started.show).toEqual([2, 1]);
+    expect([...started.announced].sort()).toEqual(["butter", "porridge", "toast"]);
+  });
+
+  it("resumes where it paused, at the task due, even after Prev", () => {
+    const paused = { elapsedMs: 10 * MIN + 5_000, startedAt: null };
+    const all = new Set(["toast", "butter", "porridge", "serve"]);
+    const resumed = resumeGuide(tasks, 1, paused, all, 50_000);
+    expect(guideElapsedMs(resumed.clock, 50_000)).toBe(10 * MIN + 5_000);
+    expect(resumed.show).toEqual([3]);
+    // Paused before both same-minute tasks were said: both are said now.
+    const early = resumeGuide(tasks, 0, { elapsedMs: 3 * MIN, startedAt: null }, new Set(["toast"]), 0);
+    expect(early.show).toEqual([1, 2]);
+    expect(early.announced.has("porridge")).toBe(true);
   });
 });
 
@@ -200,12 +249,14 @@ describe("saved state", () => {
         { taskId: "gone", status: "paused", endsAt: null, remainingMs: 10 },
         { taskId: "b", status: "running", endsAt: null, remainingMs: 10 },
       ],
+      announced: ["a", "gone", 7],
     };
     expect(parseSaved(JSON.stringify(saved), ids)).toEqual({
       v: 1,
       currentTaskId: "b",
       guide: { elapsedMs: 5000, startedAt: 100 },
       timers: [{ taskId: "a", status: "running", endsAt: 9000, remainingMs: 9000 }],
+      announced: ["a"],
     });
   });
 
@@ -218,6 +269,7 @@ describe("saved state", () => {
       currentTaskId: null,
       guide: { elapsedMs: 0, startedAt: null },
       timers: [],
+      announced: [],
     });
   });
 

@@ -160,6 +160,15 @@ describe("HUD", () => {
     expect((html.match(/aria-live/g) ?? []).length).toBe(1);
   });
 
+  it("shows the other tasks the guide started in the same minute as Also now", () => {
+    const simmer = order[simmerIndex].task;
+    const html = hud({ current: 0, alsoNow: [order[0].task.id, simmer.id] });
+    expect(html).toContain('<p class="g-also">Also now: Simmer porridge</p>');
+    const onSimmer = hud({ current: simmerIndex, alsoNow: [order[0].task.id, simmer.id] });
+    expect(onSimmer).toContain(`Also now: ${order[0].task.cardTitle.action} ${order[0].task.cardTitle.subject}`);
+    expect(hud()).not.toContain("Also now");
+  });
+
   it("shows the voice toggle state", () => {
     expect(hud({ voice: true })).toContain('aria-pressed="true"');
     expect(hud({ voice: false })).toContain("Voice off");

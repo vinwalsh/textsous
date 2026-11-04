@@ -60,6 +60,35 @@ export function dueIndex(tasks: ReadonlyArray<{ start: number }>, minute: number
   return due;
 }
 
+/**
+ * Tasks the running guide still owes an announcement at a guide minute:
+ * every task whose start has come and is not in `announced`, in order. Tasks
+ * that start in the same minute come out together.
+ */
+export function dueTasks(
+  tasks: ReadonlyArray<{ task: { id: string }; start: number }>,
+  minute: number,
+  announced: ReadonlySet<string>,
+): number[] {
+  const due: number[] = [];
+  tasks.forEach((t, i) => {
+    if (t.start <= minute && !announced.has(t.task.id)) due.push(i);
+  });
+  return due;
+}
+
+/** "A", "A and B", "A, B and C". */
+export function joinAnd(items: readonly string[]): string {
+  return items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/** One spoken line for tasks due together: "Now: Melt butter. Also start: Simmer porridge". */
+export function guideLine(headings: readonly string[]): string {
+  const [first, ...rest] = headings;
+  if (first === undefined) return "";
+  return rest.length > 0 ? `Now: ${first}. Also start: ${joinAnd(rest)}` : `Now: ${first}`;
+}
+
 /** The guide clock: elapsed time of the cook along, paused or running. */
 export interface GuideClock {
   elapsedMs: number;
@@ -82,6 +111,36 @@ export function startGuide(clock: GuideClock, now: number, fromMinute?: number):
 export function pauseGuide(clock: GuideClock, now: number): GuideClock {
   if (clock.startedAt === null) return clock;
   return { elapsedMs: guideElapsedMs(clock, now), startedAt: null };
+}
+
+/**
+ * Start guide. At 0:00 the schedule runs from the task on screen: the clock
+ * moves to its start, earlier tasks count as announced, and it is shown
+ * first with any task starting in the same minute. Otherwise the clock
+ * resumes where it paused and the guide goes to the task due: the ones not
+ * announced yet, or else the task due at that minute. `show` lists the
+ * tasks to announce, the one to show first.
+ */
+export function resumeGuide(
+  tasks: ReadonlyArray<{ task: { id: string }; start: number }>,
+  current: number,
+  clock: GuideClock,
+  announced: ReadonlySet<string>,
+  now: number,
+): { clock: GuideClock; announced: Set<string>; show: number[] } {
+  const ids = (list: number[]) => list.map((i) => tasks[i].task.id);
+  if (clock.startedAt !== null) return { clock, announced: new Set(announced), show: [] };
+  if (clock.elapsedMs === 0) {
+    const from = tasks[current]?.start ?? 0;
+    const before = new Set(tasks.filter((t) => t.start < from).map((t) => t.task.id));
+    const show = [current, ...dueTasks(tasks, from, before).filter((i) => i !== current)];
+    return { clock: startGuide(clock, now, from), announced: new Set([...before, ...ids(show)]), show };
+  }
+  const running = startGuide(clock, now);
+  const minute = Math.floor(guideElapsedMs(running, now) / 60_000);
+  const due = dueTasks(tasks, minute, announced);
+  const show = due.length > 0 ? due : [dueIndex(tasks, minute)];
+  return { clock: running, announced: new Set([...announced, ...ids(show)]), show };
 }
 
 /** A countdown on one task. Several run at once (the pot and the oven). */
@@ -226,6 +285,8 @@ export interface GlassesSaved {
   currentTaskId: string | null;
   guide: GuideClock;
   timers: TaskTimer[];
+  /** Tasks the running guide has announced, so each is said once. */
+  announced: string[];
 }
 
 export function glassesStorageKey(artifactId: string): string {
@@ -258,7 +319,10 @@ export function parseSaved(raw: string | null, taskIds: ReadonlySet<string>): Gl
       (t.status !== "running" || isNum(t.endsAt)),
   );
   const current = typeof v.currentTaskId === "string" && taskIds.has(v.currentTaskId) ? v.currentTaskId : null;
-  return { v: 1, currentTaskId: current, guide, timers };
+  const announced = (Array.isArray(v.announced) ? v.announced : []).filter(
+    (id): id is string => typeof id === "string" && taskIds.has(id),
+  );
+  return { v: 1, currentTaskId: current, guide, timers, announced };
 }
 
 /**

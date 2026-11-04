@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Ref, type RefObject } from "react";
 import {
   arrowDirection,
-  dueIndex,
+  dueTasks,
   formatCountdown,
   formatElapsed,
   glassesArtifactSrc,
@@ -13,13 +13,15 @@ import {
   glassesStorageKey,
   GUIDE_IDLE,
   guideElapsedMs,
+  guideLine,
   hudOrder,
+  joinAnd,
   laneName,
   newlyDone,
   parseSaved,
   pauseGuide,
+  resumeGuide,
   spatialTarget,
-  startGuide,
   taskHeading,
   taskIngredientLines,
   taskTimerMs,
@@ -309,6 +311,8 @@ export interface HudProps {
   timers: readonly TaskTimer[];
   voice: boolean;
   announcement: string;
+  /** Tasks the guide started together with the one on screen (shown as "Also now"). */
+  alsoNow?: readonly string[];
   flashing: ReadonlySet<string>;
   onPrev: () => void;
   onNext: () => void;
@@ -332,6 +336,7 @@ export function GlassesHud({
   timers,
   voice,
   announcement,
+  alsoNow = [],
   flashing,
   onPrev,
   onNext,
@@ -358,6 +363,10 @@ export function GlassesHud({
           ? "Resume timer"
           : "Restart timer";
   const byId = new Map(order.map((o) => [o.task.id, o.task] as const));
+  const also = alsoNow.flatMap((id) => {
+    const other = id === task.id ? undefined : byId.get(id);
+    return other ? [taskHeading(other)] : [];
+  });
   return (
     <section className="g-screen g-hud" aria-label="Cook along">
       <header className="g-top">
@@ -392,6 +401,7 @@ export function GlassesHud({
         )}
       </div>
 
+      {also.length > 0 ? <p className="g-also">Also now: {joinAnd(also)}</p> : null}
       <p className="g-next">{next ? `Next: ${taskHeading(next.task)}` : "Last step"}</p>
 
       {timer ? (
@@ -561,11 +571,13 @@ function GlassesCookAlong({
   const [details, setDetails] = useState(false);
   const [voice, setVoice] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+  const [announced, setAnnounced] = useState<ReadonlySet<string>>(() => new Set());
+  const [alsoNow, setAlsoNow] = useState<readonly string[]>([]);
   const [flashing, setFlashing] = useState<ReadonlySet<string>>(new Set());
   const timersRef = useRef<TaskTimer[]>([]);
   const guideRef = useRef<GuideClock>(GUIDE_IDLE);
   const voiceRef = useRef(true);
-  const lastDue = useRef<number | null>(null);
+  const announcedRef = useRef<ReadonlySet<string>>(new Set());
   const restored = useRef(false);
   const pushedDetails = useRef(false);
   const detailsButton = useRef<HTMLButtonElement>(null);
@@ -599,12 +611,23 @@ function GlassesCookAlong({
   );
 
   const goTo = useCallback(
-    (index: number, byGuide: boolean) => {
+    (index: number) => {
       if (index < 0 || index > order.length - 1) return;
-      const bounded = index;
-      setCurrent(bounded);
-      const heading = taskHeading(order[bounded].task);
-      say(byGuide ? `Now: ${heading}` : `Step ${bounded + 1} of ${order.length}: ${heading}`, byGuide);
+      setCurrent(index);
+      say(`Step ${index + 1} of ${order.length}: ${taskHeading(order[index].task)}`, false);
+    },
+    [order, say],
+  );
+
+  // The guide shows the first task due and says every one due with it.
+  const announce = useCallback(
+    (show: readonly number[], marked: ReadonlySet<string>) => {
+      announcedRef.current = marked;
+      setAnnounced(marked);
+      if (show.length === 0) return;
+      setCurrent(show[0]);
+      setAlsoNow(show.length > 1 ? show.map((i) => order[i].task.id) : []);
+      say(guideLine(show.map((i) => taskHeading(order[i].task))), true);
     },
     [order, say],
   );
@@ -629,8 +652,10 @@ function GlassesCookAlong({
         if (index >= 0) setCurrent(index);
         guideRef.current = saved.guide;
         setGuide(saved.guide);
-        // A running guide moves to the task due now on the next tick.
-        lastDue.current = saved.guide.startedAt !== null ? null : lastDue.current;
+        // A running guide announces only what came due since it was saved.
+        const marked = new Set(saved.announced);
+        announcedRef.current = marked;
+        setAnnounced(marked);
         timersRef.current = saved.timers;
         setTimers(saved.timers);
       }
@@ -642,13 +667,19 @@ function GlassesCookAlong({
   // Save after every change, once restored.
   useEffect(() => {
     if (!restored.current) return;
-    const saved: GlassesSaved = { v: 1, currentTaskId: order[current]?.task.id ?? null, guide, timers };
+    const saved: GlassesSaved = {
+      v: 1,
+      currentTaskId: order[current]?.task.id ?? null,
+      guide,
+      timers,
+      announced: [...announced],
+    };
     try {
       window.localStorage.setItem(glassesStorageKey(artifact.id), JSON.stringify(saved));
     } catch {
       // Blocked storage: this visit still works, it just won't survive a reload.
     }
-  }, [artifact.id, order, current, guide, timers]);
+  }, [artifact.id, order, current, guide, timers, announced]);
 
   // One clock for the countdowns and the guide.
   const tick = useCallback(() => {
@@ -657,12 +688,11 @@ function GlassesCookAlong({
     act({ type: "tick", now: t });
     const g = guideRef.current;
     if (g.startedAt === null) return;
-    const due = dueIndex(order, Math.floor(guideElapsedMs(g, t) / 60_000));
-    if (lastDue.current !== due) {
-      lastDue.current = due;
-      goTo(due, true);
-    }
-  }, [act, goTo, order]);
+    // Every task whose start has passed, once each: two in one minute are both said.
+    const marked = announcedRef.current;
+    const show = dueTasks(order, Math.floor(guideElapsedMs(g, t) / 60_000), marked);
+    if (show.length > 0) announce(show, new Set([...marked, ...show.map((i) => order[i].task.id)]));
+  }, [act, announce, order]);
   const tickRef = useRef(tick);
   useEffect(() => {
     tickRef.current = tick;
@@ -724,13 +754,12 @@ function GlassesCookAlong({
       setGuide(paused);
       return;
     }
-    // Starting runs the schedule from the task on screen.
-    const due = dueIndex(order, Math.floor(guideElapsedMs(guide, t) / 60_000));
-    const started = startGuide(guide, t, due === current ? undefined : order[current].start);
-    lastDue.current = dueIndex(order, Math.floor(guideElapsedMs(started, t) / 60_000));
-    guideRef.current = started;
-    setGuide(started);
-    say(`Now: ${taskHeading(order[current].task)}`, true);
+    // From 0:00 the schedule runs from the task on screen; after a pause it
+    // resumes where it stopped, at the task due then.
+    const next = resumeGuide(order, current, guide, announcedRef.current, t);
+    guideRef.current = next.clock;
+    setGuide(next.clock);
+    announce(next.show, next.announced);
   }
 
   function onTimer(kind: "start" | "pause" | "resume" | "minus" | "plus" | "stop") {
@@ -765,7 +794,7 @@ function GlassesCookAlong({
 
   function jump(taskId: string) {
     const index = order.findIndex((o) => o.task.id === taskId);
-    if (index >= 0) goTo(index, false);
+    if (index >= 0) goTo(index);
   }
 
   return (
@@ -781,8 +810,9 @@ function GlassesCookAlong({
         voice={voice}
         announcement={announcement}
         flashing={flashing}
-        onPrev={() => goTo(current - 1, false)}
-        onNext={() => goTo(current + 1, false)}
+        alsoNow={alsoNow}
+        onPrev={() => goTo(current - 1)}
+        onNext={() => goTo(current + 1)}
         onToggleGuide={toggleGuide}
         onDetails={openDetails}
         onTimer={onTimer}
