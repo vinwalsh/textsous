@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import type { RecipeOverview } from "../lib/convert-events";
 import type { ArtifactChange, ArtifactCredit, CookAlongArtifact } from "../lib/schema/artifact";
 import type { Lane, TimelineDefinition, TimelineTask } from "../lib/schema/timeline";
@@ -55,6 +55,20 @@ export function Credit({ credit }: { credit: ArtifactCredit }) {
       {credit.license ? <p className="meta">License: {credit.license}</p> : null}
     </div>
   );
+}
+
+/**
+ * Where "Cook on Meta glasses" goes when the cook along can't be stored:
+ * the recipe page for URL recipes (converted again, cache-first), else the
+ * glasses picker. Pure.
+ */
+export function glassesFallbackHref(credit: Pick<ArtifactCredit, "kind" | "url">): string {
+  return credit.kind === "url" && credit.url ? `/glasses?url=${encodeURIComponent(credit.url)}` : "/glasses";
+}
+
+/** The heads-up cook along for a stored (signed) artifact link. Pure. */
+export function glassesHref(signedArtifactUrl: string): string {
+  return `/glasses?src=${encodeURIComponent(signedArtifactUrl)}`;
 }
 
 /** "With tips" shows tips and the why line; "Essentials" hides both. */
@@ -495,6 +509,19 @@ export default function ArtifactViewer({
     queuedAdjustments && hasAdjustment(queuedAdjustments, floored.recipe.servings) ? queuedAdjustments : null,
   );
 
+  const [glassesBusy, setGlassesBusy] = useState(false);
+  const [glassesError, setGlassesError] = useState<FriendlyError | null>(null);
+
+  // Back from the glasses view can restore this page from the back/forward
+  // cache: the link reads Cook on Meta glasses again.
+  useEffect(() => {
+    function onShow(event: PageTransitionEvent) {
+      if (event.persisted) setGlassesBusy(false);
+    }
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
+
   function chooseTipsMode(mode: TipsMode) {
     setTipsMode(mode);
     storeTipsMode(mode);
@@ -561,6 +588,32 @@ export default function ArtifactViewer({
       return;
     }
     window.location.href = buildImportUrl(data.url);
+  }
+
+  // The glasses get exactly this cook along (adjustments included) through
+  // a 24-hour signed link; a URL recipe falls back to its page.
+  async function cookOnGlasses(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    if (glassesBusy) return;
+    setGlassesBusy(true);
+    setGlassesError(null);
+    const res = await apiFetch("/api/artifact", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ artifact: current }),
+    });
+    const data = res.data as { url?: string; error?: string } | null;
+    // Not busy once we leave: browser Back may show this page again as it was.
+    setGlassesBusy(false);
+    if (res.ok && data?.url) {
+      window.location.href = glassesHref(data.url);
+      return;
+    }
+    if (recipe.credit.kind === "url" && recipe.credit.url) {
+      window.location.href = glassesFallbackHref(recipe.credit);
+      return;
+    }
+    setGlassesError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }));
   }
 
   return (
@@ -676,6 +729,14 @@ export default function ArtifactViewer({
       {saveEnabled ? (
         <p className="meta">Saving keeps the recipe for 24 hours so TextSous can import it.</p>
       ) : null}
+      {!embedded ? (
+        <p className="meta glasses-link">
+          <a href={glassesFallbackHref(recipe.credit)} onClick={(event) => void cookOnGlasses(event)}>
+            {glassesBusy ? "Opening the glasses view…" : "Cook on Meta glasses"}
+          </a>
+        </p>
+      ) : null}
+      {glassesError ? <ErrorBox error={glassesError} /> : null}
     </article>
   );
 }

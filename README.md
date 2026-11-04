@@ -82,6 +82,27 @@ readers without JavaScript.
 https://open.textsous.com/demo-sites has four pretend recipe blogs, with
 recipes written for the demo (CC0), that carry the Adjust with SOUS button.
 
+## Cook on Meta glasses
+
+https://open.textsous.com/glasses is a heads-up Cook Along for Meta Ray-Ban
+Display (developer preview web apps): the task you are on in large type,
+what's next, a guide clock that follows the schedule and says each new task
+out loud, Details for the task (amounts, checks, done-when cue, tip and why),
+and task timers you start, pause, adjust by a minute and stop on the task
+itself. Several timers run at once, as chips along the bottom, and keep
+running across a reload. Every control is a real button, so the Neural Band
+or the D-pad moves between them and a pinch presses one; on a computer the
+arrow keys, Enter and Escape do the same.
+
+On a finished cook along, "Cook on Meta glasses" opens it there, adjustments
+included (`/glasses?src=<signed link>`, good for 24 hours); `/glasses?url=`
+converts a recipe page, and plain `/glasses` lists the demo recipes. On a
+phone or computer the page shows the Meta AI app link that puts it on your
+glasses (`fb-viewapp://web_app_deep_link?...`): turn on Developer Mode in the
+Meta AI app (Settings, App Info, tap the version number five times) and open
+the link on the paired phone, or scan the View on Glasses QR code in Meta's
+Web App Simulator for Chrome.
+
 ## Use TextSous from your AI assistant
 
 Connect Muse, ChatGPT, Claude or Gemini to the TextSous MCP server at

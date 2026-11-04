@@ -345,7 +345,8 @@ Node 22, Next.js 16 App Router, TypeScript, ESM.
   NDJSON progress contract, client-safe).
 - src/app/ (Next.js routes and UI): / (converter and viewer), /demo,
   /assistants, /embed (chrome-less, the only route other sites may frame),
-  /embed-demo, api/convert, api/adjust, api/photo, api/artifact, api/health,
+  /embed-demo, /glasses (heads-up cook along for Meta Ray-Ban Display;
+  logic in src/lib/glasses.ts), api/convert, api/adjust, api/photo, api/artifact, api/health,
   api/skills/{format,source,cook-along}, api/helpers.ts.
 - public/embed.js: the host-page script for recipe sites (plain JS, no build
   step).
