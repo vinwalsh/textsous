@@ -15,7 +15,7 @@ import ArtifactViewer from "./ArtifactViewer";
 import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
 import ProgressNote from "./ProgressNote";
-import { apiFetch, friendlyError, type FriendlyError } from "./request";
+import { apiFetch, convertNotices, friendlyError, type FriendlyError } from "./request";
 import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
 
 type Tab = "url" | "text" | "photo";
@@ -26,11 +26,8 @@ interface ConvertOk {
   warnings?: unknown;
 }
 
-/** The convert response's warnings as display strings. Pure. */
-export function convertNotices(warnings: unknown): string[] {
-  if (!Array.isArray(warnings)) return [];
-  return warnings.filter((w): w is string => typeof w === "string" && w.trim().length > 0);
-}
+// Shared with the /embed overlay; re-exported for existing importers.
+export { convertNotices };
 
 interface PhotoOk {
   recipe: CanonicalRecipe;

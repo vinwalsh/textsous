@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
-import EmbedApp, { EmbedStatus, initialEmbedState } from "../src/app/embed/EmbedApp";
+import EmbedApp, { EmbedStatus, initialEmbedState, readyFromConvert } from "../src/app/embed/EmbedApp";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
 
 const noop = () => {};
@@ -112,5 +112,24 @@ describe("embedded artifact viewer", () => {
     const html = renderToString(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
     expect(html).toContain("Convert another recipe");
     expect(html).not.toContain(">Close</button>");
+  });
+
+  it("keeps the convert warnings and shows them in the overlay, as on the home page", () => {
+    const cut = "The page text was 90,000 characters; only the first 60,000 were read.";
+    const ready = readyFromConvert({ artifact, cached: false, warnings: [cut, 3, ""] });
+    expect(ready).toEqual({ kind: "ready", artifact, notices: [cut] });
+    expect(readyFromConvert({ artifact, cached: true })?.notices).toEqual([]);
+    expect(readyFromConvert({ artifact: { id: "nope" } })).toBeNull();
+    const html = renderToString(
+      createElement(ArtifactViewer, {
+        artifact,
+        notices: ready?.notices,
+        onStartOver: noop,
+        embedded: true,
+        onClose: noop,
+      }),
+    );
+    expect(html).toContain("Notes on this conversion");
+    expect(html).toContain("only the first 60,000 were read");
   });
 });

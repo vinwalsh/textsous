@@ -17,7 +17,13 @@ import {
 import ArtifactViewer from "../ArtifactViewer";
 import ErrorBox from "../ErrorBox";
 import ProgressNote from "../ProgressNote";
-import { apiFetch, friendlyError, type ApiResult, type FriendlyError } from "../request";
+import {
+  apiFetch,
+  convertNotices,
+  friendlyError,
+  type ApiResult,
+  type FriendlyError,
+} from "../request";
 import styles from "./embed.module.css";
 
 export type EmbedState =
@@ -27,7 +33,7 @@ export type EmbedState =
   | { kind: "loading" }
   | { kind: "mismatch"; recipeHost: string; pageHost: string; url: string }
   | { kind: "error"; error: FriendlyError; url: string | null }
-  | { kind: "ready"; artifact: CookAlongArtifact };
+  | { kind: "ready"; artifact: CookAlongArtifact; notices: string[] };
 
 const HANDOFF_TIMEOUT_MS = 8000;
 
@@ -60,6 +66,18 @@ export function convertFailure(res: Pick<ApiResult, "status" | "timeout" | "data
   const data = res.data as { error?: unknown } | null;
   const message = data && typeof data.error === "string" ? data.error : "";
   return friendlyError(res.status, message, convertErrorOptions(res, url));
+}
+
+/**
+ * A successful /api/convert body as the ready state. Its warnings (page text
+ * cut, timings relabeled, review notes) show as Notes on this conversion,
+ * the same as on the home page. Null when the artifact is not valid.
+ */
+export function readyFromConvert(data: unknown): Extract<EmbedState, { kind: "ready" }> | null {
+  const body = data as { artifact?: unknown; warnings?: unknown } | null;
+  const valid = CookAlongArtifactSchema.safeParse(body?.artifact);
+  if (!valid.success) return null;
+  return { kind: "ready", artifact: valid.data, notices: convertNotices(body?.warnings) };
 }
 
 /** The error offers its own way forward (the daily cap's "Continue in your AI assistant"). */
@@ -220,8 +238,8 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
       setState({ kind: "error", error: convertFailure(res, url), url });
       return;
     }
-    const valid = CookAlongArtifactSchema.safeParse(data.artifact);
-    if (!valid.success) {
+    const ready = readyFromConvert(data);
+    if (!ready) {
       setState({
         kind: "error",
         error: friendlyError(res.status, "The server returned an invalid artifact. Try again."),
@@ -229,7 +247,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
       });
       return;
     }
-    setState({ kind: "ready", artifact: valid.data });
+    setState(ready);
   }, []);
 
   const load = useCallback(async (src: string) => {
@@ -259,7 +277,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
       setState({ kind: "error", error: INVALID_ARTIFACT, url: null });
       return;
     }
-    setState({ kind: "ready", artifact: valid.data });
+    setState({ kind: "ready", artifact: valid.data, notices: [] });
   }, []);
 
   useEffect(() => {
@@ -315,6 +333,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
         {state.kind === "ready" ? (
           <ArtifactViewer
             artifact={state.artifact}
+            notices={state.notices}
             embedded
             onClose={onClose}
             onStartOver={() => {

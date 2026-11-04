@@ -45,6 +45,12 @@ export interface FriendlyError {
   more?: string;
 }
 
+/** The convert response's warnings as display strings. Pure. */
+export function convertNotices(warnings: unknown): string[] {
+  if (!Array.isArray(warnings)) return [];
+  return warnings.filter((w): w is string => typeof w === "string" && w.trim().length > 0);
+}
+
 /** Where people continue when the free daily conversions run out (C7). */
 export function assistantsHref(recipeUrl?: string): string {
   const url = (recipeUrl ?? "").trim();
