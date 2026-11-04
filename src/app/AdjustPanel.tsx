@@ -32,6 +32,14 @@ export function adjustFailure(
   data: { error?: string; reason?: string } | null,
   artifact: Pick<CookAlongArtifact, "recipe">,
 ): FriendlyError {
+  if (!res.timeout && (res.status === 503 || res.status === 504)) {
+    // The server's time limit. The conversion copy would say to paste the
+    // ingredients, and this panel has nowhere to paste.
+    return {
+      title: "That took too long",
+      detail: "Applying these changes took too long. Try again in a minute, or apply one change at a time.",
+    };
+  }
   const credit = artifact.recipe.credit;
   const recipeUrl = credit.kind === "url" ? (credit.url ?? undefined) : undefined;
   return friendlyError(res.status, data?.error ?? "", {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { adjustFailure } from "../src/app/AdjustPanel";
 import { POST as adjustPOST } from "../src/app/api/adjust/route";
 import { POST as convertPOST } from "../src/app/api/convert/route";
 import { friendlyError } from "../src/app/request";
@@ -56,9 +57,21 @@ describe("a timed-out model step (readiness-2)", () => {
     expect(friendlyError(res.status, "").title).toBe("That took too long");
   });
 
-  it("answers 503 for an adjustment too", async () => {
-    const res = await adjustPOST(post("/api/adjust", { artifact: fixtureArtifact(), cuisine: "Thai" }));
-    expect(res.status).toBe(503);
-    expect(friendlyError(res.status, "").title).toBe("That took too long");
+  it("answers 503 for an adjustment too, with copy for the adjust panel", async () => {
+    for (const kind of ["timeout", "deadline"] as const) {
+      failure.kind = kind;
+      const artifact = fixtureArtifact();
+      const res = await adjustPOST(post("/api/adjust", { artifact, cuisine: "Thai" }));
+      expect(res.status).toBe(503);
+      const data = (await res.json()) as { error: string };
+      const copy = adjustFailure({ status: res.status, timeout: false }, data, artifact);
+      expect(copy.title).toBe("That took too long");
+      // The panel has no paste field and the request was not a conversion.
+      expect(copy.detail).toBe(
+        "Applying these changes took too long. Try again in a minute, or apply one change at a time.",
+      );
+      expect(copy.action).toBeUndefined();
+    }
+    expect(adjustFailure({ status: 504, timeout: false }, null, fixtureArtifact()).detail).toMatch(/apply one change/);
   });
 });
