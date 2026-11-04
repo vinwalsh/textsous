@@ -233,7 +233,7 @@ program
           console.log(
             `Scale flags: ${
               adjusted.scaleFlags.length > 0
-                ? adjusted.scaleFlags.map((f) => `"${f.token}" in ${f.stepId}`).join("; ")
+                ? adjusted.scaleFlags.map((f) => `"${f.token}" in ${f.card ? `card "${f.card}"` : f.stepId}`).join("; ")
                 : "none"
             }`,
           );

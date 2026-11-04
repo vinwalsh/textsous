@@ -83,8 +83,11 @@ export async function assignScaleRules(
 }
 
 export interface ScaleFlag {
+  /** Recipe step the token is in; for a step card, the card's first source step. */
   stepId: string;
   token: string;
+  /** Set when the token is in step-card text: the card's label. */
+  card?: string;
 }
 
 export interface ApplyScalingResult {
@@ -99,7 +102,7 @@ export interface ApplyScalingResult {
  * in step and task text that read as an ingredient's current amount (the
  * number directly followed by its unit or name) are rescaled; times,
  * temperatures and pan sizes never are. Other amount-like numbers in steps
- * are flagged for the cook to verify. Pure.
+ * and step cards are flagged for the cook to verify. Pure.
  */
 export function applyScaling(
   artifact: CookAlongArtifact,
@@ -148,22 +151,36 @@ export function applyScaling(
       buyQuantity: scaled.buy.quantity,
     };
   });
+  const names = recipe.ingredients.map((i) => i.name);
   const flags: ScaleFlag[] = [];
   const steps = recipe.steps.map((step) => {
-    const rescaled = rescaleText(step.text, mappings);
+    const rescaled = rescaleText(step.text, mappings, names);
     flags.push(...rescaled.unmatched.map((token) => ({ stepId: step.id, token })));
     return { ...step, text: rescaled.text };
   });
-  // Step cards render task text, so amounts there scale too (no flags:
-  // the steps already report anything left unscaled).
-  const rescale = (text: string): string => rescaleText(text, mappings).text;
-  const tasks = artifact.timelineDefinition.tasks.map((task) => ({
-    ...task,
-    label: rescale(task.label),
-    description: rescale(task.description),
-    completionCue: rescale(task.completionCue),
-    checkpoints: task.checkpoints.map(rescale),
-  }));
+  // Step cards render task text, so amounts there scale too. The cook
+  // follows the cards, so anything left unscaled there is flagged as well.
+  const cardFlags: ScaleFlag[] = [];
+  const tasks = artifact.timelineDefinition.tasks.map((task) => {
+    const unmatched = new Set<string>();
+    const rescale = (text: string): string => {
+      const rescaled = rescaleText(text, mappings, names);
+      for (const token of rescaled.unmatched) unmatched.add(token);
+      return rescaled.text;
+    };
+    const next = {
+      ...task,
+      label: rescale(task.label),
+      description: rescale(task.description),
+      completionCue: rescale(task.completionCue),
+      checkpoints: task.checkpoints.map(rescale),
+    };
+    for (const token of unmatched) {
+      cardFlags.push({ stepId: task.sourceStepIds[0] ?? "", token, card: next.label });
+    }
+    return next;
+  });
+  flags.push(...cardFlags);
   return {
     artifact: {
       ...artifact,
@@ -183,7 +200,11 @@ export function applyScaling(
         },
         ...flags.map((flag) => {
           const index = recipe.steps.findIndex((s) => s.id === flag.stepId);
-          const where = index >= 0 ? `step ${index + 1}` : "a step";
+          const where = flag.card
+            ? `the "${flag.card}" card`
+            : index >= 0
+              ? `step ${index + 1}`
+              : "a step";
           return {
             kind: "scale" as const,
             detail: `Check "${flag.token}" in ${where}; it was not rescaled.`,

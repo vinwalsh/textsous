@@ -64,8 +64,59 @@ const ADJECTIVES = new Set([
   "black",
 ]);
 
+/**
+ * Words that end a number's phrase: a modifier between a number and its unit
+ * or name can be any word but these ("2 thick slices bread" yes, "2 and the
+ * butter" no).
+ */
+const STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "or",
+  "then",
+  "until",
+  "to",
+  "into",
+  "onto",
+  "with",
+  "for",
+  "in",
+  "on",
+  "at",
+  "of",
+  "the",
+  "from",
+  "over",
+  "about",
+  "each",
+  "per",
+  "more",
+  "times",
+  "batches",
+  "batch",
+  "rounds",
+  "portions",
+  "pieces",
+  "is",
+  "are",
+  "if",
+  "so",
+]);
+
+function isModifier(word: string | undefined): boolean {
+  if (word === undefined) return false;
+  return ADJECTIVES.has(word) || !STOP_WORDS.has(word);
+}
+
 const TIME_AFTER = /^\s*(?:s|secs?|seconds?|mins?|minutes?|hrs?|hours?)\b/i;
-const TEMP_AFTER = /^\s*(?:°|º|degrees?\b|deg\b|f\b|c\b)/i;
+/** Always a temperature: a degree sign or word, or F. */
+const TEMP_AFTER = /^\s*(?:°|º|degrees?\b|deg\b|f\b)/i;
+/** "C" is Celsius only for oven-range numbers; "2 c flour" is cups. */
+const CELSIUS_AFTER = /^\s*c\b/i;
+/** A package size in parentheses right after an amount: "1 (15-ounce) can". */
+const PAREN_AFTER = /^\s*\([^()]*\)/;
+const INSIDE_PAREN_AFTER_AMOUNT = /\d\s*\(\s*(?:about\s+|approx\.?\s+)?$/i;
 const SIZE_AFTER = /^\s*-?\s*(?:inch(?:es)?\b|in\.|in\b|"|”|cm\b|mm\b)/i;
 const PAN_AFTER = /^\s*[x×]\s*\d/i;
 const PAN_BEFORE = /\d\s*[x×]\s*$/i;
@@ -105,10 +156,15 @@ function sameWord(a: string, b: string): boolean {
   return strip(a) === strip(b);
 }
 
+/** Short cup spellings the unit table leaves out ("c" is ambiguous there). */
+function unitAlias(word: string): string {
+  return word === "c" || word === "c." ? "cup" : word;
+}
+
 function isUnitWord(word: string, unit: string): boolean {
-  const target = unit.trim().toLowerCase().replace(/\.+$/, "");
+  const target = unitAlias(unit.trim().toLowerCase().replace(/\.+$/, ""));
   if (!target) return false;
-  const a = lookupUnit(word);
+  const a = lookupUnit(unitAlias(word));
   const b = lookupUnit(target);
   if (a && b) return a.standard === b.standard;
   return sameWord(word, target);
@@ -132,22 +188,34 @@ function nameMatchesAt(words: string[], at: number, name: string): boolean {
  * 2 unit or name, 0 nothing. Up to two adjectives may precede the unit or
  * name, and "of"/"the" may sit between unit and name ("2 cups of the stock").
  */
-function score(words: string[], mapping: AmountMapping): number {
+function namedWithin(words: string[], from: number, name: string): boolean {
+  for (let r = from; r <= from + 2 && r < words.length; r += 1) {
+    if (r > from && !isModifier(words[r - 1])) break;
+    if (nameMatchesAt(words, r, name)) return true;
+  }
+  return false;
+}
+
+/**
+ * How well the words after a number identify a mapping: 3 unit then name,
+ * 2 unit or name, 0 nothing. Up to two modifiers ("thick", "large") may
+ * precede the unit or name, and "of"/"the" may sit between unit and name
+ * ("2 cups of the stock"). A unit match that goes on to name a different
+ * ingredient ("1 teaspoon of the salt" against 1 teaspoon vanilla) is no
+ * match at all.
+ */
+function score(words: string[], mapping: AmountMapping, otherNames: string[]): number {
   let best = 0;
   for (let p = 0; p <= 2 && p < words.length; p += 1) {
-    if (p > 0 && !ADJECTIVES.has(words[p - 1])) break;
+    if (p > 0 && !isModifier(words[p - 1])) break;
     if (mapping.unit && isUnitWord(words[p], mapping.unit)) {
       let q = p + 1;
       while (q < words.length && (words[q] === "of" || words[q] === "the")) q += 1;
-      let named = false;
-      for (let r = q; r <= q + 2 && r < words.length; r += 1) {
-        if (r > q && !ADJECTIVES.has(words[r - 1])) break;
-        if (nameMatchesAt(words, r, mapping.name)) {
-          named = true;
-          break;
-        }
+      if (namedWithin(words, q, mapping.name)) {
+        best = Math.max(best, 3);
+      } else if (!otherNames.some((other) => namedWithin(words, q, other))) {
+        best = Math.max(best, 2);
       }
-      best = Math.max(best, named ? 3 : 2);
     } else if (nameMatchesAt(words, p, mapping.name)) {
       best = Math.max(best, 2);
     }
@@ -169,10 +237,13 @@ function classify(
   found: FoundNumber[],
   index: number,
   mappings: AmountMapping[],
+  names: string[],
 ): Classified {
   const token = found[index];
   const before = text.slice(0, token.start);
   if (PAN_BEFORE.test(before)) return { kind: "skip" };
+  // "15" in "1 (15-ounce) can": the package size never scales.
+  if (INSIDE_PAREN_AFTER_AMOUNT.test(before)) return { kind: "skip" };
   // A range low end ("2-3 cups") reads its unit after the high end.
   let last = index;
   while (
@@ -181,20 +252,29 @@ function classify(
   ) {
     last += 1;
   }
-  const after = text.slice(found[last].end);
+  let after = text.slice(found[last].end);
   if (
     TIME_AFTER.test(after) ||
     TEMP_AFTER.test(after) ||
+    (CELSIUS_AFTER.test(after) && (found[last].value ?? token.value ?? 0) >= 100) ||
     SIZE_AFTER.test(after) ||
     PAN_AFTER.test(text.slice(token.end))
   ) {
     return { kind: "skip" };
   }
   if (token.value === null) return { kind: "unmatched" };
+  after = after.replace(PAREN_AFTER, " ");
   const words = wordsAfter(after);
   const scored = mappings
     .filter((m) => close(m.current, token.value as number))
-    .map((m) => ({ m, s: score(words, m) }))
+    .map((m) => ({
+      m,
+      s: score(
+        words,
+        m,
+        names.filter((n) => normalizeWords(n).join(" ") !== normalizeWords(m.name).join(" ")),
+      ),
+    }))
     .filter((x) => x.s > 0);
   if (scored.length === 0) return { kind: "unmatched" };
   const top = Math.max(...scored.map((x) => x.s));
@@ -207,15 +287,21 @@ function classify(
 /**
  * Rescale ingredient amounts inside prose. A number is rescaled only when it
  * equals an ingredient's current amount AND is directly followed (allowing up
- * to two adjectives) by that ingredient's unit or name. Numbers followed by a
+ * to two modifiers and a parenthetical package size) by that ingredient's
+ * unit or name. Numbers followed by a
  * time unit or temperature, pan sizes (9x13, 12-inch) are left alone and not
  * reported; other unmatched numbers are reported for the cook to verify. Pure.
  */
-export function rescaleText(text: string, mappings: AmountMapping[]): RescaledText {
+export function rescaleText(
+  text: string,
+  mappings: AmountMapping[],
+  /** Every ingredient name in the recipe, scaled or not; defaults to the mappings'. */
+  names: string[] = mappings.map((m) => m.name),
+): RescaledText {
   const found = findNumbers(text);
   const unmatched: string[] = [];
   let out = text;
-  const decisions = found.map((_, i) => classify(text, found, i, mappings));
+  const decisions = found.map((_, i) => classify(text, found, i, mappings, names));
   for (let i = found.length - 1; i >= 0; i -= 1) {
     const decision = decisions[i];
     const token = found[i];

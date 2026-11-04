@@ -210,3 +210,61 @@ describe("applyScaling base and task text", () => {
     expect(artifact.recipe.ingredients[0].cookQuantity).toBe("3");
   });
 });
+
+describe("rescaleText: shapes the procedure prompt asks for", () => {
+  const BEANS: AmountMapping = { current: 1, next: 2, unit: "can", name: "white beans" };
+  const BREAD: AmountMapping = { current: 2, next: 4, unit: "slices", name: "sourdough bread" };
+  const FLOUR_C: AmountMapping = { current: 2, next: 4, unit: "cups", name: "flour" };
+  const VANILLA: AmountMapping = { current: 1, next: 1, unit: "teaspoon", name: "vanilla extract" };
+
+  it("skips a parenthetical package size between the amount and its unit", () => {
+    expect(rescaleText("Drain and rinse 1 (15-ounce) can white beans.", [BEANS])).toEqual({
+      text: "Drain and rinse 2 (15-ounce) can white beans.",
+      unmatched: [],
+    });
+  });
+
+  it("allows any modifier word before the unit", () => {
+    expect(rescaleText("Toast 2 thick slices sourdough bread.", [BREAD])).toEqual({
+      text: "Toast 4 thick slices sourdough bread.",
+      unmatched: [],
+    });
+  });
+
+  it("reads a bare c after a small number as cups, and C after an oven number as Celsius", () => {
+    expect(rescaleText("Whisk 2 c flour with the milk.", [FLOUR_C])).toEqual({
+      text: "Whisk 4 c flour with the milk.",
+      unmatched: [],
+    });
+    expect(rescaleText("Bake at 180 C until golden.", [FLOUR_C])).toEqual({
+      text: "Bake at 180 C until golden.",
+      unmatched: [],
+    });
+    expect(rescaleText("Bake at 350 F.", [FLOUR_C]).unmatched).toEqual([]);
+  });
+
+  it("never maps a unit-only match onto a different named ingredient", () => {
+    const out = rescaleText(
+      "Stir in 1 teaspoon of the salt.",
+      [VANILLA, { current: 2, next: 4, unit: "teaspoons", name: "kosher salt" }],
+      ["vanilla extract", "kosher salt"],
+    );
+    expect(out).toEqual({ text: "Stir in 1 teaspoon of the salt.", unmatched: ["1"] });
+  });
+});
+
+describe("applyScaling flags card amounts it cannot rescale", () => {
+  it("adds a flag and a change note naming the card", () => {
+    const artifact = makeArtifact();
+    artifact.timelineDefinition.tasks[0] = {
+      ...artifact.timelineDefinition.tasks[0],
+      label: "Season the batter",
+      description: "Stir in the remaining 1/2 cup flour.",
+    };
+    const result = applyScaling(artifact, 4, RULES);
+    expect(result.flags).toContainEqual({ stepId: "step-1", token: "1/2", card: "Season the batter" });
+    expect(result.artifact.changes.map((c) => c.detail)).toContain(
+      'Check "1/2" in the "Season the batter" card; it was not rescaled.',
+    );
+  });
+});
