@@ -614,6 +614,7 @@
       openMenu = { host: host, close: closeMenu };
       d.addEventListener("keydown", onKey, true);
       d.addEventListener("click", onOutside, true);
+      d.addEventListener("pointerdown", onOutside, true); // iOS sends no click for taps on plain content
       menu.focus();
     }
 
@@ -624,6 +625,7 @@
       if (openMenu && openMenu.host === host) openMenu = null;
       d.removeEventListener("keydown", onKey, true);
       d.removeEventListener("click", onOutside, true);
+      d.removeEventListener("pointerdown", onOutside, true);
       if (returnFocus) trigger.focus();
     }
 
