@@ -83,14 +83,29 @@ function storeVoice(on: boolean): void {
 /**
  * Say a line out loud when the device can; silence is always safe. Lines
  * queue, so a finished timer and a new task in the same second are both said.
+ * `onBlocked` hears when the browser refuses to speak before a button press.
  */
-export function speak(text: string): void {
+export function speak(text: string, onBlocked?: () => void): void {
   try {
     const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
     if (!synth || typeof SpeechSynthesisUtterance === "undefined") return;
-    synth.speak(new SpeechSynthesisUtterance(text));
+    const line = new SpeechSynthesisUtterance(text);
+    line.onerror = (event) => {
+      if (event.error === "not-allowed") onBlocked?.();
+    };
+    synth.speak(line);
   } catch {
     // No voice on this device.
+  }
+}
+
+/** False when this page has had no button press yet, so the browser won't speak. */
+function voiceAllowed(): boolean {
+  try {
+    const activation = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
+    return activation ? activation.hasBeenActive : true;
+  } catch {
+    return true;
   }
 }
 
@@ -314,6 +329,8 @@ export interface HudProps {
   timers: readonly TaskTimer[];
   voice: boolean;
   announcement: string;
+  /** The browser holds the voice until a button press (after a reload). */
+  voiceHint?: boolean;
   /** Tasks the guide started together with the one on screen (shown as "Also now"). */
   alsoNow?: readonly string[];
   flashing: ReadonlySet<string>;
@@ -343,6 +360,7 @@ export function GlassesHud({
   timers,
   voice,
   announcement,
+  voiceHint = false,
   alsoNow = [],
   flashing,
   onPrev,
@@ -395,6 +413,7 @@ export function GlassesHud({
           Start over
         </button>
       </header>
+      {voiceHint && voice ? <p className="g-hint">Press any button to turn the voice back on</p> : null}
 
       <div className="g-now">
         {lane ? <p className="g-lane">{lane}</p> : null}
@@ -594,6 +613,7 @@ function GlassesCookAlong({
   const details = detailsId !== null;
   const [voice, setVoice] = useState(true);
   const [announcement, setAnnouncement] = useState("");
+  const [voiceHint, setVoiceHint] = useState(false);
   const [announced, setAnnounced] = useState<ReadonlySet<string>>(() => new Set());
   const [alsoNow, setAlsoNow] = useState<readonly string[]>([]);
   const [flashing, setFlashing] = useState<ReadonlySet<string>>(new Set());
@@ -609,7 +629,7 @@ function GlassesCookAlong({
 
   const say = useCallback((text: string, aloud: boolean) => {
     setAnnouncement(text);
-    if (aloud && voiceRef.current) speak(text);
+    if (aloud && voiceRef.current) speak(text, () => setVoiceHint(true));
   }, []);
 
   const act = useCallback(
@@ -683,6 +703,9 @@ function GlassesCookAlong({
         setAnnounced(marked);
         timersRef.current = saved.timers;
         setTimers(saved.timers);
+        // After a reload the browser stays silent until a button press.
+        const live = saved.guide.startedAt !== null || saved.timers.some((x) => x.status === "running");
+        if (live && !voiceAllowed()) setVoiceHint(true);
       }
       restored.current = true;
     }, 0);
@@ -708,6 +731,18 @@ function GlassesCookAlong({
       // Blocked storage: this visit still works, it just won't survive a reload.
     }
   }, [artifact.id, order, current, guide, timers, announced, beat]);
+
+  // Any button press lets the browser speak again.
+  useEffect(() => {
+    if (!voiceHint) return;
+    const clear = () => setVoiceHint(false);
+    document.addEventListener("keydown", clear, true);
+    document.addEventListener("pointerdown", clear, true);
+    return () => {
+      document.removeEventListener("keydown", clear, true);
+      document.removeEventListener("pointerdown", clear, true);
+    };
+  }, [voiceHint]);
 
   // One clock for the countdowns and the guide.
   const tick = useCallback(() => {
@@ -878,6 +913,7 @@ function GlassesCookAlong({
         timers={timers}
         voice={voice}
         announcement={announcement}
+        voiceHint={voiceHint}
         flashing={flashing}
         alsoNow={alsoNow}
         onPrev={() => goTo(current - 1)}

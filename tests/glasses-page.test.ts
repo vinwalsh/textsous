@@ -190,6 +190,12 @@ describe("HUD", () => {
     expect(panel).toContain('inert=""');
   });
 
+  it("asks for a button press when the browser holds the voice after a reload", () => {
+    expect(hud({ voiceHint: true })).toContain('<p class="g-hint">Press any button to turn the voice back on</p>');
+    expect(hud({ voiceHint: true, voice: false })).not.toContain("Press any button");
+    expect(hud()).not.toContain("Press any button");
+  });
+
   it("shows the voice toggle state", () => {
     expect(hud({ voice: true })).toContain('aria-pressed="true"');
     expect(hud({ voice: false })).toContain("Voice off");

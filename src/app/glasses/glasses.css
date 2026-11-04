@@ -90,6 +90,12 @@ body:has(.ts-glasses-root) > main {
   font-size: 15px;
 }
 
+.g-hint {
+  margin: 0;
+  color: var(--g-accent);
+  font-size: 18px;
+}
+
 .g-now {
   flex: 1 1 auto;
   display: flex;
