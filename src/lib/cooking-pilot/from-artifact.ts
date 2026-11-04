@@ -82,8 +82,11 @@ function cardTitle(task: TimelineTask): CookingTaskDefinition["cardTitle"] {
   return context ? { action, subject, context } : { action, subject };
 }
 
-/** Ends a sentence, so joined cues and tips read as sentences, not one run-on line. */
-const sentence = (text: string) => (/[.!?…]["'”’)\]]*$/.test(text) ? text : `${text}.`);
+/** A sentence: capitalized and ended, so joined cues and tips do not read as one run-on line. */
+function sentence(text: string): string {
+  const capital = text.charAt(0).toUpperCase() + text.slice(1);
+  return /[.!?…]["'”’)\]]*$/.test(capital) ? capital : `${capital}.`;
+}
 
 /** The view's timing for a task: a range runs to its high end and may finish from its low end. */
 function taskTiming(task: TimelineTask): { minutes: number; range?: { min: number; max: number } } {

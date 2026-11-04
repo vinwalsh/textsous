@@ -3,6 +3,8 @@ import type { CookingScheduledTask } from "./plan";
 type Interval = Pick<CookingScheduledTask, "id" | "startMinute" | "endMinute">;
 const DEFAULT_TASK_HEIGHT = 220;
 const DEFAULT_PIXELS_PER_MINUTE = 12;
+/** A check's label below its line on a card, with the card's bottom margin. */
+const CHECK_LABEL_HEIGHT = 36;
 
 function orderedIntervals(tasks: readonly Interval[]) {
   if (!tasks.length || new Set(tasks.map(task => task.id)).size !== tasks.length
@@ -42,6 +44,9 @@ export function buildTimelineGeometry(plan: { tasks: readonly (Interval & Pick<C
       constraints.push({ start: prior, end: minute, height: index === 0 ? minimum(task.id) + 28 : 28 });
       prior = minute;
     }
+    // Room under the last check for its label ("Check at 7 min"), which hangs
+    // below the line: a check a minute before the end is not clipped.
+    if (prior > task.startMinute && prior < task.endMinute) constraints.push({ start: prior, end: task.endMinute, height: CHECK_LABEL_HEIGHT });
   }
   const minutes = [...new Set([0, plan.totalMinutes, ...constraints.flatMap(item => [item.start, item.end])])].sort((a, b) => a - b);
   const yByMinute = new Map<number, number>([[0, 0]]);

@@ -17,6 +17,7 @@ import {
 } from "../src/lib/cooking-pilot/from-artifact";
 import { buildCookingPlan, cookingTimelineDefinitionSchema, MAX_TASK_MINUTES } from "../src/lib/cooking-pilot/plan";
 import { sha256Hex } from "../src/lib/cooking-pilot/sha256";
+import { buildTimelineGeometry } from "../src/lib/cooking-pilot/timeline-layout";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
 
 const FIXTURES = ["toasted-oat-porridge", "charred-corn-salad", "herby-white-bean-toast"];
@@ -172,7 +173,7 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     const task = artifact.timelineDefinition.tasks[0];
     task.minutes = 12;
     task.range = { low: 10, high: 12 };
-    task.checkpoints = ["Bubbles at the edge", "Smells toasty."];
+    task.checkpoints = ["Bubbles at the edge", "smells toasty."];
     const adapted = adaptArtifactForCookingPilot(artifact).timelineDefinition.tasks[0];
     expect(adapted.range).toEqual({ min: 10, max: 12 });
     expect(adapted.checkpoints).toEqual([{ afterMinutes: 10, label: "Bubbles at the edge. Smells toasty." }]);
@@ -304,6 +305,14 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     scaled.recipe.servings = 4;
     expect(artifactFingerprint(scaled)).not.toBe(artifactFingerprint(base));
     expect(adaptArtifactForCookingPilot(scaled).timelineDefinition.servings).toBe(4);
+  });
+});
+
+describe("the Cook Along view's card geometry", () => {
+  it("leaves room under a check near the end of a card for its label", () => {
+    const tasks = [{ id: "roast", startMinute: 0, endMinute: 8, checkpoints: [{ afterMinutes: 7, label: "Golden." }] }];
+    const { position } = buildTimelineGeometry({ tasks, totalMinutes: 8 });
+    expect(position(8) - position(7)).toBeGreaterThanOrEqual(36);
   });
 });
 
