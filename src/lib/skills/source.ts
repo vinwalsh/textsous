@@ -49,10 +49,25 @@ function readableText(extraction: UrlExtraction): string {
   return text.length > MAX_SOURCE_TEXT_CHARS ? text.slice(0, MAX_SOURCE_TEXT_CHARS) : text;
 }
 
-function looksLikeRecipe(extraction: UrlExtraction): boolean {
+/** A measured amount such as "2 tablespoons", "1/2 teaspoon" or "250 g". */
+const MEASURED_AMOUNT =
+  /(?:\d+(?:[./]\d+)?|[½¼¾⅓⅔⅛])\s*(?:to\s*\d+\s*)?(?:cups?|tablespoons?|tbsps?|teaspoons?|tsps?|grams?|g|kg|ml|milliliters?|millilitres?|liters?|litres?|ounces?|oz|pounds?|lbs?)\b/gi;
+
+/** Measured amounts that mark a page's text as recipe text. */
+export const MIN_MEASURED_AMOUNTS = 3;
+
+/**
+ * Does a page without schema.org JSON-LD hold a recipe? Either both the
+ * "ingredients" and "instructions" headings appear, or the text names a few
+ * measured amounts. Blog recipe cards (for example Jetpack's) often head
+ * their lists "Assembly" or leave out the "Directions" heading, so the
+ * headings alone miss real recipes.
+ */
+export function looksLikeRecipe(extraction: UrlExtraction): boolean {
   if (extraction.hasJsonLd) return true;
   const text = extraction.rawText;
-  return /ingredients?/i.test(text) && /(instructions|directions|method|steps?)\b/i.test(text);
+  if (/ingredients?/i.test(text) && /(instructions|directions|method|steps?)\b/i.test(text)) return true;
+  return (text.match(MEASURED_AMOUNT) ?? []).length >= MIN_MEASURED_AMOUNTS;
 }
 
 /**

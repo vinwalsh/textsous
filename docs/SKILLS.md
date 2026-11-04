@@ -71,7 +71,10 @@ intake the converter uses (public https only, private networks refused,
 
 422: `{ "ok": false, "error": { "code", "message" } }` with `code` one of
 `refused_url`, `multiple_recipes`, `fetch_failed`, `not_a_recipe`. The
-message tells the assistant what to ask the person.
+message tells the assistant what to ask the person. A page without
+schema.org data counts as a recipe when its text has both an ingredients and
+an instructions heading, or at least three measured amounts ("2 tablespoons",
+"250 g"), which covers blog recipe cards that use other headings.
 
 ### `POST /api/skills/cook-along` (secret)
 

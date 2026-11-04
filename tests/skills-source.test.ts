@@ -100,6 +100,33 @@ describe("POST /api/skills/source", () => {
     expect(await res.json()).toMatchObject({ ok: false, error: { code: "not_a_recipe" } });
   });
 
+  it("accepts a blog recipe card without JSON-LD or an Ingredients heading", async () => {
+    // Shaped like a Jetpack recipe card: a "Servings" line, lists headed by
+    // component ("Pickled onions"), no "Ingredients" heading, no JSON-LD.
+    const card = `<html><head><title>Weeknight beans</title></head><body><article>
+      <p>A short story about why these beans happen every week at our house.</p>
+      <div class="hrecipe jetpack-recipe"><h3>Weeknight Beans</h3><p>Servings: 2 to 3</p>
+        <h5>Pickled onions</h5><ul><li>1 small red onion, thinly sliced</li>
+        <li>3 tablespoons cider vinegar</li><li>1/2 teaspoon kosher salt</li></ul>
+        <h5>Beans</h5><ul><li>2 tablespoons olive oil</li><li>1 can black beans, drained</li></ul>
+        <p>Toss the onion with the vinegar and salt. Warm the oil, add the beans and cook until hot.</p>
+      </div></article></body></html>`;
+    vi.stubGlobal("fetch", vi.fn(async () => html(card)));
+    const res = await sourcePOST(post("/api/skills/source", { url: `${PUBLIC}/beans` }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; source: { jsonLd: unknown; text: string } };
+    expect(body.ok).toBe(true);
+    expect(body.source.jsonLd).toBeNull();
+    expect(body.source.text).toContain("3 tablespoons cider vinegar");
+  });
+
+  it("still refuses prose that names only one or two amounts", async () => {
+    const prose = `<html><body><article><p>We love 2 cups of coffee and 1 tablespoon of honey on a slow morning.</p></article></body></html>`;
+    vi.stubGlobal("fetch", vi.fn(async () => html(prose)));
+    const res = await sourcePOST(post("/api/skills/source", { url: `${PUBLIC}/morning` }));
+    expect(await res.json()).toMatchObject({ ok: false, error: { code: "not_a_recipe" } });
+  });
+
   it("classifies intake errors", () => {
     expect(classifyIntakeError("Refusing page with 2 recipes; single-recipe pages only.")).toBe("multiple_recipes");
     expect(classifyIntakeError("Refusing to fetch a private-network address.")).toBe("refused_url");
