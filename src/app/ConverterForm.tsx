@@ -16,6 +16,7 @@ import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
 import ProgressNote from "./ProgressNote";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
+import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
 
 type Tab = "url" | "text" | "photo";
 
@@ -30,7 +31,8 @@ interface PhotoOk {
   status: string;
 }
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+/** Hosting caps request bodies at 4.5 MB; stay under it after shrinking. */
+const MAX_UPLOAD_BYTES = 4.4 * 1024 * 1024;
 
 export const PHOTO_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
@@ -157,17 +159,20 @@ export default function ConverterForm({
   async function onTranscribe(event: FormEvent) {
     event.preventDefault();
     if (!photoFile || busy) return;
-    if (photoFile.size > MAX_PHOTO_BYTES) {
-      setError({
-        title: "That photo is too big",
-        detail: "Photos must be under 5 MB. Try a smaller image.",
-      });
-      return;
-    }
     setBusy("transcribe");
     setError(null);
+    // Shrink on the device first: phone photos exceed the upload limit.
+    const upload = await prepareUploadPhoto(photoFile);
+    if (upload.size > MAX_UPLOAD_BYTES) {
+      setError({
+        title: "That photo is too big",
+        detail: "Even after shrinking it is over 4 MB. Try a smaller image or a screenshot.",
+      });
+      setBusy(null);
+      return;
+    }
     const form = new FormData();
-    form.set("photo", photoFile);
+    form.set("photo", upload);
     const res = await apiFetch("/api/photo", { method: "POST", body: form });
     const data = res.data as (PhotoOk & { error?: string }) | null;
     if (!res.ok || !data || !data.recipe) {
@@ -197,10 +202,10 @@ export default function ConverterForm({
       });
       return;
     }
-    if (file.size > MAX_PHOTO_BYTES) {
+    if (file.size > MAX_ORIGINAL_BYTES) {
       setError({
         title: "That photo is too big",
-        detail: "Photos must be under 5 MB. Try a smaller image.",
+        detail: "Photos must be under 30 MB. Try a smaller image.",
       });
       return;
     }
@@ -276,7 +281,10 @@ export default function ConverterForm({
               onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
             />
           </label>
-          <p className="meta">PNG, JPEG or WebP, up to 5 MB. The photo is read in memory only.</p>
+          <p className="meta">
+            PNG, JPEG or WebP. Large photos are shrunk on your device before upload. The photo is
+            read in memory only.
+          </p>
           <p className="meta">Tip: you can also paste a screenshot straight from your clipboard.</p>
           {photoFile ? (
             <p className="meta">
