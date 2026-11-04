@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ArtifactChange, CookAlongArtifact } from "../lib/schema/artifact";
 import { buildImportUrl } from "../lib/handoff";
+import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
@@ -57,7 +58,10 @@ export default function ArtifactViewer({
   artifact: CookAlongArtifact;
   onStartOver: () => void;
 }) {
-  const [current, setCurrent] = useState(artifact);
+  // Allergen floor on display too, so artifacts saved before it existed
+  // (cache, ?src=) show inferred tags; Save sends the floored artifact.
+  const floored = useMemo(() => applyArtifactAllergenFloor(artifact), [artifact]);
+  const [current, setCurrent] = useState(floored);
   const [modified, setModified] = useState(false);
   const [prepDone, setPrepDone] = useState<Set<string>>(new Set());
   const [saveBusy, setSaveBusy] = useState(false);
@@ -74,6 +78,8 @@ export default function ArtifactViewer({
   const recipe = current.recipe;
   const timeline = current.timelineDefinition;
   const prepTasks = timeline.tasks.filter((t) => t.phase === "prep");
+  const traces = rollUpTraces(recipe.ingredients);
+  const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
   const cookTasks = timeline.tasks.filter((t) => t.phase !== "prep");
 
   function togglePrep(id: string) {
@@ -91,7 +97,7 @@ export default function ArtifactViewer({
   }
 
   function handleReset() {
-    setCurrent(artifact);
+    setCurrent(floored);
     setModified(false);
   }
 
@@ -126,19 +132,17 @@ export default function ArtifactViewer({
       <Credit artifact={current} />
 
       {recipe.allergens.length > 0 ? (
-        <div>
+        <div className="allergens" aria-label="Allergens">
           <h3>Allergens</h3>
-          <ul className="chips">
-            {recipe.allergens.map((a) => (
-              <li key={a} className="chip">
-                {a}
-              </li>
-            ))}
-          </ul>
+          <p className="notice" role="note">
+            <strong>Contains:</strong> {recipe.allergens.join(", ")}.{mayContain} This list can
+            miss things. Check every label.
+          </p>
         </div>
       ) : (
         <p className="notice" role="note">
-          Allergen information is unknown — check every ingredient label yourself.
+          Allergen information is unknown.{mayContain} This list can miss things. Check every
+          label.
         </p>
       )}
 

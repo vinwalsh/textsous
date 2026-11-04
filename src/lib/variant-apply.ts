@@ -2,6 +2,7 @@ import type { ArtifactChange, CookAlongArtifact } from "./schema/artifact";
 import { DIETARY_TARGETS, type VariantTransform } from "./schema/variant";
 import { deriveMethod, rollUpAllergens } from "./stages/compile";
 import { extractTimingNumbers } from "./scaling/amounts";
+import { applyAllergenFloor } from "./allergens";
 
 export interface ApplyVariantOptions {
   /**
@@ -40,8 +41,9 @@ function sameMultiset(a: number[], b: number[]): boolean {
  * judgment happened upstream; code swaps, overrides, recomputes and guards.
  * Refuses unknown references, timing changes in step overrides, and swaps
  * that reintroduce ingredients removed by an earlier variant. Swapped-in
- * ingredients carry empty allergen tags (unknown, never allergen-free); the
- * swap's packageRequirements tell the cook what to verify on the label.
+ * ingredients start with empty allergen tags (unknown, never allergen-free)
+ * and get only the deterministic floor (almond milk -> nuts); the swap's
+ * packageRequirements tell the cook what to verify on the label.
  */
 export function applyVariant(
   artifact: CookAlongArtifact,
@@ -123,6 +125,8 @@ export function applyVariant(
     }
     steps = steps.map((s) => (s.id === current.id ? { ...s, text: override.text } : s));
   }
+
+  ingredients = applyAllergenFloor(ingredients);
 
   for (const technique of transform.techniqueChanges) {
     changes.push({ kind: "technique", detail: technique });

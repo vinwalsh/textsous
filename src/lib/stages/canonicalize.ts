@@ -6,6 +6,7 @@ import {
   type CanonicalRecipe,
 } from "../schema/canonical";
 import { fingerprintSource } from "../intake/fingerprint";
+import { withAllergenFloor } from "../allergens";
 import {
   callStructured,
   type ProviderName,
@@ -259,7 +260,11 @@ export async function canonicalize(
       license: null,
     },
     sourceFingerprint: fingerprint,
-    ingredients: result.data.ingredients.map((ing, i) => ({ ...ing, id: `ing-${i + 1}` })),
+    // Ids by code; the deterministic allergen floor unions inferred tags
+    // with the model's (never removes one).
+    ingredients: result.data.ingredients.map((ing, i) =>
+      withAllergenFloor({ ...ing, id: `ing-${i + 1}` }),
+    ),
     steps: result.data.steps.map((step, i) => ({
       ...step,
       id: `step-${i + 1}`,

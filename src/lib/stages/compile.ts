@@ -8,6 +8,7 @@ import {
 } from "../schema/artifact";
 import type { TimelineDefinition } from "../schema/timeline";
 import type { ReviewResult } from "./review";
+import { applyAllergenFloor } from "../allergens";
 
 export const COMPILE_VERSION = 1;
 
@@ -46,7 +47,8 @@ export function deriveMethod(steps: Array<{ text: string }>): { method: string; 
 }
 
 /** Union of declared allergens across ingredients, sorted. Traces stay visible
- * per ingredient; the roll-up lists definite presence only. */
+ * per ingredient; the roll-up lists definite presence only. Callers floor the
+ * ingredients first (applyAllergenFloor) so inferred tags are included. */
 export function rollUpAllergens<T extends string>(recipe: {
   ingredients: Array<{ allergens: T[] }>;
 }): T[] {
@@ -85,6 +87,9 @@ export function compile(input: CompileInput): CookAlongArtifact {
   }
   const { recipe, timeline, equipmentProfile } = input;
   const { method, label } = deriveMethod(recipe.steps);
+  // Deterministic allergen floor: every compile path (convert, photo
+  // confirm, assistant-authored recipes) gets the inferred tags.
+  const ingredients = applyAllergenFloor(recipe.ingredients);
   const id = `art-${createHash("sha256")
     .update(`${recipe.sourceFingerprint}:${JSON.stringify(timeline)}`)
     .digest("hex")
@@ -95,10 +100,10 @@ export function compile(input: CompileInput): CookAlongArtifact {
     recipe: {
       title: recipe.title,
       servings: recipe.nativeServings,
-      ingredients: recipe.ingredients,
+      ingredients,
       equipment: recipe.equipment,
       steps: recipe.steps,
-      allergens: rollUpAllergens(recipe),
+      allergens: rollUpAllergens({ ingredients }),
       originalMethod: method,
       methodLabel: label,
       methodNotice: "",
