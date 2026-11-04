@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
   callStructured,
+  type ChatContentPart,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -9,8 +11,23 @@ import { canonicalize, type CanonicalizeResult } from "../stages/canonicalize";
 import { assertTimeFor, STAGE_MIN_MS } from "../model/budget";
 import type { CanonicalRecipe } from "../schema/canonical";
 
-export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+/** Photos in one request: consecutive pages of one recipe. */
+export const MAX_PHOTOS = 3;
+/**
+ * The whole /api/photo request body. The hosting platform refuses function
+ * request bodies over 4.5 MB, so the route answers 413 above this first.
+ */
+export const MAX_PHOTO_BODY_BYTES = Math.floor(4.4 * 1024 * 1024);
+/** One photo: always under the body cap, with room for the multipart framing. */
+export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 export const PHOTO_SCHEMA_NAME = "photo_transcription";
+
+/**
+ * reasoning_effort for the transcription call. Reading printed words off a
+ * page needs little reasoning, and the default (high) made the photo wait
+ * long before canonicalize could start.
+ */
+export const TRANSCRIBE_REASONING_EFFORT: ReasoningEffort = "low";
 
 export type PhotoImageType = "png" | "jpeg" | "webp";
 
@@ -132,16 +149,25 @@ export interface ValidatedPhoto {
 }
 
 /**
- * Accept PNG, JPEG or WebP up to 5 MB. Pure and memory-only: the bytes are
- * never written to disk, cache or logs.
+ * Accept PNG, JPEG or WebP up to 4 MB. Pure and memory-only: the bytes are
+ * never written to disk, cache or logs. `page` (1-based) names the photo in
+ * the error when a request carries several.
  */
-export function validatePhoto(bytes: Uint8Array): ValidatedPhoto {
+export function validatePhoto(bytes: Uint8Array, page?: number): ValidatedPhoto {
   const type = detectImageType(bytes);
   if (!type) {
-    throw new PhotoError("unsupported-type", "Unsupported image type: send PNG, JPEG or WebP.");
+    throw new PhotoError(
+      "unsupported-type",
+      page === undefined
+        ? "Unsupported image type: send PNG, JPEG or WebP."
+        : `Photo ${page} has an unsupported image type: send PNG, JPEG or WebP.`,
+    );
   }
   if (bytes.byteLength > MAX_PHOTO_BYTES) {
-    throw new PhotoError("too-large", "Photo is larger than the 5 MB limit.");
+    throw new PhotoError(
+      "too-large",
+      `${page === undefined ? "Photo" : `Photo ${page}`} is larger than the 4 MB limit.`,
+    );
   }
   return { type, bytes, orientation: type === "jpeg" ? readJpegOrientation(bytes) : 1 };
 }
@@ -166,44 +192,101 @@ const PhotoTranscriptionSchema = z.object({
 
 export type PhotoTranscription = z.infer<typeof PhotoTranscriptionSchema>;
 
-function transcribeSystemPrompt(orientation: number): string {
-  const orientationNote =
-    orientation === 1
+/** What the model returns: the transcription plus whether it left a recipe out. */
+const PhotoTranscriptionReplySchema = PhotoTranscriptionSchema.extend({
+  otherRecipeSkipped: z.boolean(),
+});
+
+/** One photo for the transcription call, in page order. */
+export interface PhotoPage {
+  /** image_url data URL (photoDataUrl). */
+  dataUrl: string;
+  /** EXIF orientation flag, 1 when upright or unknown. */
+  orientation: number;
+}
+
+function orientationNotes(orientations: readonly number[]): string {
+  if (orientations.length === 1) {
+    const [orientation] = orientations;
+    return orientation === 1
       ? ""
       : ` The photo's EXIF orientation flag is ${orientation} (not standard upright): read the text accordingly even if it appears rotated or mirrored.`;
+  }
+  return orientations
+    .map((orientation, i) =>
+      orientation === 1
+        ? ""
+        : ` Photo ${i + 1}'s EXIF orientation flag is ${orientation} (not standard upright): read its text accordingly even if it appears rotated or mirrored.`,
+    )
+    .join("");
+}
+
+function transcribeSystemPrompt(orientations: readonly number[]): string {
+  const pages =
+    orientations.length > 1
+      ? "The photos are consecutive pages of ONE recipe, in order: transcribe them as one " +
+        "continuous text, page 1 first, without page markers. "
+      : "";
   return (
-    "You are transcribing a cookbook or recipe photo for TextSous. Transcribe EVERY visible " +
-    "recipe word verbatim: ingredient lines with quantities and units exactly as printed, " +
-    "instruction steps in order, and any servings, yield or timing lines. Never invent, correct, " +
-    "reorder or summarize recipe words. Skip non-recipe text such as page headers, footers and " +
-    `advertisements.${orientationNote} Read any visible book title, author and page number into ` +
-    "book, author and page (null when not visible). Reply with only JSON matching the schema, no prose."
+    "You are transcribing a cookbook or recipe photo for TextSous. " +
+    pages +
+    "Transcribe EVERY visible recipe word verbatim: ingredient lines with quantities and units " +
+    "exactly as printed, instruction steps in order, and any servings, yield or timing lines. " +
+    "Never invent, correct, reorder or summarize recipe words. Skip non-recipe text such as page " +
+    "headers, footers and advertisements. Transcribe ONE recipe: the first recipe that starts on " +
+    "the first photo (when none starts there, the recipe the first photo shows), with its " +
+    "continuation on any later photo. Parts of the same dish, such as a sauce, dough, filling or " +
+    "topping, belong to it. Never merge two recipes: leave out the end of an earlier recipe and " +
+    "any other recipe, and set otherRecipeSkipped to true when you left one out (false " +
+    `otherwise).${orientationNotes(orientations)} Read any visible book title, author and the ` +
+    "page number where the recipe starts into book, author and page (null when not visible). " +
+    "Reply with only JSON matching the schema, no prose."
   );
 }
 
+function transcribeUserText(count: number): string {
+  return count === 1
+    ? "Transcribe this recipe photo."
+    : `These ${count} photos are consecutive pages of ONE recipe, in order (photo 1 first). ` +
+        "Transcribe them as that one recipe.";
+}
+
+/** Readable warning for a transcription that left another recipe out. */
+export function otherRecipeWarning(count: number): string {
+  return count === 1
+    ? "The photo shows more than one recipe, so only the first one was read. Convert the others one at a time."
+    : "The photos show more than one recipe, so only the one that starts on the first photo was read. Convert the others one at a time.";
+}
+
 /**
- * One vision call: the photo goes in as an image_url data URL in a user
- * message, and the model replies with the verbatim transcription plus any
- * visible book credit.
+ * One vision call for every photo: one user message with one text part,
+ * then each photo as an image_url data URL in page order. The model replies
+ * with the verbatim transcription of one recipe plus any visible book
+ * credit. Runs at low reasoning effort (TRANSCRIBE_REASONING_EFFORT).
  */
 export async function transcribePhoto(
-  imageDataUrl: string,
-  orientation: number,
+  pages: readonly PhotoPage[],
   opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
-): Promise<{ transcription: PhotoTranscription; usage: TokenUsage }> {
+): Promise<{ transcription: PhotoTranscription; usage: TokenUsage; warnings: string[] }> {
+  if (pages.length < 1 || pages.length > MAX_PHOTOS) {
+    throw new Error(`Send 1 to ${MAX_PHOTOS} photos of one recipe.`);
+  }
+  const content: ChatContentPart[] = [
+    { type: "text", text: transcribeUserText(pages.length) },
+    ...pages.map((page): ChatContentPart => ({ type: "image_url", image_url: { url: page.dataUrl } })),
+  ];
   const result = await callStructured(
-    PhotoTranscriptionSchema,
+    PhotoTranscriptionReplySchema,
     [
-      { role: "system", content: transcribeSystemPrompt(orientation) },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Transcribe this recipe photo." },
-          { type: "image_url", image_url: { url: imageDataUrl } },
-        ],
-      },
+      { role: "system", content: transcribeSystemPrompt(pages.map((p) => p.orientation)) },
+      { role: "user", content },
     ],
-    { provider: opts.provider, client: opts.client, schemaName: PHOTO_SCHEMA_NAME },
+    {
+      provider: opts.provider,
+      client: opts.client,
+      schemaName: PHOTO_SCHEMA_NAME,
+      reasoningEffort: TRANSCRIBE_REASONING_EFFORT,
+    },
   );
   const t = result.data;
   return {
@@ -214,6 +297,7 @@ export async function transcribePhoto(
       page: t.page,
     },
     usage: result.usage,
+    warnings: t.otherRecipeSkipped ? [otherRecipeWarning(pages.length)] : [],
   };
 }
 
@@ -223,20 +307,30 @@ export interface PhotoResult {
   status: "needs_review";
   usage: { transcribe: TokenUsage; canonicalize: TokenUsage };
   canonicalizeResult: CanonicalizeResult;
+  /** Readable notes for the confirm screen (another recipe left out). */
+  warnings: string[];
 }
 
 /**
- * Full photo intake: validate, transcribe the photo, then canonicalize the
- * transcription with a photo source (book, author, page). The status is always
- * needs_review: a transcription must be confirmed before cooking.
+ * Full photo intake: validate 1 to 3 photos (pages of one recipe, in order),
+ * transcribe them in one call, then canonicalize the transcription with a
+ * photo source (book, author, page). The status is always needs_review: a
+ * transcription must be confirmed before cooking.
  */
 export async function photoToCanonical(
-  bytes: Uint8Array,
+  input: Uint8Array | readonly Uint8Array[],
   opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
 ): Promise<PhotoResult> {
-  const photo = validatePhoto(bytes);
+  const list: readonly Uint8Array[] = input instanceof Uint8Array ? [input] : input;
+  if (list.length < 1 || list.length > MAX_PHOTOS) {
+    throw new Error(`Send 1 to ${MAX_PHOTOS} photos of one recipe.`);
+  }
+  const photos = list.map((bytes, i) => validatePhoto(bytes, list.length > 1 ? i + 1 : undefined));
   assertTimeFor("transcribe", STAGE_MIN_MS.transcribe);
-  const transcribed = await transcribePhoto(photoDataUrl(photo), photo.orientation, opts);
+  const transcribed = await transcribePhoto(
+    photos.map((photo) => ({ dataUrl: photoDataUrl(photo), orientation: photo.orientation })),
+    opts,
+  );
   assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
   const canonical = await canonicalize(
     {
@@ -259,5 +353,6 @@ export async function photoToCanonical(
     status: "needs_review",
     usage: { transcribe: transcribed.usage, canonicalize: canonical.usage },
     canonicalizeResult: canonical,
+    warnings: transcribed.warnings,
   };
 }
