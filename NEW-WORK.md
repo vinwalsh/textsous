@@ -37,8 +37,17 @@ no public recipe import); Vercel project `open-textsous` with
 open.textsous.com attached; Upstash store `textsous_cache`; Meta Model API
 access (muse-spark-1.3) and a Baseten account. (Other accounts, prior
 prototypes, and shared design assets are disclosed separately by the
-owner.) No recipe format, converter, or handoff code existed anywhere
-before Oct 27.
+owner.)
+
+The Cook Along format (the step-by-step recipe SOUS texts) was designed
+before Oct 27, and the private TextSous app had a recipe-conversion
+pipeline, but the format was not fully in production. Since Oct 27 we have
+been putting it into production, and one part of that work is this
+open-source converter, which lets anyone turn a recipe into the format.
+None of the private code is in this repo: the open format, converter and
+handoff here were written from scratch inside the window, under a
+clean-room rule (AGENTS.md). The private-repo changes made inside the
+window are listed below.
 
 Private-repo handoff changes (the TextSous app; its code stays private).
 Both are merged and deployed on textsous.com as of Nov 4 (TASKS.md O11):
