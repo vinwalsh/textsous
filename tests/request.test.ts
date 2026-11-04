@@ -1,4 +1,7 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import ErrorBox from "../src/app/ErrorBox";
 import { apiFetch, friendlyError } from "../src/app/request";
 
 describe("friendlyError", () => {
@@ -96,8 +99,9 @@ describe("friendlyError", () => {
       name: "compile blocked",
       status: 422,
       message: "compile blocked: task_schedule",
-      title: "This recipe needs a human touch",
-      detailPart: /compile blocked/,
+      title: "We couldn't double-check this one",
+      detailPart: /couldn't confirm this conversion matches the original recipe/,
+      action: "paste-text",
     },
     {
       name: "rate limit",
@@ -152,6 +156,21 @@ describe("friendlyError", () => {
       expect(err.action).toBe(c.action ?? undefined);
     });
   }
+
+  it("keeps a blocked review's check names out of the main copy, behind Details", () => {
+    const err = friendlyError(
+      422,
+      "compile blocked: quantities: the milk amount changed; source_fidelity: a step was added",
+    );
+    expect(`${err.title} ${err.detail}`).not.toMatch(/compile blocked|quantities|source_fidelity/);
+    expect(err.more).toBe("quantities: the milk amount changed; source_fidelity: a step was added");
+    const html = renderToStaticMarkup(createElement(ErrorBox, { error: err, onAction: () => {} }));
+    expect(html).toContain("<summary>Details</summary>");
+    expect(html).toContain("Paste the recipe text instead");
+    expect(renderToStaticMarkup(createElement(ErrorBox, { error: friendlyError(500, "") }))).not.toContain(
+      "<details",
+    );
+  });
 });
 
 describe("apiFetch", () => {

@@ -12,6 +12,12 @@ export default function ErrorBox({
       <p style={{ margin: 0 }}>
         <strong>{error.title}.</strong> {error.detail}
       </p>
+      {error.more ? (
+        <details className="alert-more">
+          <summary>Details</summary>
+          <p>{error.more}</p>
+        </details>
+      ) : null}
       {error.action === "paste-text" && onAction ? (
         <div className="btn-row">
           <button type="button" className="btn" onClick={onAction}>

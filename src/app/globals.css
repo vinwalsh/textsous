@@ -288,6 +288,20 @@ a:hover {
   margin-top: 12px;
 }
 
+.alert-more {
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+.alert-more summary {
+  color: var(--ts-alert-ink);
+}
+
+.alert-more p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
 .notice {
   background: var(--ts-warn-bg);
   border: 1px solid var(--ts-warn-line);

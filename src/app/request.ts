@@ -41,6 +41,8 @@ export interface FriendlyError {
   action?: "paste-text" | "assistants";
   /** Link for the "assistants" action. */
   href?: string;
+  /** Technical detail kept out of the main copy; shown behind "Details". */
+  more?: string;
 }
 
 /** Where people continue when the free daily conversions run out (C7). */
@@ -123,9 +125,14 @@ export function friendlyError(
         action: "paste-text",
       };
     }
+    // A blocking review failure: one calm sentence, the reasons behind Details.
+    const reasons = message.replace(/^compile blocked:\s*/i, "").trim();
     return {
-      title: "This recipe needs a human touch",
-      detail: message || "It didn't pass the automatic checks.",
+      title: "We couldn't double-check this one",
+      detail:
+        "The automatic review couldn't confirm this conversion matches the original recipe, so it isn't shown. Try again, or paste the recipe text.",
+      action: "paste-text",
+      ...(reasons ? { more: reasons } : {}),
     };
   }
   if (status === 429) {
