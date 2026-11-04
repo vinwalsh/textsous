@@ -412,14 +412,15 @@ Order for Nov 4: O10, O11, O13, O14, O8, O9 (the M7 deploy and O12 are done).
 - [ ] O9 Submit on the Cerebral Valley platform by Nov 4, 9:00 PM ET, with the
   public repo and a public video link.
   - 2026-11-04: due tonight. NEW-WORK.md (M5.3) is the disclosure of what is new.
-- [ ] O10 Skills secret. Generate one value (`openssl rand -hex 32`). Set it
+- [x] O10 Skills secret. Generate one value (`openssl rand -hex 32`). Set it
   as SKILLS_API_SECRET on the open-textsous Vercel project (Production and
   Preview, Sensitive) and as TEXTSOUS_OPEN_SKILLS_SECRET on the TextSous
   app's project, then redeploy both. Until then the two secret skills routes
   answer 503 `not_configured` and the MCP recipe tools say recipe skills are
   not set up. Done when production `/api/health` (after the M7 deploy) shows
   `"skillsConfigured": true`. Needed for O13.
-- [ ] O11 TextSous app merges. Run the Cookbook import PR's database migration
+  - 2026-11-04: done at the owner's request: one generated value set as SKILLS_API_SECRET (open-textsous) and TEXTSOUS_OPEN_SKILLS_SECRET (the TextSous app), Production and Preview, Sensitive, never printed; both redeployed. Production `/api/health` shows `"skillsConfigured": true`, and the secret skills routes answer 401 without it.
+- [x] O11 TextSous app merges. Run the Cookbook import PR's database migration
   on production, merge that PR, then merge the MCP recipe-tools PR stacked on
   it, and deploy. Leave TEXTSOUS_OPEN_ORIGIN unset in production (it
   defaults to https://open.textsous.com). Done when
@@ -429,6 +430,7 @@ Order for Nov 4: O10, O11, O13, O14, O8, O9 (the M7 deploy and O12 are done).
   with NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off so "Save to TextSous" stays hidden.
   Needed for O13.
   - 2026-11-04: the MCP recipe-tools PR is open, stacked on the Cookbook import PR (not merged). M7 deployed with "Save to TextSous" shown, so the button lands on a 404 until this ships.
+  - 2026-11-04: done. The database migration was applied and the Cookbook import PR merged and deployed (textsous.com/import answers 200; /open redirects to open.textsous.com). The stacked MCP PR merged into its already-merged base branch, so the same commits went to the default branch in a replacement PR, merged and deployed at 14:58 ET.
 - [x] O12 Warm the demo cache after the M7 deploy:
   `npm run warm -- --base https://open.textsous.com`. It converts each /demo
   URL and the /embed-demo post once, one at a time; cache hits are free. A
