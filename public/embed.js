@@ -4,7 +4,7 @@
  * <script src="https://open.textsous.com/embed.js" async></script>
  * <div data-textsous-cook-along></div>   (optional placement; repeatable)
  *
- * Attributes (on a placement or on the script tag):
+ * Attributes (on a placement or on the script tag; a placement's own attribute wins):
  *   data-recipe-url  recipe page to convert (default: <link rel="canonical">, else this page)
  *   data-src         a pre-converted artifact JSON URL (made with the TextSous CLI)
  *   data-label       button text (default "Cook along with TextSous")
@@ -90,12 +90,55 @@
     return origin.replace(/\/$/, "") + "/embed?" + params.toString();
   }
 
-  /** Message from our iframe's window and origin, with the expected type. */
+  /**
+   * Origins our iframe may speak from: the script's own origin, plus its https twin when the
+   * script was loaded over http (the host then redirects /embed to https).
+   */
+  function trustedOrigins(origin) {
+    var list = [origin];
+    if (typeof origin === "string" && origin.indexOf("http://") === 0) list.push("https://" + origin.slice(7));
+    return list;
+  }
+
+  /** Message from our iframe's window and origin (or one of several origins), with the expected type. */
   function isTrustedMessage(event, expectedOrigin, expectedSource, type) {
-    if (!event || event.origin !== expectedOrigin) return false;
+    var origins = Array.isArray(expectedOrigin) ? expectedOrigin : [expectedOrigin];
+    if (!event || origins.indexOf(event.origin) === -1) return false;
     if (expectedSource !== undefined && event.source !== expectedSource) return false;
     var data = event.data;
     return !!data && typeof data === "object" && data.type === type;
+  }
+
+  /**
+   * What a placement opens. The placement's own attributes win over the script tag's:
+   * own data-src, own data-recipe-url, then the script's data-src, the script's
+   * data-recipe-url, then the canonical link or the page.
+   */
+  function pickTarget(input) {
+    var own = input.own || {};
+    var shared = input.script || {};
+    var href = input.href;
+    var src = resolveSrc(own.src, href);
+    if (src) return { src: src };
+    var ownUrl = resolveSrc(own.recipeUrl, href); // only a valid web address counts as the placement's own
+    if (ownUrl) return { url: resolveRecipeUrl({ attr: ownUrl, canonical: null, href: href }) };
+    src = resolveSrc(shared.src, href);
+    if (src) return { src: src };
+    return { url: resolveRecipeUrl({ attr: shared.recipeUrl, canonical: input.canonical, href: href }) };
+  }
+
+  /** Page elements to make inert behind the open overlay: body children except ours and non-visual ones. */
+  function backgroundElements(children, overlayHost) {
+    var out = [];
+    for (var i = 0; i < children.length; i++) {
+      var el = children[i];
+      if (!el || el === overlayHost || el.nodeType !== 1) continue;
+      var tag = String(el.tagName || "").toUpperCase();
+      if (tag === "SCRIPT" || tag === "STYLE" || tag === "LINK" || tag === "TEMPLATE" || tag === "NOSCRIPT") continue;
+      if (el.hasAttribute && el.hasAttribute("inert")) continue; // already inert: leave it as the page set it
+      out.push(el);
+    }
+    return out;
   }
 
   /** data-autoopen / boolean attributes: present and not "false" or "0". */
@@ -112,6 +155,9 @@
     scriptOrigin: scriptOrigin,
     buildFrameUrl: buildFrameUrl,
     isTrustedMessage: isTrustedMessage,
+    trustedOrigins: trustedOrigins,
+    pickTarget: pickTarget,
+    backgroundElements: backgroundElements,
     isOn: isOn,
   };
   w.TextSousEmbed = api;
@@ -127,6 +173,7 @@
       return all.length ? all[all.length - 1] : null;
     })();
   var ORIGIN = scriptOrigin(script ? script.src : "");
+  var ORIGINS = trustedOrigins(ORIGIN);
   var READY = "data-textsous-ready";
 
   function attr(el, name) {
@@ -140,16 +187,18 @@
     return link ? link.href : null;
   }
 
+  function ownAttr(el, name) {
+    return el && el.hasAttribute && el.hasAttribute(name) ? el.getAttribute(name) : null;
+  }
+
   function targetFor(el) {
-    var src = resolveSrc(attr(el, "data-src"), w.location.href);
-    if (src) return { src: src };
-    return {
-      url: resolveRecipeUrl({
-        attr: attr(el, "data-recipe-url"),
-        canonical: canonicalHref(),
-        href: w.location.href,
-      }),
-    };
+    var shared = script && script !== el ? script : null;
+    return pickTarget({
+      own: { src: ownAttr(el, "data-src"), recipeUrl: ownAttr(el, "data-recipe-url") },
+      script: { src: ownAttr(shared, "data-src"), recipeUrl: ownAttr(shared, "data-recipe-url") },
+      canonical: canonicalHref(),
+      href: w.location.href,
+    });
   }
 
   var BUTTON_CSS =
@@ -207,6 +256,7 @@
     ".close:hover{background:#E2DBD5}" +
     ".close:focus-visible{outline:3px solid #D45A35;outline-offset:2px}" +
     "iframe{flex:1;width:100%;border:0;background:#FAF8F5}" +
+    ".sentinel{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}" +
     "@media (max-width:640px){.dialog{width:100vw;height:100vh;height:100dvh;border-radius:0}}";
 
   var state = null; // { host, iframe, closeButton, returnFocus, src, saved }
@@ -228,6 +278,30 @@
     if (d.body) d.body.style.overflow = saved.body;
   }
 
+  function sentinel(onFocus) {
+    var el = d.createElement("span");
+    el.className = "sentinel";
+    el.tabIndex = 0;
+    el.setAttribute("aria-hidden", "true");
+    el.addEventListener("focus", onFocus);
+    return el;
+  }
+
+  /** aria-modal alone isn't honored everywhere (or inside a shadow root): make the page behind inert. */
+  function makeBackgroundInert(overlayHost) {
+    var els = backgroundElements(d.body ? d.body.children : [], overlayHost);
+    for (var i = 0; i < els.length; i++) {
+      els[i].setAttribute("inert", "");
+    }
+    return els;
+  }
+
+  function restoreBackground(els) {
+    for (var i = 0; i < (els || []).length; i++) {
+      els[i].removeAttribute("inert");
+    }
+  }
+
   function onKeydown(event) {
     if (state && (event.key === "Escape" || event.key === "Esc")) {
       event.preventDefault();
@@ -235,10 +309,11 @@
     }
   }
 
-  function answerArtifact(src) {
+  function answerArtifact(src, frameOrigin) {
     var frame = state && state.iframe;
     function reply(message) {
-      if (frame && frame.contentWindow) frame.contentWindow.postMessage(message, ORIGIN);
+      // frameOrigin is the asking message's origin, already checked against ORIGINS.
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage(message, frameOrigin);
     }
     w.fetch(src, { credentials: "same-origin" })
       .then(function (res) {
@@ -257,13 +332,13 @@
   function onMessage(event) {
     if (!state) return;
     var source = state.iframe.contentWindow;
-    if (isTrustedMessage(event, ORIGIN, source, CLOSE)) {
+    if (isTrustedMessage(event, ORIGINS, source, CLOSE)) {
       close();
       return;
     }
-    if (isTrustedMessage(event, ORIGIN, source, NEED_ARTIFACT)) {
+    if (isTrustedMessage(event, ORIGINS, source, NEED_ARTIFACT)) {
       // Only the artifact this overlay was opened for: the page fetches it with its own access.
-      if (state.src && event.data.src === state.src) answerArtifact(state.src);
+      if (state.src && event.data.src === state.src) answerArtifact(state.src, event.origin);
     }
   }
 
@@ -305,8 +380,18 @@
       host: w.location.hostname,
     });
 
+    // Focus sentinels keep Tab inside the dialog: past the iframe -> Close, before Close -> iframe.
+    var startSentinel = sentinel(function () {
+      iframe.focus();
+    });
+    var endSentinel = sentinel(function () {
+      closeButton.focus();
+    });
+
+    dialog.appendChild(startSentinel);
     dialog.appendChild(bar);
     dialog.appendChild(iframe);
+    dialog.appendChild(endSentinel);
     backdrop.appendChild(dialog);
     backdrop.addEventListener("click", function (event) {
       if (event.target === backdrop) close();
@@ -322,6 +407,7 @@
       returnFocus: returnFocus || d.activeElement,
       src: target.src || null,
       saved: lockScroll(),
+      inerted: makeBackgroundInert(host),
     };
     d.addEventListener("keydown", onKeydown, true);
     w.addEventListener("message", onMessage);
@@ -335,6 +421,7 @@
     d.removeEventListener("keydown", onKeydown, true);
     w.removeEventListener("message", onMessage);
     unlockScroll(current.saved);
+    restoreBackground(current.inerted); // before restoring focus: the button sits in that background
     if (current.host.parentNode) current.host.parentNode.removeChild(current.host);
     if (current.returnFocus && typeof current.returnFocus.focus === "function") {
       try {

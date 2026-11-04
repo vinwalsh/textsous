@@ -29,7 +29,9 @@ on one page, for example one per recipe card, each with its own
 ## Attributes
 
 Set these on a placement `<div>`, or on the `<script>` tag to apply them to
-every placement on the page (a placement's own attribute wins).
+every placement on the page. A placement's own attribute wins: a placement
+uses its own `data-src`, then its own `data-recipe-url`, and only then the
+script tag's `data-src` or `data-recipe-url`.
 
 | Attribute | Default | What it does |
 |---|---|---|
@@ -62,13 +64,18 @@ There is also a small script API: `TextSousEmbed.open({ url })`,
   `https://open.textsous.com/embed?url=<recipe URL>&utm_source=<your host>&utm_medium=embed`.
 - Close it with the Close button, the Esc key, a click on the backdrop, or
   the Close button inside the Cook Along. Focus moves into the dialog when
-  it opens and returns to the button when it closes; the page behind it
-  does not scroll while it is open.
+  it opens, Tab stays inside it, and focus returns to the button when it
+  closes. While it is open, the rest of your page is made `inert` (screen
+  readers and the keyboard skip it) and does not scroll.
+- Closing the overlay ends a conversion that is still running. Reopening
+  starts it again; a finished conversion is cached, so it opens right away.
 - Inside the overlay, "Save to TextSous" and every other link open in a new
   tab. Your page stays where the reader left it.
 - The iframe talks to your page with `postMessage`. embed.js acts on
   `{ type: "textsous:close" }` only when it comes from the overlay's own
-  iframe and from the script's origin.
+  iframe and from the script's origin. If you load the script over `http:`,
+  embed.js also accepts the `https:` version of that origin, because the
+  host redirects the overlay to https.
 
 The script loads the overlay from its own origin, so a copy served from a
 preview or local build (`http://localhost:3102/embed.js`) opens that build's
@@ -175,3 +182,9 @@ link.
   `eval/fixtures/toasted-oat-porridge.html`.
   `/embed-demo?src=<this site's /api/artifact link>&autoopen=1` opens the
   overlay on a saved artifact.
+- Testing the demo: plain `/embed-demo` (no `?src=`) converts the demo
+  page's own address, so it only converts on https://open.textsous.com. On
+  localhost the address is http (refused by intake), and on a Vercel
+  preview the server's fetch of its own protected preview URL gets a 401.
+  On a preview or local build, test with
+  `/embed-demo?src=<saved artifact link>&autoopen=1`.
