@@ -8,6 +8,7 @@ import { buildImportUrl, saveToTextSousEnabled } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
 import { laneDisplayColors, taskLaneColor } from "../lib/lane-palette";
 import { mergeNotes, reviewNoteTexts } from "../lib/review-notes";
+import { formatQuantityWithUnit } from "../lib/scaling/units";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
@@ -110,8 +111,10 @@ export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredi
       <ul className="ingredients">
         {ingredients.map((ing) => (
           <li key={ing.id}>
-            <strong>{formatAmount(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
-            {ing.buyQuantity ? <span className="meta"> · buy {ing.buyQuantity}</span> : null}
+            <strong>{formatQuantityWithUnit(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
+            {ing.buyQuantity ? (
+              <span className="meta"> · buy {formatQuantityWithUnit(ing.buyQuantity, ing.unit)}</span>
+            ) : null}
             {ing.note ? <span> — {ing.note}</span> : null}
             {ing.allergens.length > 0 ? (
               <span className="meta"> · contains {ing.allergens.join(", ")}</span>
@@ -208,10 +211,6 @@ function TaskNotes({ task, mode }: { task: { tip?: string | null; why?: string |
       {task.tip ? <p className="tip">Tip: {task.tip}</p> : null}
     </>
   );
-}
-
-function formatAmount(quantity: string, unit: string): string {
-  return `${quantity} ${unit}`.trim();
 }
 
 const PHASE_NAMES: Record<TimelineTask["phase"], string> = {

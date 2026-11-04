@@ -108,3 +108,28 @@ export function isMeasureUnit(raw: string): boolean {
   const kind = lookupUnit(raw)?.kind;
   return kind === "volume" || kind === "weight";
 }
+
+function sameUnitWord(a: string, b: string): boolean {
+  if (a === b) return true;
+  const ua = lookupUnit(a);
+  const ub = lookupUnit(b);
+  if (ua && ub) return ua.standard === ub.standard;
+  const strip = (w: string): string => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w);
+  return strip(a) === strip(b);
+}
+
+/**
+ * An ingredient amount as the cook reads it: the quantity, then the unit
+ * unless the quantity already names it ("3/4 cup (150g)" with unit "cup",
+ * "a pinch" with unit "pinch"). Pure.
+ */
+export function formatQuantityWithUnit(quantity: string, unit: string): string {
+  const q = quantity.trim();
+  const u = unit.trim();
+  const unitWords = u.toLowerCase().match(/[a-z]+/g) ?? [];
+  const words = q.toLowerCase().match(/[a-z]+/g) ?? [];
+  for (let i = 0; unitWords.length > 0 && i + unitWords.length <= words.length; i += 1) {
+    if (unitWords.every((w, j) => sameUnitWord(words[i + j], w))) return q;
+  }
+  return `${q} ${u}`.trim();
+}
