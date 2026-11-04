@@ -7,7 +7,8 @@ import * as cheerio from "cheerio/slim";
 export const FETCH_TIMEOUT_MS = 10_000;
 export const MAX_BYTES = 2 * 1024 * 1024;
 export const MAX_REDIRECTS = 3;
-export const MAX_RAW_TEXT_CHARS = 20_000;
+/** Page text kept for the no-JSON-LD fallback (the canonicalize window). */
+export const MAX_RAW_TEXT_CHARS = 60_000;
 
 export interface UrlExtraction {
   sourceUrl: string;
@@ -21,6 +22,8 @@ export interface UrlExtraction {
   instructionLines: string[];
   servingsRaw?: string;
   rawText: string;
+  /** Readable notes, e.g. page text cut to the first 60,000 characters. */
+  warnings: string[];
 }
 
 // --- SSRF guards: public https only, no private IPs ---
@@ -329,14 +332,21 @@ function authorName(value: unknown): string | undefined {
   return undefined;
 }
 
-function reduceToReadableText($: cheerio.CheerioAPI): string {
+function reduceToReadableText($: cheerio.CheerioAPI): { text: string; warnings: string[] } {
   $("script, style, noscript, template").remove();
   const article = $("article").first();
   const main = $("main").first();
   const root = article.length > 0 ? article : main.length > 0 ? main : $("body");
   root.find("nav, header, footer, aside").remove();
   const text = root.text().replace(/\s+/g, " ").trim();
-  return text.length > MAX_RAW_TEXT_CHARS ? text.slice(0, MAX_RAW_TEXT_CHARS) : text;
+  if (text.length <= MAX_RAW_TEXT_CHARS) return { text, warnings: [] };
+  return {
+    text: text.slice(0, MAX_RAW_TEXT_CHARS),
+    warnings: [
+      `The page text was ${text.length.toLocaleString("en-US")} characters; ` +
+        `only the first ${MAX_RAW_TEXT_CHARS.toLocaleString("en-US")} were kept.`,
+    ],
+  };
 }
 
 /** Pure HTML -> extraction step; used by fetchAndExtract and by tests. */
@@ -365,7 +375,8 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
       `Refusing page with ${recipes.length} recipes; single-recipe pages only.`,
     );
   }
-  const rawText = reduceToReadableText($);
+  const readable = reduceToReadableText($);
+  const rawText = readable.text;
   if (recipes.length === 1) {
     const recipe = recipes[0];
     const title =
@@ -386,6 +397,8 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
       instructionLines: flattenInstructions(recipe.recipeInstructions),
       servingsRaw: normalizeYield(recipe.recipeYield),
       rawText,
+      // JSON-LD conversions never read the page text, so no warning.
+      warnings: [],
     };
   }
   return {
@@ -400,6 +413,7 @@ export function extractFromHtml(html: string, baseUrl: string): UrlExtraction {
     instructionLines: [],
     servingsRaw: undefined,
     rawText,
+    warnings: readable.warnings,
   };
 }
 

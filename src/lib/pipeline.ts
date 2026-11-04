@@ -47,6 +47,8 @@ export interface PipelineResult {
   procedure: StageReport<ProcedureCheck>;
   review: StageReport<ReviewCheck>;
   usageTotal: TokenUsage;
+  /** Readable notes for the cook (e.g. source text cut to the input window). */
+  warnings: string[];
 }
 
 function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
@@ -101,6 +103,7 @@ export async function convertToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(addUsage(canon.usage, proc.usage), rev.usage),
+    warnings: canon.warnings,
   };
 }
 
@@ -136,6 +139,7 @@ export async function convertRecipeToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(proc.usage, rev.usage),
+    warnings: [],
   };
 }
 

@@ -190,6 +190,7 @@ export async function POST(request: Request) {
         artifact: result.artifact,
         schedule: result.schedule,
         cached: false,
+        warnings: [...extracted.warnings, ...result.warnings],
         usage: {
           canonicalize: result.canonicalize.usage,
           procedure: result.procedure.usage,
@@ -267,6 +268,7 @@ export async function POST(request: Request) {
       artifact: result.artifact,
       schedule: result.schedule,
       cached: false,
+      warnings: result.warnings,
       usage: {
         canonicalize: result.canonicalize.usage,
         procedure: result.procedure.usage,

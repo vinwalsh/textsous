@@ -16,6 +16,13 @@ import {
 
 export const CANONICALIZE_VERSION = 1;
 
+/**
+ * Source text the model reads when there is no JSON-LD (pasted text, page
+ * text fallback, photo transcription). Pasted text over this is refused at
+ * intake; longer page text is cut here with a warning, never silently.
+ */
+export const CANONICALIZE_MAX_CHARS = 60_000;
+
 export interface CanonicalizeInput {
   source: {
     kind: "url" | "text" | "photo";
@@ -49,6 +56,8 @@ export interface CanonicalizeResult {
   attempts: number;
   /** Verbatim successful model completion (for --record). */
   rawResponse: string;
+  /** Readable notes, e.g. the source text was cut to the input window. */
+  warnings: string[];
 }
 
 /** Format of eval/recordings/*.json, written by `convert --record`. */
@@ -212,7 +221,9 @@ function buildUserPrompt(input: CanonicalizeInput): string {
     });
   }
   const text =
-    input.rawText.length > 8000 ? `${input.rawText.slice(0, 8000)}\n[truncated]` : input.rawText;
+    input.rawText.length > CANONICALIZE_MAX_CHARS
+      ? `${input.rawText.slice(0, CANONICALIZE_MAX_CHARS)}\n[truncated]`
+      : input.rawText;
   return JSON.stringify({
     title: input.title ?? null,
     recipeText: text,
@@ -272,6 +283,15 @@ export async function canonicalize(
     })),
   };
 
+  const usesRawText = !(input.hasJsonLd && input.ingredientLines.length > 0);
+  const warnings =
+    usesRawText && input.rawText.length > CANONICALIZE_MAX_CHARS
+      ? [
+          `The source text was ${input.rawText.length.toLocaleString("en-US")} characters; ` +
+            `only the first ${CANONICALIZE_MAX_CHARS.toLocaleString("en-US")} were read.`,
+        ]
+      : [];
+
   return {
     recipe,
     checks: runCanonicalChecks(input, recipe),
@@ -279,5 +299,6 @@ export async function canonicalize(
     fallbackUsed: result.fallbackUsed,
     attempts: result.attempts,
     rawResponse: result.rawContent,
+    warnings,
   };
 }
