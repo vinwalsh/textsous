@@ -199,7 +199,9 @@ describe("friendlyError", () => {
   it("tells a cook whose URL conversion dropped that it may still finish", () => {
     const err = friendlyError(null, "", { recipeUrl: "https://example.com/r", mayFinish: true });
     expect(err.title).toBe("Connection lost");
-    expect(err.detail).toMatch(/may still finish converting: wait a minute and convert the same link again/);
+    // The server keeps converting, and converting again too soon starts a
+    // second live conversion (fix-pass review): a minute is too short.
+    expect(err.detail).toMatch(/may still finish converting: wait two or three minutes and convert the same link again/);
     expect(friendlyError(null, "").detail).not.toMatch(/still finish/);
   });
 

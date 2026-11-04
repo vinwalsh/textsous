@@ -104,7 +104,7 @@ export function friendlyError(
     return {
       title: "Connection lost",
       detail: opts.mayFinish
-        ? "The connection dropped, which happens when a phone locks or you switch apps. The recipe may still finish converting: wait a minute and convert the same link again. Finished recipes open instantly."
+        ? "The connection dropped, which happens when a phone locks or you switch apps. The recipe may still finish converting: wait two or three minutes and convert the same link again. Finished recipes open instantly."
         : "The connection dropped, which can happen when a phone locks or you switch apps. Check your connection and try again.",
     };
   }

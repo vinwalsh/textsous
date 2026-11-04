@@ -119,9 +119,12 @@ the M7 deploy (M7.10), O12 (warm the demo cache) and O13 (Muse end to end).
     "Start" tap for uncached URLs (which needs a cache-only probe on
     /api/convert) would close that, but it changes the embed's auto-convert
     behavior, so it waits.
-  - Closing the overlay ends a running conversion; reopening starts again.
-    Keeping it alive needs a busy/idle message from the iframe. EMBED.md
-    documents the behavior.
+  - Closing the overlay ends the reader's wait, not the server's work: a
+    URL conversion still finishes and is cached. Reopening (or converting
+    the same link again) before then starts a second live conversion, with
+    another daily unit and a fresh 3 to 4 minute wait. Sharing one
+    in-flight conversion per URL would avoid that. EMBED.md documents the
+    behavior.
   - The skills secret budget stays at 600 requests an hour: raising it
     would weaken the cap on a leaked secret or a looping caller.
   - The "Open" pill's text is 4.49:1 on its background, as the brand colors

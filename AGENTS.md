@@ -59,8 +59,9 @@ here with the date. Check the code before trusting any doc line about it.
   end-to-end test, phone checks, the demo video, and the submission by
   Nov 4, 9:00 PM ET.
 - Open decisions (HANDOFF.md, "Open loops"): /embed starts an uncached
-  conversion without a tap; closing the overlay ends a running conversion;
-  the skills secret budget stays at 600 requests an hour.
+  conversion without a tap; closing the overlay does not stop the server's
+  conversion, so reopening too soon starts a second one; the skills secret
+  budget stays at 600 requests an hour.
 
 ## Names (use exactly)
 - TextSous: the public name of the platform and of this project, in UI copy,

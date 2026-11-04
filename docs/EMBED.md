@@ -67,8 +67,9 @@ There is also a small script API: `TextSousEmbed.open({ url })`,
   it opens, Tab stays inside it, and focus returns to the button when it
   closes. While it is open, the rest of your page is made `inert` (screen
   readers and the keyboard skip it) and does not scroll.
-- Closing the overlay ends a conversion that is still running. Reopening
-  starts it again; a finished conversion is cached, so it opens right away.
+- Closing the overlay ends the reader's wait, not the conversion: the
+  server finishes it and caches it, and reopening after that opens it right
+  away. Reopening while it is still running starts a second conversion.
 - Inside the overlay, "Save to TextSous" and every other link open in a new
   tab. Your page stays where the reader left it.
 - The iframe talks to your page with `postMessage`. embed.js acts on
