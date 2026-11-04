@@ -17,9 +17,20 @@ Oct 27 to Nov 4, 2026 is hackathon work; NEW-WORK.md records it.
 Updated 2026-11-04. Keep this section current: when something ships, say so
 here with the date. Check the code before trusting any doc line about it.
 
-- Live: M1-M7 (TASKS.md) on main. Vercel project `open-textsous` deploys
+- Live: M1-M8 (TASKS.md) on main. Vercel project `open-textsous` deploys
   main to https://open.textsous.com on every push. CI runs typecheck, lint,
   the offline tests and the schema/docs diff gate.
+- M8 went live on Nov 4: `cf3fc28` at 15:05 ET, then its review fixes and
+  the free-text rescaling at 15:55 ET (`9dfae4e`). It brought progressive
+  conversion (NDJSON events: facts, overview, recipe, procedure, done; see
+  src/lib/convert-events.ts), per-stage reasoning effort (procedure minimal,
+  review low), the overview stage, the cooking line, adjustments queued
+  before the cook along is ready, up to 3 photos of one recipe, servings up
+  to 36 with free-text amounts rescaled, header buttons and the side-by-side
+  action row. 880 offline tests, CI green. Live checks on Nov 4: fresh
+  conversions finish in about 45-80 s (facts in 2-6 s, summary in 6-10 s,
+  ingredients in 20-40 s), two photo pages read as one recipe, and 12 -> 18
+  muffins rescale every amount on production.
 - M7 went live on Nov 4 at 04:17 ET: main fast-forwarded from `3e56ebb` to
   `f92e0a1` (93 commits, Nov 3-4, docs included). It brought fixes from the
   Nov 3 review, the cook-along output format, the EU-14 allergen floor, new

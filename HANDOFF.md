@@ -5,14 +5,19 @@ TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
 
 ## Where things stand
 
-- **M1–M7** are on main and deployed at https://open.textsous.com. M6.1,
+- **M1–M8** are on main and deployed at https://open.textsous.com. M6.1,
   M6.3, M6.4 and M6.6 still wait for the owner's phone re-checks (TASKS.md
   O14).
+- **M8** went live on Nov 4 (`cf3fc28` at 15:05 ET, review fixes and
+  free-text rescaling in `9dfae4e` at 15:55 ET): progressive conversion,
+  per-stage reasoning effort, up to 3 photos, servings up to 36. A fresh
+  conversion now finishes in about 45-80 s, with the recipe's facts on screen
+  in a few seconds.
 - **M7** (TASKS.md M7.1–M7.9) went live on Nov 4 at 04:17 ET: main
   fast-forwarded from `3e56ebb` to `f92e0a1`, 93 commits, docs included.
   The production checks passed and the demo cache is warm (O12). M7.10 stays
   open for the owner's Muse and phone checks (O13, O14).
-- Gates on main: 723/723 offline in 68 files with `MODEL_API_KEY` unset,
+- Gates on main: 880/880 offline in 81 files with `MODEL_API_KEY` unset,
   typecheck, lint, build, and `npm run schema && npm run docs` with no diff;
   CI green.
 - Other open items: M5.3 (owner review of the NEW-WORK.md summary), M5.5

@@ -8,8 +8,9 @@ Nov 4, 04:00 ET; two of them are merges and two are docs), fast-forwarded
 to main and deployed on Nov 4 at 04:17 ET, then a warm-script fix and the
 docs commit that records the deploy, then M8: 37 commits from `f1a7642`
 through `cf3fc28` (Nov 4, 14:27 to 14:57 ET; four of them are merges),
-pushed to main at 15:05 ET, then the M8 review: 7 commits of fixes and
-docs plus this log's update. The range extends if further commits
+pushed to main at 15:05 ET, then the M8 review fixes, the free-text
+rescaling and the cooking-line label through `9dfae4e` (pushed to main at
+15:55 ET), plus the docs commit that records the deploy. The range extends if further commits
 land before the Nov 4, 9:00 PM ET deadline. M1 foundation +
 first conversion (Oct 27–28), M2 Cook Along pipeline (Oct 28), M3
 adjustments (Oct 29), M4 photo, web flow and artifact handoff (Oct 29–31),
@@ -199,3 +200,5 @@ dates above govern. Every entry falls inside the window regardless.
 2026-11-04: Review of M8, fixed in 7 commits on top of `cf3fc28`: a recipe posted for more than 36 servings takes dietary, cuisine and voice changes again (the browser's range check on the servings input blocked every submit; a servings change is now checked in code); the queued Adjust copy names the "Apply when ready" button, since choosing alone queues nothing; the progress note announces its explainer once instead of the elapsed time every second; a scaling reply that leaves out an ingredient scales it by the rule it already has, else linearly, with a warning, instead of failing with a 500 that kept the daily unit; the one-photo notice names the recipe that was read (the first that starts in the photo); the event contract and AGENTS.md say the overview can follow the recipe and clients accept any order; README and HANDOFF say a fresh conversion takes about a minute; this log corrects the M8 server entry and records the M8 work above. Prompts, stage versions and the cache key are unchanged. 863/863 offline in 80 files, typecheck, lint, build, schema/docs gate green.
 
 2026-11-04: Rescaling reads free-text quantities: the leading amount of "1/2 cup (100g)", "1 and 3/4 cups (219g)", "500 grams or 12 oz" or "1 (24-ounce)" scales, with the grams, ml, Tbsp or oz that restate it ("2 5/8 cups (329g)" at 12 -> 18 muffins), never a package size; metric amounts round to whole g and ml, tenths of kg and l. Words-only amounts ("Half a", "A fistful") stay as printed and are named in a "Check these amounts" note (artifact change, adjust warnings, adjust panel). The ingredients card prints a unit once when the quantity already names it. 17 new tests (tests/scaling-leading.test.ts).
+
+2026-11-04: Shipped M8 to production: `cf3fc28` at 15:05 ET, then `9dfae4e` at 15:55 ET with the review fixes, free-text rescaling and the cooking-line label; CI green on both. Checked on production: `/api/health` ok with `skillsConfigured` true; a cached recipe streams one done event; a fresh Budget Bytes recipe filled in at phone width (facts and allergens at about 3 s, the summary at about 8 s, adjustments, ingredients and Before you start at about 40 s, prep and steps at about 55 s, the finished page by 90 s, no sideways scroll); a 12 -> 18 rescale of a real muffin recipe scales every amount, grams included ("1 and 3/4 cups (219g)" to "2 5/8 cups (329g)"). On a preview: two photo pages of one recipe read as one recipe in 36 s, and its conversion streamed in 46 s.
