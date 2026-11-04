@@ -10,6 +10,7 @@ import { readEvents, type ConvertEvent } from "../src/lib/convert-events";
 import { reserveDailyUnit, resetMemoryLimits } from "../src/lib/limits";
 import type { ProcedureRecordingFile } from "../src/lib/stages/procedure";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
+import { eventStream } from "../src/app/api/helpers";
 
 // POST /api/convert with Accept: application/x-ndjson. The model is replaced
 // by canned replies keyed by schema name (the recorded charred corn salad,
@@ -341,5 +342,27 @@ describe("the x-textsous-efforts header", () => {
     const adjusted = await adjustPOST(post({ artifact: fixtureArtifact(), servings: 4 }, "10.61.0.2", header, "/api/adjust"));
     expect(adjusted.status).toBe(200);
     expect(state.calls.find((c) => c.name === "scaling_rules_v1")?.effort).toBe("low");
+  });
+});
+
+describe("eventStream", () => {
+  it("sends blank keep-alive lines while idle, which readers skip, and survives a reader that leaves", async () => {
+    const res = eventStream(async (send) => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      send({ type: "error", status: 503, error: "x" });
+    }, 5);
+    const text = await res.text();
+    expect(text.startsWith("\n")).toBe(true);
+    expect(text.trim()).toBe(JSON.stringify({ type: "error", status: 503, error: "x" }));
+
+    let finished = false;
+    const left = eventStream(async (send) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      send({ type: "error", status: 500, error: "late" });
+      finished = true;
+    });
+    await (left.body as ReadableStream<Uint8Array>).cancel();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(finished).toBe(true);
   });
 });
