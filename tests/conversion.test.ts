@@ -15,7 +15,7 @@ import type { CanonicalRecipe } from "../src/lib/schema/canonical";
 import type { TimelineDefinition } from "../src/lib/schema/timeline";
 import { fixtureArtifact } from "./helpers/fixture-artifact";
 
-const URL_BODY: ConvertBody = { url: "https://example.com/recipes/muffins" };
+const URL_BODY = { url: "https://example.com/recipes/muffins" } satisfies ConvertBody;
 const recording = JSON.parse(
   readFileSync("eval/recordings/procedure-toasted-oat-porridge.json", "utf8"),
 ) as { recipe: CanonicalRecipe; response: string };

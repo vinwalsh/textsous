@@ -6,7 +6,7 @@ import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
-import { apiFetch, friendlyError, submitButtonClass, type FriendlyError } from "./request";
+import { apiFetch, friendlyError, submitButtonClass, type ApiResult, type FriendlyError } from "./request";
 import { withScreenOn } from "./wake-lock";
 
 interface AdjustOk {
@@ -91,6 +91,17 @@ export function adjustSummary(baseServings: number, choices: AdjustChoices): str
   return parts.join(" · ");
 }
 
+/** POST /api/adjust for these choices, keeping the screen on. */
+export function requestAdjustment(artifact: CookAlongArtifact, choices: AdjustChoices): Promise<ApiResult> {
+  return withScreenOn(() =>
+    apiFetch("/api/adjust", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(adjustRequestBody(artifact, choices)),
+    }),
+  );
+}
+
 /** Queued mode: the cook along is still being written, so choices wait for it. */
 export interface PendingAdjust {
   /** Servings the recipe is written for. */
@@ -136,13 +147,7 @@ export default function AdjustPanel({
     if (!artifact) return;
     setApplying(true);
     setError(null);
-    const res = await withScreenOn(() =>
-      apiFetch("/api/adjust", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(adjustRequestBody(artifact, choices)),
-      }),
-    );
+    const res = await requestAdjustment(artifact, choices);
     const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.artifact) {
       setError(adjustFailure(res, data, artifact));
@@ -279,7 +284,7 @@ export default function AdjustPanel({
             className={submitButtonClass(error)}
             disabled={!hasChange || applying}
           >
-            {applying ? "Adjusting…" : "Apply adjustments"}
+            {applying ? "Adjusting…" : artifact ? "Apply adjustments" : "Apply when ready"}
           </button>
           {modified ? (
             <button type="button" className="btn" onClick={onReset} disabled={applying}>
