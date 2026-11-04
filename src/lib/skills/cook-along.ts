@@ -3,6 +3,7 @@ import { DEFAULT_EQUIPMENT_PROFILE } from "../pipeline";
 import type { CookAlongArtifact, EquipmentProfile } from "../schema/artifact";
 import { schedule, type ScheduleResult } from "../scheduler/schedule";
 import { runFormatWarnings } from "../format";
+import type { CanonicalRecipe } from "../schema/canonical";
 import type { TimelineDefinition } from "../schema/timeline";
 import { compile } from "../stages/compile";
 import { runProcedureChecks } from "../stages/procedure";
@@ -83,13 +84,37 @@ export function assistantAuthoredReview(input: ReviewInput): ReviewResult {
   };
 }
 
-/** The converter's non-blocking format warnings, pointed at the task to improve. */
-function formatAdvice(review: ReviewResult, timeline: TimelineDefinition): SkillsWarning[] {
-  const index = new Map(timeline.tasks.map((task, i) => [task.id, i] as const));
-  return (review.warnings ?? []).map((w) => {
-    const i = w.taskId === undefined ? undefined : index.get(w.taskId);
-    return { code: w.code, message: w.message, ...(i === undefined ? {} : { path: `timeline.tasks[${i}]` }) };
-  });
+/** How to act on each of the converter's format warnings. */
+const FORMAT_FIXES: Record<string, string> = {
+  amount_missing: "Put the exact amount, unit and name in that task's description.",
+  prep_not_covered: "Add a prep task for that action and cite the ingredient's id in its ingredientIds.",
+  batch_round_timing: "Set minutes to the number of rounds times the per-round time, as an estimate.",
+};
+
+/**
+ * The converter's non-blocking format warnings, pointed at the task (or the
+ * ingredient) to improve. A prep task validate.ts already asked for
+ * (prep_task_missing) is not asked for twice.
+ */
+export function formatAdvice(
+  review: Pick<ReviewResult, "warnings">,
+  recipe: Pick<CanonicalRecipe, "ingredients">,
+  timeline: Pick<TimelineDefinition, "tasks">,
+  already: readonly SkillsWarning[] = [],
+): SkillsWarning[] {
+  const taskIndex = new Map(timeline.tasks.map((task, i) => [task.id, i] as const));
+  const ingredientIndex = new Map(recipe.ingredients.map((ing, i) => [ing.id, i] as const));
+  const asked = new Set(already.filter((w) => w.code === "prep_task_missing").map((w) => w.path));
+  const advice: SkillsWarning[] = [];
+  for (const w of review.warnings ?? []) {
+    const t = w.taskId === undefined ? undefined : taskIndex.get(w.taskId);
+    const g = w.ingredientId === undefined ? undefined : ingredientIndex.get(w.ingredientId);
+    if (w.code === "prep_not_covered" && g !== undefined && asked.has(`recipe.ingredients[${g}].note`)) continue;
+    const path = t !== undefined ? `timeline.tasks[${t}]` : g !== undefined ? `recipe.ingredients[${g}]` : undefined;
+    const fix = FORMAT_FIXES[w.code];
+    advice.push({ code: w.code, message: fix ? `${w.message} ${fix}` : w.message, ...(path ? { path } : {}) });
+  }
+  return advice;
 }
 
 /** Every reply names at most MAX_REPORTED errors and warnings. */
@@ -258,6 +283,6 @@ async function prepare(raw: unknown, opts: PrepareOptions): Promise<PrepareResul
   // compile() also applies the deterministic allergen floor once the core
   // stream's src/lib/allergens.ts lands inside it: no second inferrer here.
   const artifact = compile({ recipe, timeline, review, equipmentProfile });
-  warnings.push(...formatAdvice(review, timeline));
+  warnings.push(...formatAdvice(review, recipe, timeline, warnings));
   return { ok: true, artifact, schedule: sched, review, summary: summarize(artifact, sched), warnings };
 }

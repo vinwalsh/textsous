@@ -134,7 +134,7 @@ What the server does, in order:
   "viewUrl": "https://open.textsous.com/?src=<encodeURIComponent(artifactUrl)>",
   "expiresAt": "2026-11-05T21:00:00.000Z",
   "summary": { "title": "...", "servings": 2, "totalMinutes": 15, "handsOnMinutes": 15, "taskCount": 7, "allergens": ["gluten", "milk"], "traces": [] },
-  "warnings": [{ "code": "amount_missing", "path": "recipe.ingredients[2]", "message": "..." }]
+  "warnings": [{ "code": "amount_missing", "path": "timeline.tasks[4]", "message": "..." }]
 }
 ```
 

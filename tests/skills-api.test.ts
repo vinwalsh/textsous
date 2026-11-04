@@ -546,6 +546,34 @@ describe("bounded replies (a hostile body cannot amplify)", () => {
   });
 });
 
+describe("format advice comes once", () => {
+  it("reports a missing amount once, at the task that should state it", async () => {
+    const body = structuredClone(COOK_ALONG_EXAMPLE);
+    const butter = body.timeline.tasks[4];
+    butter.description = butter.description.replace("1 tablespoon ", "");
+    const result = await prepareCookAlong(body);
+    expect(result.ok).toBe(true);
+    const amounts = result.warnings.filter((w) => w.code === "amount_missing");
+    expect(amounts).toHaveLength(1);
+    expect(amounts[0].path).toBe("timeline.tasks[4]");
+    expect(amounts[0].message).toMatch(/unsalted butter.*Put the exact amount, unit and name/);
+  });
+
+  it("asks for a missing prep task once, at the ingredient", async () => {
+    const body = structuredClone(COOK_ALONG_EXAMPLE);
+    const dice = body.timeline.tasks.find((t) => t.label === "Dice apple");
+    body.timeline.tasks = body.timeline.tasks
+      .filter((t) => t !== dice)
+      .map((t) => ({ ...t, dependencies: (t.dependencies ?? []).filter((d) => d !== dice?.id) }));
+    const result = await prepareCookAlong(body);
+    expect(result.ok ? [] : result.errors).toEqual([]);
+    const prep = result.warnings.filter((w) => w.code === "prep_task_missing" || w.code === "prep_not_covered");
+    expect(prep).toEqual([
+      expect.objectContaining({ code: "prep_task_missing", path: "recipe.ingredients[3].note" }),
+    ]);
+  });
+});
+
 describe("allergens in the summary", () => {
   it("reports traces the allergen floor adds, as the viewer does", async () => {
     // The guide allows empty allergen lists ("When unsure, leave the list

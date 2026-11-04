@@ -271,13 +271,12 @@ export function validateCookAlong(
   });
 
   // Advice only: these rules need judgment, so they never block a save.
+  // Missing amounts are reported once, per task, by the converter's format
+  // rules (cook-along.ts formatAdvice), not here.
   recipe.ingredients.forEach((ing, i) => {
     const users = timeline.tasks.filter((t) => t.scheduling.ingredientIds.includes(ing.id));
     if (ing.note && PREP_NOTE.test(ing.note) && !users.some((t) => t.phase === "prep")) {
       warnings.push({ code: "prep_task_missing", path: `recipe.ingredients[${i}].note`, message: `"${ing.name}" is noted "${ing.note}": add a prep task for that action and cite ${ing.id} in it.` });
-    }
-    if (ing.quantity && users.length > 0 && !users.some((t) => t.description.includes(ing.quantity))) {
-      warnings.push({ code: "amount_missing", path: `recipe.ingredients[${i}]`, message: `No task description states "${[ing.quantity, ing.unit, ing.name].filter(Boolean).join(" ")}": put the exact amount, unit and name in the description of the task that measures or adds it.` });
     }
     if (normalizedSource !== null) {
       const words = normalizeText(ing.name).split(/[^a-z]+/).filter((w) => w.length >= 3);
