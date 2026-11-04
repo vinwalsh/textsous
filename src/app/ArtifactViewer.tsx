@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { ArtifactChange, CookAlongArtifact } from "../lib/schema/artifact";
 import { buildImportUrl } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
+import { laneDisplayColors } from "../lib/lane-palette";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
@@ -83,6 +84,7 @@ function BeforeYouStart({
 }) {
   const timeline = artifact.timelineDefinition;
   const components = timeline.lanes.filter((lane) => lane.kind === "component");
+  const colors = laneDisplayColors(timeline.lanes);
   const busy = handsOnMinutes(timeline.tasks);
   const equipment = artifact.recipe.equipment;
   return (
@@ -98,7 +100,7 @@ function BeforeYouStart({
           <ul className="component-list">
             {components.map((lane) => (
               <li key={lane.id}>
-                <span className="lane-dot" style={{ backgroundColor: lane.color }} aria-hidden="true" />
+                <span className="lane-dot" style={{ backgroundColor: colors.get(lane.id) }} aria-hidden="true" />
                 {lane.label}
               </li>
             ))}

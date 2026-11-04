@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { laneDisplayColors } from "../lib/lane-palette";
 import type { TimelineDefinition } from "../lib/schema/timeline";
 import { schedule } from "../lib/scheduler/schedule";
 
@@ -18,6 +19,8 @@ export default function TimelineView({ timeline }: { timeline: TimelineDefinitio
 
   const placed = new Map(sched.tasks.map((t) => [t.id, t] as const));
   const total = Math.max(1, sched.totalMinutes);
+  // Lanes are colored by position, not by the color the artifact stored.
+  const colors = laneDisplayColors(timeline.lanes);
 
   return (
     <div>
@@ -30,7 +33,7 @@ export default function TimelineView({ timeline }: { timeline: TimelineDefinitio
         {timeline.lanes.map((lane) => (
           <div key={lane.id} className="lane-row">
             <div className="lane-label" title={lane.label}>
-              <span className="lane-dot" style={{ backgroundColor: lane.color }} aria-hidden="true" />
+              <span className="lane-dot" style={{ backgroundColor: colors.get(lane.id) }} aria-hidden="true" />
               <span>{lane.label}</span>
             </div>
             <div className="lane-track">
@@ -47,6 +50,7 @@ export default function TimelineView({ timeline }: { timeline: TimelineDefinitio
                       style={{
                         left: `${(start / total) * 100}%`,
                         width: `${Math.max(2, (span / total) * 100)}%`,
+                        borderLeftColor: colors.get(lane.id),
                       }}
                       title={`${task.label} (${start}–${start + span} min)`}
                     >

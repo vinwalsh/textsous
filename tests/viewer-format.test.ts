@@ -111,8 +111,10 @@ describe("Before you start", () => {
     // 3 prep + 4 brown + 20 simmer + 2 serve = 29; hands-on 3 + 4 + 2 = 9.
     expect(html).toContain("About 29 min to serve · 9 min hands-on · One cook");
     expect(html).toContain("What you are cooking");
-    expect(html).toMatch(/background-color:#B94C39[^>]*><\/span>Stew/);
-    expect(html).toContain("Rice");
+    // Lanes take the earth-tone palette by position, not the color the artifact stored.
+    expect(html).toMatch(/background-color:#B58D3D[^>]*><\/span>Stew/);
+    expect(html).toMatch(/background-color:#587454[^>]*><\/span>Rice/);
+    expect(html).not.toContain("#B94C39");
     expect(html).not.toMatch(/component-list[^]*Kitchen[^]*<\/ul>[^]*Equipment/);
     expect(html).toContain("<li>large pot</li>");
     expect(html).toContain("<li>wooden spoon</li>");

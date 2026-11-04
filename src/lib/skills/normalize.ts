@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { firstSentence } from "../format";
 import { fingerprintSource } from "../intake/fingerprint";
+import { KITCHEN_LANE_COLOR, componentLaneColor } from "../lane-palette";
 import { EU14_ALLERGENS, type CanonicalRecipe } from "../schema/canonical";
 import type { Lane, TimelineDefinition, TimelineTask } from "../schema/timeline";
 import type { SkillsWarning } from "./errors";
@@ -28,8 +29,6 @@ export interface NormalizedCookAlong {
 /** Time the oven takes to heat after the preheat task (10 minutes). */
 export const OVEN_HEAT_SECONDS = 600;
 
-const COMPONENT_COLORS = ["#E8B44A", "#C96A2B", "#7FB069", "#6A9FD4", "#B07CC6", "#D4776A", "#5FB3A8"];
-const KITCHEN_COLOR = "#9AA0A6";
 const HEX_COLOR = /^#[0-9a-f]{3}([0-9a-f]{3})?$/i;
 
 /** Common non-slug allergen words assistants use, mapped to EU-14 slugs. */
@@ -223,8 +222,8 @@ export function normalize(body: CookAlongRequest, source: ResolvedSource): Norma
       given && HEX_COLOR.test(given)
         ? given
         : kind === "kitchen"
-          ? KITCHEN_COLOR
-          : COMPONENT_COLORS[componentIndex % COMPONENT_COLORS.length];
+          ? KITCHEN_LANE_COLOR
+          : componentLaneColor(componentIndex);
     if (kind === "component") componentIndex += 1;
     return { id: lane.id.trim(), label: lane.label.trim(), color, kind };
   });
