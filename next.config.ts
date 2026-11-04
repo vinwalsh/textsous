@@ -20,6 +20,9 @@ export const EMBED_SCRIPT_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // `next dev` would otherwise write a managed block into AGENTS.md, which is
+  // this repo's own hand-written agent guide (Next 16.3+ option).
+  agentRules: false,
   async headers() {
     return [
       // Every path except exactly /embed (so /embed-demo and /embed.js stay protected).

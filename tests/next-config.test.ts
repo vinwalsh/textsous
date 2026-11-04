@@ -31,6 +31,10 @@ describe("next.config headers()", () => {
     }
   });
 
+  it("keeps next dev from rewriting AGENTS.md", () => {
+    expect(nextConfig.agentRules).toBe(false);
+  });
+
   it("caches /embed.js briefly and allows any origin", async () => {
     const h = await headersFor("/embed.js");
     expect(h["cache-control"]).toEqual(["public, max-age=300, s-maxage=3600"]);
