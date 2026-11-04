@@ -7,15 +7,17 @@ import {
   EMBED_ARTIFACT_MESSAGE,
   EMBED_CLOSE_MESSAGE,
   EMBED_NEED_ARTIFACT_MESSAGE,
+  adjustLine,
   embeddingOrigin,
   hostOf,
   isMessageOfType,
   isSameOrigin,
   isTrustedMessage,
   samePageCheck,
+  type EmbedAdjust,
   type EmbedRequest,
 } from "../../lib/embed";
-import type { AdjustChoices } from "../AdjustPanel";
+import { hasAdjustment, type AdjustChoices } from "../AdjustPanel";
 import ArtifactViewer from "../ArtifactViewer";
 import { initialConversionState, type ConversionState } from "../conversion";
 import ErrorBox from "../ErrorBox";
@@ -57,6 +59,54 @@ const HANDOFF_TIMEOUT_MS = 8000;
 /** First render, identical on server and client. */
 export function initialEmbedState(request: EmbedRequest): EmbedState {
   return request.kind === "none" ? { kind: "none" } : { kind: "starting", request };
+}
+
+/**
+ * The adjustment the /embed address asked for (the "Adjust with SOUS" menu),
+ * as adjust-panel choices for a recipe that serves `base`. Null until the
+ * recipe's servings are known. Pure.
+ */
+export function requestedChoices(adjust: EmbedAdjust | null | undefined, base: number | null): AdjustChoices | null {
+  if (!adjust || base === null) return null;
+  return {
+    servings: adjust.servings ?? base,
+    dietary: adjust.dietary ?? "",
+    cuisine: adjust.cuisine ?? "",
+    sousVoice: false,
+  };
+}
+
+/** Where the overlay is: still working, showing the cook along, or stopped (error, mismatch, none). */
+export type EmbedStage = "working" | "ready" | "stopped";
+
+export function embedStage(state: EmbedState): EmbedStage {
+  if (state.kind === "ready") return "ready";
+  return state.kind === "starting" || state.kind === "loading" || state.kind === "converting" ? "working" : "stopped";
+}
+
+/**
+ * The calm line at the top while the asked-for adjustment is on its way
+ * ("Scaling to 18 servings…"), from the first moment until the adjusted cook
+ * along shows or the adjustment fails (`settled`). None once the reader
+ * changes the queued choices themselves, or when the recipe already is what
+ * was asked (serves 18 already). Pure.
+ */
+export function workingLine(input: {
+  adjust: EmbedAdjust | null | undefined;
+  stage: EmbedStage;
+  /** The recipe's servings, once known. */
+  base: number | null;
+  ownQueue: boolean;
+  settled: boolean;
+}): string | null {
+  const { adjust, base } = input;
+  if (!adjust || input.ownQueue || input.settled || input.stage === "stopped") return null;
+  if (base === null) return adjustLine(adjust) || null;
+  const choices = requestedChoices(adjust, base);
+  if (!choices || !hasAdjustment(choices, base)) return null;
+  // The recipe may already serve what was asked: say only what changes.
+  const shown: EmbedAdjust = adjust.servings === base ? { ...adjust, servings: undefined } : adjust;
+  return adjustLine(shown) || null;
 }
 
 /** The open site's own page for a recipe, opened in a new tab from errors. */
@@ -254,8 +304,18 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
   // The conversion streams in part by part (useConversion keeps the screen on).
   const conversion = useConversion();
   const startConversion = conversion.start;
-  // Adjustments chosen before the cook along is ready, applied when it is.
+  // Adjustments chosen before the cook along is ready, applied when it is. The
+  // address's own (?servings=, ?dietary=, ?cuisine=) count until the reader
+  // changes the queued choices in the panel.
   const [queued, setQueued] = useState<AdjustChoices | null>(null);
+  const [ownQueue, setOwnQueue] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const requested = request.kind === "none" ? null : (request.adjust ?? null);
+  const onQueue = useCallback((choices: AdjustChoices | null) => {
+    setOwnQueue(true);
+    setQueued(choices);
+  }, []);
+  const onQueuedApplied = useCallback(() => setSettled(true), []);
 
   const close = useCallback(() => {
     if (!inFrame()) return;
@@ -354,16 +414,26 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
   }
 
   const onClose = framed ? close : undefined;
+  const base =
+    state.kind === "ready" ? state.artifact.recipe.servings : (conversion.state.recipe?.nativeServings ?? null);
+  const queuedNow = ownQueue ? queued : requestedChoices(requested, base);
+  const line = workingLine({ adjust: requested, stage: embedStage(state), base, ownQueue, settled });
 
   return (
     <div className={`ts-embed-root ${styles.root}`} onClickCapture={onClickCapture}>
       <main className={styles.main}>
+        {line ? (
+          <p className={styles.workingLine} role="status">
+            {line}
+          </p>
+        ) : null}
         {state.kind === "ready" ? (
           <ArtifactViewer
             artifact={state.artifact}
             notices={state.notices}
             overview={state.overview ?? null}
-            queuedAdjustments={queued}
+            queuedAdjustments={queuedNow}
+            onQueuedApplied={onQueuedApplied}
             embedded
             onClose={onClose}
             onStartOver={() => {
@@ -374,7 +444,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
           <EmbedStatus
             state={state}
             onClose={onClose}
-            progress={{ conversion: conversion.state, queued, onQueue: setQueued }}
+            progress={{ conversion: conversion.state, queued: queuedNow, onQueue }}
           />
         )}
       </main>

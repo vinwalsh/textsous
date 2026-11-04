@@ -152,6 +152,7 @@ export default function AdjustPanel({
   onReset,
   pending,
   autoApply,
+  onAutoApplied,
 }: {
   /** The finished cook along; null while it is being written (queued mode, see `pending`). */
   artifact: CookAlongArtifact | null;
@@ -161,6 +162,8 @@ export default function AdjustPanel({
   pending?: PendingAdjust;
   /** Choices queued before the cook along was ready: applied once, as soon as this shows. */
   autoApply?: AdjustChoices | null;
+  /** Called once the autoApply choices were applied, or failed to apply. */
+  onAutoApplied?: () => void;
 }) {
   const base = artifact ? artifact.recipe.servings : (pending?.servings ?? 1);
   const preset = artifact ? autoApply : pending?.queued;
@@ -206,7 +209,7 @@ export default function AdjustPanel({
   const applyQueued = useEffectEvent(() => {
     if (autoRan.current || !autoApply) return;
     autoRan.current = true;
-    void apply(autoApply);
+    void apply(autoApply).finally(() => onAutoApplied?.());
   });
   useEffect(() => {
     if (!autoRun) return;
