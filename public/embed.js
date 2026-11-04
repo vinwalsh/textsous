@@ -201,13 +201,17 @@
     });
   }
 
+  // TextSous colors (--ts-action #B74725, hover #9D3D20, focus --ts-accent #D45A35) and font:
+  // Inter where the reader has it, else the system UI font. No web font is loaded on the host page.
+  var FONT = "Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
+
   var BUTTON_CSS =
     ":host{display:inline-block}" +
     "button{all:initial;box-sizing:border-box;display:inline-flex;align-items:center;gap:.5em;" +
     "padding:.7em 1.2em;border-radius:30px;background:#B74725;color:#fff;cursor:pointer;" +
-    "font:600 16px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}" +
+    "font:600 16px/1.2 " + FONT + "}" +
     "button:hover{background:#9D3D20}" +
-    "button:focus-visible{outline:3px solid #D45A35;outline-offset:2px}" +
+    "button:focus-visible{outline:2px solid #D45A35;outline-offset:2px}" +
     "svg{width:1.1em;height:1.1em;flex:none}";
 
   var ICON =
@@ -249,12 +253,12 @@
     "border-radius:10px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.3)}" +
     ".bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 8px 16px;" +
     "border-bottom:1px solid #E2DBD5;background:#FFFFFF;" +
-    "font:600 15px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#22201C}" +
+    "font:600 15px/1.3 " + FONT + ";color:#22201C}" +
     ".close{all:initial;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" +
-    "padding:8px 14px;border-radius:30px;background:#F1EBE4;color:#22201C;" +
-    "font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}" +
-    ".close:hover{background:#E2DBD5}" +
-    ".close:focus-visible{outline:3px solid #D45A35;outline-offset:2px}" +
+    "padding:8px 14px;border:1px solid #E2DBD5;border-radius:30px;background:#FFFFFF;color:#22201C;" +
+    "font:600 15px/1 " + FONT + "}" +
+    ".close:hover{background:#F1EBE4}" +
+    ".close:focus-visible{outline:2px solid #D45A35;outline-offset:2px}" +
     "iframe{flex:1;width:100%;border:0;background:#FAF8F5}" +
     ".sentinel{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0}" +
     "@media (max-width:640px){.dialog{width:100vw;height:100vh;height:100dvh;border-radius:0}}";

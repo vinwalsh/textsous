@@ -73,6 +73,18 @@ describe("layout chrome", () => {
   });
 });
 
+describe("embed.js chrome", () => {
+  const code = readFileSync("public/embed.js", "utf8");
+
+  it("uses the TextSous colors and the Inter-then-system font stack", () => {
+    expect(code).toContain('var FONT = "Inter,system-ui,');
+    expect(code).toContain("background:#B74725;color:#fff");
+    expect(code).toContain("button:hover{background:#9D3D20}");
+    expect(code).toContain("outline:2px solid #D45A35;outline-offset:2px");
+    expect(code).not.toContain("BlinkMacSystemFont");
+  });
+});
+
 describe("not found page", () => {
   it("stays light and offers a way back", () => {
     const html = renderToStaticMarkup(createElement(NotFound));
