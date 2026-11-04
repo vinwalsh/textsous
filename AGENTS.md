@@ -20,14 +20,15 @@ here with the date. Check the code before trusting any doc line about it.
 - Live: M1-M6 (TASKS.md) on main at `3e56ebb`. Vercel project
   `open-textsous` deploys main to https://open.textsous.com on every push.
   CI runs typecheck, lint, the offline tests and the schema/docs diff gate.
-- Built, not yet on main: M7 on branch `m7` (82 commits after `3e56ebb`,
-  Nov 3-4): fixes from the Nov 3 review, the cook-along output format, the
-  EU-14 allergen floor, new limits and timeouts, the skills API, the
-  /assistants page, the Cook Along button (embed.js, /embed, /embed-demo),
-  the TextSous brand pass, advisory review judgments and a final round of
-  review fixes. 711 offline tests pass with MODEL_API_KEY unset, plus
-  typecheck, lint, build and the schema/docs gate. Live model checks so far:
-  four conversions on a Vercel preview of the core stream, before the merges.
+- Built, not yet on main: M7 on branch `m7` (93 commits after `3e56ebb`,
+  Nov 3-4, docs included): fixes from the Nov 3 review, the cook-along
+  output format, the EU-14 allergen floor, new limits and timeouts, the
+  skills API, the /assistants page, the Cook Along button (embed.js, /embed,
+  /embed-demo), the TextSous brand pass, advisory review judgments, a final
+  round of review fixes and a review of those fixes. 722 offline tests pass
+  with MODEL_API_KEY unset, plus typecheck, lint, build and the schema/docs
+  gate. Live model checks so far: four conversions on a Vercel preview of
+  the core stream, before the merges.
 - What the M7 deploy changes in production:
   - Stage versions moved (canonicalize 2, procedure 4, review 2, compile 2),
     so most /demo URLs are no longer cached. Warm them after the deploy:

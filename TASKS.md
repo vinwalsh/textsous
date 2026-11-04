@@ -376,6 +376,7 @@ C4 MCP tools, C5 embed, C6 design tokens, C7 /assistants, C8 brand.
   AGENTS.md alone; 44 px tap targets and AA contrast.
   Check: each finding has a test that fails before its fix; full gates.
   - 2026-11-04: 22 commits; 21 of 22 review findings and 12 of 13 visual-QA findings applied (the skills secret budget and the wordmark pill's colors kept by decision); 711/711 offline in 68 files with MODEL_API_KEY unset, typecheck, lint, build, schema/docs no diff. Rerun in the docs session: 711/711, typecheck and lint clean, schema and docs unchanged.
+  - 2026-11-04: review of those 22 commits: 10 confirmed findings (two of them the same defect), all fixed in 9 commits, every code change with a test that fails before it (SDK errors matched by class so the production build retries a dropped connection, blocked reviews always 422, the wake lock asked for again after an app switch, adjust and refused-link copy, the hourly-limit copy, no paste button on the Pasted text tab) plus the overlay-close and cross-site docs. The retry and timeout fix was also checked on the built bundle against a local fake model server. 722/722 offline in 68 files with MODEL_API_KEY unset, typecheck, lint, build, schema/docs no diff; prompts, stage versions and the cache key untouched.
 - [ ] **M7.10 Ship and verify.** `m7` reaches main and deploys; the demo
   cache is warmed (O12); the owner checks Muse (O13) and phones (O14).
   Check: production `/api/health` is ok on muse-spark-1.3 and reports

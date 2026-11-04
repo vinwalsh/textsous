@@ -3,16 +3,17 @@
 ## Hackathon build summary (M5.3; finalize Nov 4)
 Everything in this repo was built inside the window, starting from
 `960fe7a` (Initial, Oct 27): 22 commits on main through `3e56ebb` (Nov 3),
-then M7 on branch `m7`: 82 commits from `295620c` through `484750a` (Nov 3,
-22:50 ET to Nov 4, 02:06 ET; two of them are merges) plus the M7 docs
-commit. The range extends if further commits land before the Nov 4, 9:00 PM
-ET deadline. M1 foundation + first conversion (Oct 27–28), M2 Cook Along
-pipeline (Oct 28), M3 adjustments (Oct 29), M4 photo, web flow and artifact
-handoff (Oct 29–31), M5 proof and disclosure (Oct 29–Nov 3), M6 phone-check
-follow-ups (Nov 1), M7 assistants, embed, output format and brand (Nov 3–4).
+then M7 on branch `m7`: 92 commits from `295620c` through `2bd547b` (Nov 3,
+22:50 ET to Nov 4, 03:57 ET; two of them are merges and one is the M7 docs
+commit) plus the docs commit that records them. The range extends if
+further commits land before the Nov 4, 9:00 PM ET deadline. M1 foundation +
+first conversion (Oct 27–28), M2 Cook Along pipeline (Oct 28), M3
+adjustments (Oct 29), M4 photo, web flow and artifact handoff (Oct 29–31),
+M5 proof and disclosure (Oct 29–Nov 3), M6 phone-check follow-ups (Nov 1),
+M7 assistants, embed, output format and brand (Nov 3–4).
 Detail is in the dated log below. Proof through M6: 287 offline tests
 green, CI green, production `/api/health` ok on muse-spark-1.3, full eval
-23/23 (739k tokens). Proof for M7: 711 offline tests in 68 files with
+23/23 (739k tokens). Proof for M7: 722 offline tests in 68 files with
 MODEL_API_KEY unset, typecheck, lint, build and the schema/docs gate on
 `m7`, and four live conversions on a Vercel preview of the core stream;
 production checks follow the deploy (TASKS.md M7.10).
@@ -113,7 +114,7 @@ dates above govern. Every entry falls inside the window regardless.
 2026-11-01: TRUE eval root cause: full-cheerio import loads undici@7, breaking model fetch in the owner shell (import ladder proved it). Switched intake to cheerio/slim (we only use load()) + regression lock test. 287/287 + typecheck + lint + build green. Owner smoke + full eval re-run next.
 2026-11-01: M5.1 done: full eval 23/23 green, 739k tokens, skimmed clean (M4.6 numbers computed from the same run; M6.5 closed with no misses to fix, UA lock shipped). Awaiting commit of RESULTS.md + closures.
 
-2026-11-04: M7 began at 22:50 ET on Nov 3 as three parallel streams branched from `3e56ebb`: core (review fixes and the output format), skills (skills API and /assistants) and embed (the Cook Along button), plus a fourth stream for the MCP tools in the TextSous app's private repo. Each stream was reviewed twice and fixed, then merged into `m7`, brand-passed, reviewed again (contracts, security, readiness, visual QA) and fixed. 82 commits through `484750a` at 02:06 ET.
+2026-11-04: M7 began at 22:50 ET on Nov 3 as three parallel streams branched from `3e56ebb`: core (review fixes and the output format), skills (skills API and /assistants) and embed (the Cook Along button), plus a fourth stream for the MCP tools in the TextSous app's private repo. Each stream was reviewed twice and fixed, then merged into `m7`, brand-passed, reviewed again (contracts, security, readiness, visual QA) and fixed. 82 commits through `08dfcca` at 02:06 ET, then the M7 docs commit and a review of the final fixes (the last entry below).
 
 2026-11-04: Step cards follow dietary and cuisine variants: an optional `taskOverrides` list in the variant transform (dietary and cuisine stage v2), and code rewording with a warning when the model sends none. Removing an ingredient takes its amount and prep words with it and never leaves a hanging clause; a card left with nothing to do is dropped (its dependents take over its dependencies) or, when dropping is unsafe, becomes a "Skip this step" card with its timer off. Vegan porridge leaves no butter, milk or cheese in task text.
 
@@ -170,3 +171,5 @@ dates above govern. Every entry falls inside the window regardless.
 2026-11-04: TextSous app, private repo, not merged: three MCP tools on the existing server at https://textsous.com/api/mcp. get_cook_along_format (read; the open site's format, cached 10 minutes), get_recipe_source (read; refusals come back as data) and save_cook_along (write; the open site builds the cook along, then it is filed in the person's Cookbook; returns viewUrl, cookbookUrl, summary, warnings and expiresAt; 422 errors come back as data). Its input is never stricter than the skills API's, its per-person limits fit inside the open site's 60 an hour per account, and the open site gets an opaque hashed account key, never the user id.
 
 2026-11-04: Docs for M7: AGENTS.md (Status, Layout, skills and embed rules, advisory checks), TASKS.md (M7 and owner actions O10-O14), README.md (Cook Along button, AI assistants, self-hosting), HANDOFF.md (the TextSous app contract) and this log.
+
+2026-11-04: Review of the final fixes, applied in 9 commits through `2bd547b`: SDK errors are matched by class, not name, because the production build renames the SDK's classes, so a dropped model connection is now retried there and a first-call timeout keeps its daily unit (checked on the built bundle against a local fake model server); a blocked review is always a 422 with the calm copy, whatever words its reasons use; the screen wake lock is asked for again each time the page comes back into view; a slow adjustment says to apply one change at a time; a link to a PDF, an image or a page over 2 MB offers pasting the text instead of "try again"; the per-IP limit copy says to try again within the hour; the Pasted text tab no longer offers a paste button; EMBED.md, HANDOFF.md and AGENTS.md now say closing the overlay ends the reader's wait, not the conversion, and that a page framing /embed can still start conversions of its own recipes. 722/722 offline in 68 files, typecheck, lint, build, schema/docs gate green.

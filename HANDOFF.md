@@ -8,10 +8,10 @@ TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
 - **M1–M6** are on main (`3e56ebb`) and deployed at
   https://open.textsous.com. M6.1, M6.3, M6.4 and M6.6 still wait for the
   owner's phone re-checks (TASKS.md O14).
-- **M7** (TASKS.md M7.1–M7.9) is built on branch `m7`: 82 commits after
-  `3e56ebb` plus the docs commit. It is not pushed or deployed yet; M7.10
-  (ship and verify) is open.
-- Gates on `m7`: 711/711 offline in 68 files with `MODEL_API_KEY` unset,
+- **M7** (TASKS.md M7.1–M7.9) is built on branch `m7`: 93 commits after
+  `3e56ebb`, docs included. It is not deployed yet; M7.10 (ship and verify)
+  is open.
+- Gates on `m7`: 722/722 offline in 68 files with `MODEL_API_KEY` unset,
   typecheck, lint, build, and `npm run schema && npm run docs` with no diff.
 - Other open items: M5.3 (owner review of the NEW-WORK.md summary), M5.5
   (final state), and owner actions O3, O4 and O6–O14. The order for Nov 4 is
