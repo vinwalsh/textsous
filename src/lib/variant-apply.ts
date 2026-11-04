@@ -178,12 +178,12 @@ export function applyVariant(
     .map((swap) => swap.to?.name)
     .filter((name): name is string => typeof name === "string" && name.length > 0);
   const overriddenSteps = new Set(transform.stepOverrides.map((o) => o.stepId));
-  steps = steps.map((step) => {
+  steps = steps.map((step, index) => {
     if (!mentionsAny(step.text, textSwaps, protectedNames)) return step;
     const text = rewordForSwaps(step.text, textSwaps, protectedNames);
     const note = overriddenSteps.has(step.id)
-      ? `step ${step.id}: the rewritten text still named a swapped ingredient; reworded automatically`
-      : `step ${step.id}: reworded automatically for the swap; check amounts`;
+      ? `Step ${index + 1} still named a swapped ingredient after the rewrite, so it was reworded automatically.`
+      : `Step ${index + 1} was reworded automatically for the swap; check the amounts.`;
     warnings.push(note);
     return { ...step, text: text || step.text };
   });
@@ -264,7 +264,7 @@ function applyTaskOverrides(
   const overrides = new Map<string, NonNullable<VariantTransform["taskOverrides"]>[number]>();
   for (const override of transform.taskOverrides ?? []) {
     if (!byId.has(override.taskId)) {
-      warnings.push(`task override for unknown task "${override.taskId}" ignored`);
+      warnings.push("A suggested rewrite for a step card that does not exist was ignored.");
       continue;
     }
     overrides.set(override.taskId, override);
@@ -295,10 +295,12 @@ function applyTaskOverrides(
         ...candidate.checkpoints,
       ];
       if (!sameMultiset(timingsOf(task), timingsOf(candidate))) {
-        warnings.push(`task ${task.id}: rewritten text changed a timing; kept the original wording`);
+        warnings.push(
+          `The rewrite for "${task.label}" changed a timing, so the original wording was kept.`,
+        );
       } else if (texts.some((t) => mentionsAny(t, guardSwaps, protectedNames))) {
         warnings.push(
-          `task ${task.id}: rewritten text named a removed ingredient; reworded automatically`,
+          `The rewrite for "${task.label}" named a removed ingredient, so it was reworded automatically.`,
         );
       } else {
         next = candidate;
@@ -310,7 +312,8 @@ function applyTaskOverrides(
       next.checkpoints.some((c) => mentionsAny(c, swaps, protectedNames)) ||
       mentionsAny(next.cardTitle.subject, swaps, protectedNames) ||
       mentionsAny(next.cardTitle.context, swaps, protectedNames) ||
-      (typeof next.tip === "string" && mentionsAny(next.tip, swaps, protectedNames));
+      (typeof next.tip === "string" && mentionsAny(next.tip, swaps, protectedNames)) ||
+      (typeof next.why === "string" && mentionsAny(next.why, swaps, protectedNames));
     if (!stillNamed) return next;
     const removedOnly = swaps.filter((s) => s.newName === null).map((s) => s.oldName);
     const fallbackDescription =
@@ -327,10 +330,11 @@ function applyTaskOverrides(
       completionCue: reword(next.completionCue) || "Done.",
       checkpoints: next.checkpoints.map(reword).filter((c) => c.length > 0),
       tip: typeof next.tip === "string" ? reword(next.tip) || null : next.tip,
+      why: typeof next.why === "string" ? reword(next.why) || null : next.why,
     };
     const named = swaps
       .filter((swap) =>
-        [next.label, next.description, next.completionCue, ...next.checkpoints, next.cardTitle.subject, next.cardTitle.context, next.tip ?? ""].some(
+        [next.label, next.description, next.completionCue, ...next.checkpoints, next.cardTitle.subject, next.cardTitle.context, next.tip ?? "", next.why ?? ""].some(
           (t) => mentions(t, swap, protectedNames),
         ),
       )
@@ -338,7 +342,7 @@ function applyTaskOverrides(
         swap.newName === null ? `removed ${swap.oldName}` : `${swap.oldName} → ${swap.newName}`,
       );
     warnings.push(
-      `task ${task.id}: step card reworded automatically (${named.join(", ")}); check amounts`,
+      `"${task.label}" was reworded automatically (${named.join(", ")}); check the amounts.`,
     );
     return rewritten;
   });

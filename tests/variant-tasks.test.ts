@@ -86,7 +86,8 @@ describe("variant step cards", () => {
     const melt = artifact.timelineDefinition.tasks.find((t) => t.id === "task-melt-butter");
     expect(melt?.description).toBe("Melt the coconut oil in a small skillet until it foams and smells nutty.");
     expect(melt?.cardTitle.subject).toBe("coconut oil");
-    expect(warnings.some((w) => w.includes("task-melt-butter"))).toBe(true);
+    expect(warnings.some((w) => w.includes("\"Brown butter\" was reworded"))).toBe(true);
+    expect(warnings.some((w) => /task-|step-\d/.test(w))).toBe(false);
     expect(artifact.changes.some((c) => c.detail.includes("reworded automatically"))).toBe(true);
     // Timings, ids and structure unchanged.
     expect(artifact.timelineDefinition.tasks.map((t) => [t.id, t.minutes])).toEqual(
@@ -113,7 +114,7 @@ describe("variant step cards", () => {
     expect(melt?.description).toBe("Warm the coconut oil in a small skillet until it shimmers.");
     expect(melt?.label).toBe("Warm coconut oil");
     expect(allTaskText(artifact).filter((t) => DAIRY.test(t))).toEqual([]);
-    expect(warnings.some((w) => w.startsWith("task task-simmer-porridge"))).toBe(true);
+    expect(warnings.some((w) => w.startsWith("\"Simmer porridge\""))).toBe(true);
   });
 
   it("drops an override that changes a timing or names a removed ingredient", () => {

@@ -181,10 +181,14 @@ export function applyScaling(
           kind: "scale" as const,
           detail: `rescaled ${recipe.servings} → ${targetServings} servings (×${formatAmount(targetServings / recipe.servings)})`,
         },
-        ...flags.map((flag) => ({
-          kind: "scale" as const,
-          detail: `verify "${flag.token}" in step ${flag.stepId} (not rescaled)`,
-        })),
+        ...flags.map((flag) => {
+          const index = recipe.steps.findIndex((s) => s.id === flag.stepId);
+          const where = index >= 0 ? `step ${index + 1}` : "a step";
+          return {
+            kind: "scale" as const,
+            detail: `Check "${flag.token}" in ${where}; it was not rescaled.`,
+          };
+        }),
       ],
     },
     flags,

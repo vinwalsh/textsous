@@ -206,7 +206,7 @@ describe("applyScaling", () => {
     expect(flags).toEqual([{ stepId: "step-1", token: "3" }]);
     expect(artifact.changes).toContainEqual({
       kind: "scale",
-      detail: 'verify "3" in step step-1 (not rescaled)',
+      detail: 'Check "3" in step 1; it was not rescaled.',
     });
   });
 });
