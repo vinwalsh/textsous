@@ -9,6 +9,7 @@ import {
   glassesArtifactSrc,
   glassesInstallLink,
   glassesRecipeUrl,
+  glassesRequestFromSearch,
   glassesStorageKey,
   GUIDE_IDLE,
   guideElapsedMs,
@@ -46,6 +47,7 @@ export interface GlassesDemo {
 }
 
 type LoadState =
+  | { kind: "boot" }
   | { kind: "pick" }
   | { kind: "loading" }
   | { kind: "error"; error: FriendlyError }
@@ -194,20 +196,26 @@ function useSpatialKeys(onEscape: () => boolean): void {
  * glasses' D-pad and pinch reach it.
  */
 export default function GlassesApp({
-  request,
+  request: given,
   demos,
 }: {
-  request: GlassesRequest;
+  /** What to show; read from the page's query string when left out. */
+  request?: GlassesRequest;
   demos: readonly GlassesDemo[];
 }) {
-  const [state, setState] = useState<LoadState>(() => initialGlassesState(request));
+  const [state, setState] = useState<LoadState>(() => (given ? initialGlassesState(given) : { kind: "boot" }));
   const escapeRef = useRef<() => boolean>(() => false);
   useSpatialKeys(() => escapeRef.current());
 
   useEffect(() => {
-    if (request.kind === "none") return;
     let live = true;
     const id = setTimeout(() => {
+      const request = given ?? glassesRequestFromSearch(window.location.search);
+      if (request.kind === "none") {
+        setState({ kind: "pick" });
+        return;
+      }
+      setState({ kind: "loading" });
       void loadArtifact(request).then((next) => {
         if (live) setState(next);
       });
@@ -216,7 +224,7 @@ export default function GlassesApp({
       live = false;
       clearTimeout(id);
     };
-  }, [request]);
+  }, [given]);
 
   return (
     <div className="ts-glasses-root">
@@ -234,6 +242,13 @@ export default function GlassesApp({
 
 /** Picker, loading and error screens. */
 export function GlassesStatus({ state, demos }: { state: LoadState; demos: readonly GlassesDemo[] }) {
+  if (state.kind === "boot") {
+    return (
+      <p className="g-status g-muted" role="status">
+        Loading…
+      </p>
+    );
+  }
   if (state.kind === "loading") {
     return (
       <div className="g-status" role="status">

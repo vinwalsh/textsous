@@ -3,6 +3,7 @@
  * task order and the guide clock from the schedule, task timers, saved
  * state, the install link and link checks. Client-safe: no node imports.
  */
+import { parseEmbedRequest, type EmbedRequest } from "./embed";
 import type { CookAlongArtifact } from "./schema/artifact";
 import type { TimelineDefinition, TimelineTask } from "./schema/timeline";
 import { formatQuantityWithUnit } from "./scaling/units";
@@ -298,6 +299,12 @@ export function glassesRecipeUrl(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** What /glasses was asked to show, from the page's query string (`?src=` wins over `?url=`). */
+export function glassesRequestFromSearch(search: string): EmbedRequest {
+  const params = new URLSearchParams(search);
+  return parseEmbedRequest({ src: params.get("src") ?? undefined, url: params.get("url") ?? undefined });
 }
 
 export type Direction = "left" | "right" | "up" | "down";

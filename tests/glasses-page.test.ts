@@ -72,6 +72,14 @@ describe("/glasses page", () => {
     expect(html).not.toContain("site-header");
   });
 
+  it("reads the query in the browser: the static page first shows Loading, not the picker", () => {
+    const html = renderToStaticMarkup(
+      createElement(GlassesApp, { demos: [{ url: "https://example.com/soup", host: "example.com", title: "Soup" }] }),
+    );
+    expect(html).toContain("Loading…");
+    expect(html).not.toContain("Choose a recipe");
+  });
+
   it("starts loading for ?src= and ?url=", () => {
     for (const request of [
       { kind: "src" as const, src: "https://open.textsous.com/api/artifact/x?sig=y" },

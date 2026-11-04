@@ -8,6 +8,7 @@ import {
   glassesArtifactSrc,
   glassesInstallLink,
   glassesRecipeUrl,
+  glassesRequestFromSearch,
   glassesStorageKey,
   GUIDE_IDLE,
   guideElapsedMs,
@@ -249,6 +250,18 @@ describe("links", () => {
     expect(glassesArtifactSrc(`http://localhost:3000/api/artifact/${id}?sig=${sig}`, "http://localhost:3000")).toBe(
       `http://localhost:3000/api/artifact/${id}?sig=${sig}`,
     );
+  });
+
+  it("reads ?src= before ?url= from the query string", () => {
+    expect(glassesRequestFromSearch("")).toEqual({ kind: "none" });
+    expect(glassesRequestFromSearch("?url=https%3A%2F%2Fexample.com%2Fsoup")).toEqual({
+      kind: "url",
+      url: "https://example.com/soup",
+    });
+    expect(glassesRequestFromSearch("?url=https%3A%2F%2Fexample.com&src=%2Fapi%2Fartifact%2Fx")).toEqual({
+      kind: "src",
+      src: "/api/artifact/x",
+    });
   });
 
   it("accepts only http(s) recipe pages", () => {

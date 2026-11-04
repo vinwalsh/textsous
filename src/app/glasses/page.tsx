@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { parseEmbedRequest } from "../../lib/embed";
 import { GLASSES_APP_NAME } from "../../lib/glasses";
 import { glassesDemos } from "./demos";
 import GlassesApp from "./GlassesApp";
@@ -25,17 +24,14 @@ export const viewport: Viewport = {
 /**
  * Heads-up Cook Along for Meta Ray-Ban Display, chrome-less like /embed.
  * `?src=` (this site's signed artifact link) or `?url=` (a recipe page,
- * converted cache-first); with neither, a picker of the demo recipes.
+ * converted cache-first); with neither, a picker of the demo recipes. The
+ * page is static (the demo list is read at build time, like /demo); the
+ * browser reads the query.
  */
-export default async function GlassesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ url?: string | string[]; src?: string | string[] }>;
-}) {
-  const params = await searchParams;
+export default function GlassesPage() {
   return (
     <main>
-      <GlassesApp request={parseEmbedRequest(params)} demos={glassesDemos()} />
+      <GlassesApp demos={glassesDemos()} />
     </main>
   );
 }
