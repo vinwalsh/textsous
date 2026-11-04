@@ -581,3 +581,6 @@
 .embeddedStats { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 6px 0 18px; }
 .embeddedStats .stats { margin: 0; }
 .embeddedStats .dietaryControls { margin: 0; }
+/* Embedded in the site's 1180 px body, a slimmer ingredients aside leaves a
+   five-lane timeline (837 px) room without a sideways scroll. */
+@media (min-width: 1101px) { .page.embedded .layout { grid-template-columns: minmax(0, 1fr) 290px; gap: 30px; } }
