@@ -183,9 +183,12 @@ export function friendlyError(
         href: assistantsHref(opts.recipeUrl),
       };
     }
+    // The per-IP limit counts live requests over an hour, so a minute's
+    // wait is not enough.
     return {
       title: "Slow down a little",
-      detail: "Too many requests in a short time. Wait a minute and try again.",
+      detail:
+        "This connection has reached its hourly limit. Try again within the hour — recipes that were already converted still open right away.",
     };
   }
   if (status === 500) {

@@ -115,7 +115,8 @@ describe("friendlyError", () => {
       status: 429,
       message: "Rate limit exceeded. Try again later.",
       title: "Slow down a little",
-      detailPart: /Wait a minute/,
+      // 20 live requests an hour per IP: a minute's wait is not enough.
+      detailPart: /reached its hourly limit\. Try again within the hour/,
     },
     {
       name: "daily cap",
