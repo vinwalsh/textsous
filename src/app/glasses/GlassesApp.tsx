@@ -265,6 +265,11 @@ export default function GlassesApp({
 
 /** Picker, loading and error screens. */
 export function GlassesStatus({ state, demos }: { state: LoadState; demos: readonly GlassesDemo[] }) {
+  // React's autoFocus skips links: focus the way out by hand.
+  const choose = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (state.kind === "error") choose.current?.focus();
+  }, [state.kind]);
   if (state.kind === "boot") {
     return (
       <p className="g-status g-muted" role="status">
@@ -285,7 +290,7 @@ export function GlassesStatus({ state, demos }: { state: LoadState; demos: reado
       <div className="g-status" role="alert">
         <p className="g-status-title">{state.error.title}</p>
         <p className="g-muted">{state.error.detail}</p>
-        <a className="g-btn" href="/glasses" autoFocus>
+        <a className="g-btn" href="/glasses" ref={choose}>
           Choose a recipe
         </a>
       </div>
@@ -296,6 +301,10 @@ export function GlassesStatus({ state, demos }: { state: LoadState; demos: reado
 }
 
 export function GlassesPicker({ demos }: { demos: readonly GlassesDemo[] }) {
+  const first = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    first.current?.focus();
+  }, []);
   return (
     <nav className="g-picker" aria-label="Choose a recipe">
       <h1 className="g-picker-title">Choose a recipe</h1>
@@ -303,7 +312,11 @@ export function GlassesPicker({ demos }: { demos: readonly GlassesDemo[] }) {
       <ul className="g-picker-list">
         {demos.map((demo, i) => (
           <li key={demo.url}>
-            <a className="g-pick" href={`/glasses?url=${encodeURIComponent(demo.url)}`} autoFocus={i === 0}>
+            <a
+              className="g-pick"
+              href={`/glasses?url=${encodeURIComponent(demo.url)}`}
+              ref={i === 0 ? first : undefined}
+            >
               <span className="g-pick-title">{demo.title}</span>
               <span className="g-pick-host">{demo.host}</span>
             </a>
@@ -731,6 +744,14 @@ function GlassesCookAlong({
       // Blocked storage: this visit still works, it just won't survive a reload.
     }
   }, [artifact.id, order, current, guide, timers, announced, beat]);
+
+  // When the guide moves on or a timer row goes away, focus would fall to the
+  // page and the D-pad would have nothing to move from: put it on the main button.
+  useEffect(() => {
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    mainButton.current?.focus({ preventScroll: true });
+  }, [current, timers]);
 
   // Any button press lets the browser speak again.
   useEffect(() => {
