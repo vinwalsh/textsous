@@ -1,6 +1,6 @@
 :root {
   /* TextSous design tokens (contract C6). Light theme only; text on
-     --ts-action is white. Existing styles below are unchanged for now. */
+     --ts-action is white. */
   --ts-bg: #FAF8F5;
   --ts-ink: #22201C;
   --ts-muted: #726A65;
@@ -14,61 +14,239 @@
   --ts-radius: 10px;
   --ts-pill: 30px;
 
-  --ink: #1c1917;
-  --muted: #57534e;
-  --line: #e3ded6;
-  --well: #f5f4f2;
-  --accent: #17603a;
+  /* Older names, mapped onto the tokens until every rule uses --ts-*. */
+  --ink: var(--ts-ink);
+  --muted: var(--ts-muted);
+  --line: var(--ts-border);
+  --well: var(--ts-secondary);
+  --accent: var(--ts-action);
   --warn-bg: #fef6e7;
   --warn-line: #e3c878;
   --warn-ink: #7a5200;
   --alert-bg: #fdeeee;
   --alert-line: #efb4b4;
   --alert-ink: #9c1f1f;
+
+  color-scheme: light;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ts-bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Header, page, footer: one centered column, at most 720 px of content,
+   16 px gutters on phones. The footer sits at the bottom of short pages. */
 body {
   margin: 0;
-  color: var(--ink);
-  background: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--ts-ink);
+  background: var(--ts-bg);
+  font-family: var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-main {
-  max-width: 44rem;
+body > main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: calc(720px + 32px);
   margin: 0 auto;
-  padding: 1rem 1rem 4rem;
+  padding: 8px 16px 56px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ts-ink);
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  font-size: 1.5rem;
-  margin: 0.5rem 0 0.25rem;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 12px 0 8px;
 }
 
 h2 {
-  font-size: 1.25rem;
-  margin: 1.5rem 0 0.5rem;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 28px 0 10px;
 }
 
 h3 {
-  font-size: 1.05rem;
-  margin: 1.25rem 0 0.5rem;
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 650;
+  margin: 24px 0 8px;
+}
+
+h4 {
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+a {
+  color: var(--ts-action);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--ts-action-hover);
 }
 
 .tagline {
-  color: var(--muted);
-  margin: 0 0 1rem;
+  color: var(--ts-muted);
+  margin: 0 0 16px;
 }
 
 .meta {
-  color: var(--muted);
-  font-size: 0.9rem;
+  color: var(--ts-muted);
+  font-size: 14px;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ts-accent);
   outline-offset: 2px;
+}
+
+/* Small labels: section kickers, card labels, phase names. */
+.label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Site header ---------- */
+
+.site-header {
+  padding: 20px 16px 4px;
+}
+
+.site-header-inner,
+.site-footer-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.site-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 20px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ts-ink);
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.brand:hover {
+  color: var(--ts-ink);
+}
+
+.wordmark {
+  font-family: var(--font-fredoka, "Fredoka"), var(--font-inter, "Inter"), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1;
+  color: #22201C;
+}
+
+.open-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: var(--ts-pill);
+  background: var(--ts-accent-soft);
+  color: var(--ts-action);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 18px;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  text-decoration: underline;
+}
+
+.site-intro {
+  margin: 6px 0 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ts-ink);
+}
+
+/* ---------- Site footer ---------- */
+
+.site-footer {
+  padding: 0 16px;
+  color: var(--ts-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.site-footer-inner {
+  border-top: 1px solid var(--ts-border);
+  padding: 18px 0 36px;
+}
+
+.site-footer p {
+  margin: 0 0 6px;
 }
 
 .tabs {
@@ -421,19 +599,6 @@ textarea {
 details summary {
   cursor: pointer;
   font-weight: 600;
-}
-
-.site-footer {
-  max-width: 44rem;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 2.5rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.site-footer p {
-  margin: 0.3rem 0;
 }
 
 @media (min-width: 40rem) {

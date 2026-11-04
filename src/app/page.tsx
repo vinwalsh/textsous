@@ -8,10 +8,8 @@ export default async function Home({
   const params = await searchParams;
   return (
     <main>
-      <h1>TextSous Open</h1>
-      <p>
-        Convert any recipe into the TextSous Cook Along format. <a href="/demo">Or try a demo recipe.</a>
-      </p>
+      {/* The site header carries the visible title and intro. */}
+      <h1 className="visually-hidden">TextSous Open: turn a recipe into a cook along</h1>
       <ConverterForm initialUrl={params.url ?? ""} initialSrc={params.src ?? ""} />
     </main>
   );
