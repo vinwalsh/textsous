@@ -1,0 +1,41 @@
+.root {
+  min-height: 100vh;
+  background: var(--ts-bg, #faf8f5);
+  color: var(--ts-ink, #22201c);
+}
+
+.main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+
+.status {
+  background: var(--ts-card, #ffffff);
+  border: 1px solid var(--ts-border, #e2dbd5);
+  border-radius: var(--ts-radius, 10px);
+  padding: 1rem 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.title {
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem;
+}
+
+.footer {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 1rem 1.5rem;
+  color: var(--ts-muted, #726a65);
+  font-size: 0.85rem;
+}
+
+.linkButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ts-ink, #22201c);
+  text-decoration: none;
+  line-height: 1.4;
+}

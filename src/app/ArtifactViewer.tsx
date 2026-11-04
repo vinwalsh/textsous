@@ -175,11 +175,16 @@ export default function ArtifactViewer({
   artifact,
   onStartOver,
   notices = [],
+  embedded = false,
+  onClose,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
   /** Warnings the convert call returned, shown above Before you start. */
   notices?: readonly string[];
+  /** Inside the /embed overlay: save opens a new tab, Close replaces "Convert another recipe". */
+  embedded?: boolean;
+  onClose?: () => void;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -189,6 +194,7 @@ export default function ArtifactViewer({
   const [prepDone, setPrepDone] = useState<Set<string>>(new Set());
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveError, setSaveError] = useState<FriendlyError | null>(null);
+  const [importUrl, setImportUrl] = useState<string | null>(null);
   const [tipsMode, setTipsMode] = useState<TipsMode>(readTipsMode);
 
   function chooseTipsMode(mode: TipsMode) {
@@ -232,6 +238,9 @@ export default function ArtifactViewer({
 
   async function saveToTextSous() {
     if (saveBusy) return;
+    // Embedded: open the tab now, inside the click, so popup blockers allow it.
+    const tab = embedded ? window.open("about:blank", "_blank") : null;
+    if (tab) tab.opener = null;
     setSaveBusy(true);
     setSaveError(null);
     const res = await apiFetch("/api/artifact", {
@@ -241,11 +250,17 @@ export default function ArtifactViewer({
     });
     const data = res.data as { url?: string; error?: string } | null;
     if (!res.ok || !data || !data.url) {
+      tab?.close();
       setSaveError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }));
       setSaveBusy(false);
       return;
     }
     setSaveBusy(false);
+    if (embedded) {
+      setImportUrl(buildImportUrl(data.url));
+      if (tab) tab.location.href = buildImportUrl(data.url);
+      return;
+    }
     window.location.href = buildImportUrl(data.url);
   }
 
@@ -387,10 +402,25 @@ export default function ArtifactViewer({
         <button type="button" className="btn btn-primary" onClick={saveToTextSous} disabled={saveBusy}>
           {saveBusy ? "Saving…" : "Save to TextSous"}
         </button>
-        <button type="button" className="btn" onClick={onStartOver}>
-          Convert another recipe
-        </button>
+        {embedded && onClose ? (
+          <button type="button" className="btn" onClick={onClose}>
+            Close
+          </button>
+        ) : (
+          <button type="button" className="btn" onClick={onStartOver}>
+            Convert another recipe
+          </button>
+        )}
       </div>
+      {importUrl ? (
+        <p className="meta">
+          TextSous opened in a new tab.{" "}
+          <a href={importUrl} target="_blank" rel="noopener">
+            Continue to TextSous
+          </a>{" "}
+          if it didn&apos;t.
+        </p>
+      ) : null}
       <p className="meta">Saving keeps the recipe for 24 hours so TextSous can import it.</p>
     </article>
   );

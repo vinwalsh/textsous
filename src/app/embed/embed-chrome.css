@@ -1,0 +1,13 @@
+/* Loaded only by /embed: hide the site header and footer inside the overlay.
+   Scoped with :has() so it is harmless if it ever reaches another route.
+   The brand pass's site header must keep the `site-header` class (or be a
+   direct <header> child of <body>) for this to apply. */
+body:has(.ts-embed-root) {
+  background: var(--ts-bg, #faf8f5);
+}
+
+body:has(.ts-embed-root) > .site-header,
+body:has(.ts-embed-root) > header,
+body:has(.ts-embed-root) > .site-footer {
+  display: none;
+}
