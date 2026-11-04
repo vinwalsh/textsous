@@ -21,6 +21,25 @@ export function scaleFlagText(flag: ScaleFlag, steps: ReadonlyArray<{ id: string
   return `${where}: “${flag.token}” was left as printed — check it yourself.`;
 }
 
+/**
+ * Friendly copy for a failed adjustment. The daily-cap button keeps the
+ * recipe's link (/assistants?url=...) when the artifact came from a URL (C7).
+ * Pure.
+ */
+export function adjustFailure(
+  res: { status: number | null; timeout: boolean },
+  data: { error?: string; reason?: string } | null,
+  artifact: Pick<CookAlongArtifact, "recipe">,
+): FriendlyError {
+  const credit = artifact.recipe.credit;
+  const recipeUrl = credit.kind === "url" ? (credit.url ?? undefined) : undefined;
+  return friendlyError(res.status, data?.error ?? "", {
+    timeout: res.timeout,
+    reason: data?.reason,
+    ...(recipeUrl ? { recipeUrl } : {}),
+  });
+}
+
 function labelTarget(target: string): string {
   return target.charAt(0).toUpperCase() + target.slice(1);
 }
@@ -65,7 +84,7 @@ export default function AdjustPanel({
     });
     const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.artifact) {
-      setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout, reason: data?.reason }));
+      setError(adjustFailure(res, data, artifact));
       setApplying(false);
       return;
     }

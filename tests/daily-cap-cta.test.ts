@@ -1,8 +1,10 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { adjustFailure } from "../src/app/AdjustPanel";
 import ErrorBox from "../src/app/ErrorBox";
 import { assistantsHref, friendlyError } from "../src/app/request";
+import { fixtureArtifact } from "./helpers/fixture-artifact";
 
 const RECIPE = "https://example.com/recipes/toast?x=1&y=2";
 
@@ -36,6 +38,19 @@ describe("daily cap call to action (C2)", () => {
       expect(err.action).toBeUndefined();
     }
     expect(friendlyError(429, "Rate limit exceeded. Try again later.").title).toBe("Slow down a little");
+  });
+
+  it("keeps the recipe link when an adjustment hits the cap on a URL recipe", () => {
+    const fromUrl = fixtureArtifact();
+    expect(fromUrl.recipe.credit.kind).toBe("url");
+    const capped = { status: 429, timeout: false };
+    const body = { error: "Daily free conversions are used up.", reason: "daily_cap" };
+    expect(adjustFailure(capped, body, fromUrl).href).toBe(
+      `/assistants?url=${encodeURIComponent(fromUrl.recipe.credit.url ?? "")}`,
+    );
+    const pasted = { ...fromUrl, recipe: { ...fromUrl.recipe, credit: { ...fromUrl.recipe.credit, kind: "text" as const, url: null } } };
+    expect(adjustFailure(capped, body, pasted).href).toBe("/assistants");
+    expect(adjustFailure({ status: 429, timeout: false }, { error: "slow", reason: "rate_limited" }, fromUrl).action).toBeUndefined();
   });
 
   it("renders the assistants button in the error box", () => {
