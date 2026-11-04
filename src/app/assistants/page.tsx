@@ -54,19 +54,15 @@ export default async function AssistantsPage({
           Connect Muse
         </h2>
         <p className={styles.small}>
-          Muse is Meta&apos;s personal agent at <a href={MUSE_URL}>muse.ai</a>, for adults in the
-          US.
+          Muse is Meta&apos;s personal agent at <a href={MUSE_URL}>muse.ai</a>. You add TextSous
+          to it from a Muse chat.
         </p>
         <ol className={styles.steps}>
           <li>
             Open <a href={MUSE_URL}>muse.ai</a> and sign in.
           </li>
           <li>
-            Go to <strong>Settings</strong> &gt; <strong>Connectors</strong> &gt;{" "}
-            <strong>Add custom connector</strong>.
-          </li>
-          <li>
-            Paste the TextSous address:
+            In a chat, ask Muse to create a custom connector for TextSous at this address:
             <span className={styles.address}>
               <code className={styles.code}>{TEXTSOUS_MCP_URL}</code>
               <CopyButton text={TEXTSOUS_MCP_URL} label="Copy address" />
@@ -78,6 +74,10 @@ export default async function AssistantsPage({
             photo. For a photo, Muse reads it and checks the words with you before saving.
           </li>
         </ol>
+        <p className={styles.small}>
+          Muse asking something different? <a href={TEXTSOUS_ASSISTANTS_URL}>Steps for Muse</a> on
+          textsous.com stay up to date.
+        </p>
       </section>
 
       <section className={styles.card} aria-labelledby="others-heading">

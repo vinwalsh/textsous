@@ -12,11 +12,16 @@ describe("/assistants", () => {
   it("shows the Muse steps, the MCP address and notes for the other assistants", async () => {
     const html = await render();
     expect(html).toContain("Connect Muse");
-    expect(html).toContain("Settings</strong> &gt; <strong>Connectors</strong> &gt; <strong>Add custom connector");
+    // Muse adds custom connectors from a chat (Meta's help: "How Muse works
+    // with Connectors"); Settings > Connectors lists only listed connectors.
+    expect(html).toContain("In a chat, ask Muse to create a custom connector for TextSous");
+    expect(html).not.toMatch(/Settings<\/strong> &gt;|Add custom connector/);
+    expect(html).not.toContain("adults in the");
+    expect(html).toContain("Steps for Muse");
     expect(html).toContain("https://textsous.com/api/mcp");
     expect(html).toContain("Copy address");
     expect(html).toContain('href="https://muse.ai"');
-    for (const name of ["ChatGPT", "Claude", "Gemini"]) expect(html).toContain(`Steps for ${name}`);
+    for (const name of ["Muse", "ChatGPT", "Claude", "Gemini"]) expect(html).toContain(`Steps for ${name}`);
     expect(html).toContain('href="https://textsous.com/assistants"');
     expect(html).toMatch(/not limited by this\s+site&#x27;s daily free conversions/);
     expect(html).toContain("TextSous Cookbook");
