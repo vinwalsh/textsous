@@ -7,7 +7,8 @@ import styles from "./CookAlongView.module.css";
 /**
  * The Cook Along body of the finished page: the TextSous app's Cook Along
  * view (component swimlanes, a guided timeline from Mise en Place to
- * serving, step cards that open with details and timers). The caller
+ * serving, step cards that open with details and timers). It opens on the
+ * swimlanes, so Cook is in view; Read this First is one tab away. The caller
  * adapts the artifact with cookingPilotInput (src/lib/cooking-pilot/
  * from-artifact.ts) and shows its own sections when that returns null.
  */
@@ -15,7 +16,7 @@ export default function CookAlongView({ input }: { input: CookingPilotInput | nu
   if (!input) return null;
   return (
     <section className={styles.body} aria-label="Cook Along">
-      <CookingPilot embedded recipe={input.recipe} timelineDefinition={input.timelineDefinition} />
+      <CookingPilot embedded initialTab="timeline" recipe={input.recipe} timelineDefinition={input.timelineDefinition} />
     </section>
   );
 }

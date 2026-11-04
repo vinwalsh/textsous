@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
+import DemoPage from "../src/app/demo/page";
 import { MAX_TASK_MINUTES as OPEN_MAX_TASK_MINUTES } from "../src/lib/schema/timeline";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../src/lib/schema/artifact";
 import { LANE_PALETTE, KITCHEN_LANE_COLOR } from "../src/lib/lane-palette";
@@ -219,8 +220,11 @@ describe("the finished page's Cook Along body", () => {
       createElement(ArtifactViewer, { artifact: fixtureArtifact("toasted-oat-porridge"), onStartOver: noop }),
     );
     expect(html).toContain('aria-label="Cook Along"');
+    // It opens on the swimlanes with Cook in view; Read this First is a tab.
+    expect(html).toContain('aria-label="Cooking timeline"');
+    expect(html).toMatch(/<button[^>]*>(<svg[^>]*>[\s\S]*?<\/svg>)?Cook<\/button>/);
     expect(html).toContain("Read this First");
-    expect(html).toContain("Your kitchen, ready.");
+    expect(html).not.toContain("Your kitchen, ready.");
     expect(html).not.toContain("<h3>Timeline</h3>");
     // The header parts and the action row stay.
     expect(html).toContain("Toasted Oat Porridge with Brown Butter Apples");
@@ -261,6 +265,14 @@ describe("the finished page's Cook Along body", () => {
 });
 
 describe("/cook-along-demo", () => {
+  it("is the first link on /demo", () => {
+    const html = renderToStaticMarkup(createElement(DemoPage));
+    const at = html.indexOf('href="/cook-along-demo"');
+    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeLessThan(html.indexOf('href="/?url='));
+  });
+
+
   it("serves the committed fixture artifact, current with the fixture", () => {
     const committed = JSON.parse(readFileSync("src/app/cook-along-demo/artifact.json", "utf8"));
     expect(committed).toEqual(JSON.parse(JSON.stringify(fixtureArtifact("toasted-oat-porridge"))));

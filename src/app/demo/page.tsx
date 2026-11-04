@@ -40,6 +40,9 @@ export default function DemoPage() {
         Twenty recipes we test with. Pick one and it opens as a Cook Along: one converted
         recently opens right away; a fresh one takes about a minute and fills in as it goes.
       </p>
+      <p className="meta">
+        No time to wait? <Link href="/cook-along-demo">Open a finished Cook Along</Link> instantly.
+      </p>
       {urls.length === 0 ? (
         <p>No demo recipes are listed yet.</p>
       ) : (
@@ -60,9 +63,6 @@ export default function DemoPage() {
       </p>
       <p className="meta">
         Or try <Link href="/demo-sites">Adjust with SOUS on four demo recipe blogs</Link>.
-      </p>
-      <p className="meta">
-        No time to wait? <Link href="/cook-along-demo">Open a finished Cook Along</Link> instantly.
       </p>
       <p className="meta">
         <Link href="/">Back to the converter</Link>

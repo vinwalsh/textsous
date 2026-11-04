@@ -48,7 +48,7 @@ export interface CookingPilotRecipe {
   allergenTraces: string[];
 }
 
-type Tab = "overview" | "timeline" | "recipe";
+export type Tab = "overview" | "timeline" | "recipe";
 type WithoutTime<T> = T extends unknown ? Omit<T, "nowMs"> : never;
 const tabs: { id: Tab; label: string }[] = [
   { id: "overview", label: "Read this First" }, { id: "timeline", label: "Cook Along" },
@@ -203,6 +203,8 @@ export interface CookingPilotProps {
   /** Inside another page that already shows the title, credit and allergens:
    * no masthead, title block or footer, and no full-height page. */
   embedded?: boolean;
+  /** The tab it opens on: "overview" (Read this First, the default) or "timeline" (the swimlanes and Cook). */
+  initialTab?: Tab;
   mealAttributes?: readonly CookingMealAttribute[];
   recipe: CookingPilotRecipe;
   timelineDefinition?: CookingTimelineDefinition;
@@ -248,7 +250,7 @@ interface CookingViewState {
 }
 
 export function CookingPilot(props: CookingPilotProps) {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(props.initialTab ?? "overview");
   const [serveInput, setServeInput] = useState("");
   const { detailLevel, changeDetailLevel } = useInstructionDetailPreference();
   const definition = props.timelineDefinition;
