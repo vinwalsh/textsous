@@ -24,6 +24,17 @@
           "type": "number",
           "exclusiveMinimum": 0
         },
+        "nativeServings": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "ingredients": {
           "type": "array",
           "items": {
@@ -281,6 +292,7 @@
       "required": [
         "title",
         "servings",
+        "nativeServings",
         "ingredients",
         "equipment",
         "steps",

@@ -36,12 +36,25 @@ export const StepOverrideSchema = z.strictObject({
   text: z.string().min(1),
 });
 
+// Rewritten step-card text for a timeline task that mentions a swapped or
+// removed ingredient. Only the fields that change are set; code keeps timing
+// numbers unchanged and refuses text that names a removed ingredient.
+export const TaskOverrideSchema = z.strictObject({
+  taskId: z.string().min(1),
+  label: z.string().min(1).nullish(),
+  description: z.string().min(1).nullish(),
+  completionCue: z.string().min(1).nullish(),
+  checkpoints: z.array(z.string().min(1)).nullish(),
+});
+
 export const VariantTransformSchema = z.strictObject({
   kind: VariantKindSchema,
   target: z.string().min(1),
   titleOverride: z.string().nullish(),
   swaps: z.array(VariantSwapSchema),
   stepOverrides: z.array(StepOverrideSchema),
+  // Additive (stage v2): older transforms and recordings omit it.
+  taskOverrides: z.array(TaskOverrideSchema).nullish(),
   techniqueChanges: z.array(z.string().min(1)),
   rationale: z.array(z.string().min(1)),
 });
@@ -58,6 +71,7 @@ export const CuisineVariantTransformSchema = VariantTransformSchema.extend({
 
 export type VariantSwap = z.infer<typeof VariantSwapSchema>;
 export type StepOverride = z.infer<typeof StepOverrideSchema>;
+export type TaskOverride = z.infer<typeof TaskOverrideSchema>;
 export type VariantTransform = z.infer<typeof VariantTransformSchema>;
 export type DietaryVariantTransform = z.infer<typeof DietaryVariantTransformSchema>;
 export type CuisineVariantTransform = z.infer<typeof CuisineVariantTransformSchema>;

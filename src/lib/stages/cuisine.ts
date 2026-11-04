@@ -10,9 +10,14 @@ import {
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
-import { applyVariant, type ApplyVariantResult } from "../variant-apply";
+import {
+  applyVariant,
+  taskTextOf,
+  type ApplyVariantResult,
+  type VariantTaskText,
+} from "../variant-apply";
 
-export const CUISINE_VERSION = 1;
+export const CUISINE_VERSION = 2;
 
 export interface CuisinableRecipe {
   title: string;
@@ -20,6 +25,8 @@ export interface CuisinableRecipe {
   method: string;
   ingredients: Array<{ id: string; name: string; quantity: string; unit: string }>;
   steps: Array<{ id: string; text: string }>;
+  /** Step-card text the viewer shows; taskOverrides rewrite it. Optional for older callers. */
+  tasks?: VariantTaskText[];
 }
 
 const SYSTEM_PROMPT = `You infuse a recipe with a target cuisine while keeping the dish's identity and cooking method. Rules:
@@ -28,6 +35,8 @@ const SYSTEM_PROMPT = `You infuse a recipe with a target cuisine while keeping t
 - List method tweaks in techniqueChanges, never inside steps. Give a one-sentence rationale per swap, plus the per-swap reason.
 - Every swap lists packageRequirements the cook must verify on the label.
 - titleOverride only when the dish name no longer fits.
+- taskOverrides: for EVERY timeline task whose label, description, completionCue or checkpoints mention a swapped or removed ingredient, give that taskId with only the fields that change, rewritten to name the replacement (with its amount when the text gives one) or to leave the removed item out. Keep every duration and temperature word-for-word. Never name a swapped-out or removed ingredient. Use [] when no task mentions one.
+- Ingredient quantities are at the current servings; give replacement quantities at the same scale.
 - Reply with only JSON matching the schema, no prose.`;
 
 function buildUserPrompt(
@@ -45,6 +54,7 @@ function buildUserPrompt(
     servings: recipe.servings,
     ingredients: recipe.ingredients,
     steps: recipe.steps,
+    tasks: recipe.tasks ?? [],
   });
 }
 
@@ -123,10 +133,12 @@ export async function applyCuisine(
       ingredients: recipe.ingredients.map((i) => ({
         id: i.id,
         name: i.name,
-        quantity: i.quantity,
+        // The amount the cook sees now (scaled), so swaps come back at this scale.
+        quantity: i.cookQuantity ?? i.quantity,
         unit: i.unit,
       })),
       steps: recipe.steps.map((s) => ({ id: s.id, text: s.text })),
+      tasks: taskTextOf(artifact),
     },
     target,
     opts,

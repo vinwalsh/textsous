@@ -80,6 +80,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       artifact: result.artifact,
       scaleFlags: result.scaleFlags,
+      warnings: result.warnings,
       usage: result.usage,
     });
   } catch (error) {

@@ -101,6 +101,7 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `recipe`: object
 - `recipe.title`: string (min length 1)
 - `recipe.servings`: number (> 0)
+- `recipe.nativeServings`: number or null (> 0)
 - `recipe.ingredients`: array of object (min 1 items)
 - `recipe.ingredients[].id`: string (min length 1)
 - `recipe.ingredients[].name`: string (min length 1)
@@ -198,5 +199,11 @@ Dietary and cuisine adjustments as ingredient swaps, step overrides and techniqu
 - `stepOverrides`: array of object
 - `stepOverrides[].stepId`: string (min length 1)
 - `stepOverrides[].text`: string (min length 1)
+- `taskOverrides`: array of object or null
+- `taskOverrides[].taskId`: string (min length 1)
+- `taskOverrides[].label`: string or null (min length 1)
+- `taskOverrides[].description`: string or null (min length 1)
+- `taskOverrides[].completionCue`: string or null (min length 1)
+- `taskOverrides[].checkpoints`: array of string or null
 - `techniqueChanges`: array of string
 - `rationale`: array of string

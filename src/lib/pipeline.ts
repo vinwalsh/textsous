@@ -151,6 +151,8 @@ export interface AdjustUsage {
 export interface AdjustedArtifact {
   artifact: CookAlongArtifact;
   scaleFlags: ScaleFlag[];
+  /** Automatic fixes made in code (e.g. step cards reworded for a swap). */
+  warnings: string[];
   usage: AdjustUsage;
 }
 
@@ -194,6 +196,7 @@ export async function adjustArtifact(
   let current = artifact;
   let removedNames: string[] = [];
   let scaleFlags: ScaleFlag[] = [];
+  const warnings: string[] = [];
   const usage: AdjustUsage = {
     scaling: ZERO_USAGE,
     dietary: ZERO_USAGE,
@@ -231,6 +234,7 @@ export async function adjustArtifact(
       forbiddenNames: removedNames,
     });
     usage.dietary = applied.usage;
+    warnings.push(...applied.warnings);
     current = applied.artifact;
     removedNames = applied.removedNames;
   }
@@ -242,6 +246,7 @@ export async function adjustArtifact(
       priorVariant: dietary ?? null,
     });
     usage.cuisine = applied.usage;
+    warnings.push(...applied.warnings);
     current = applied.artifact;
     removedNames = applied.removedNames;
   }
@@ -257,5 +262,5 @@ export async function adjustArtifact(
     addUsage(usage.scaling, usage.dietary),
     addUsage(usage.cuisine, usage.voice),
   );
-  return { artifact: current, scaleFlags, usage };
+  return { artifact: current, scaleFlags, warnings, usage };
 }
