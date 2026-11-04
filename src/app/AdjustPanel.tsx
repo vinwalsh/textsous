@@ -3,7 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import type { CookAlongArtifact } from "../lib/schema/artifact";
 import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
-import { MAX_SERVINGS } from "../lib/scaling/servings";
+import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../lib/scaling/servings";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
@@ -80,6 +80,20 @@ export function adjustRequestBody(artifact: CookAlongArtifact, choices: AdjustCh
   if (choices.cuisine.trim() !== "") body.cuisine = choices.cuisine.trim();
   if (choices.sousVoice) body.voice = "sous";
   return body;
+}
+
+/**
+ * The error for a servings change the adjust route would refuse, or null.
+ * Unchanged servings are never sent, so they are never checked: a recipe
+ * posted for more than MAX_SERVINGS still takes a dietary, cuisine or voice
+ * change. Pure.
+ */
+export function servingsError(servings: number, baseServings: number): FriendlyError | null {
+  if (servings === baseServings || servingsInRange(servings)) return null;
+  return {
+    title: "That number of servings won't work",
+    detail: `Choose between ${MIN_SERVINGS} and ${MAX_SERVINGS} servings.`,
+  };
 }
 
 /** "serves 2 → 4 · Gluten-free · Italian style · SOUS voice". Pure. */
@@ -182,7 +196,15 @@ export default function AdjustPanel({
     event.preventDefault();
     if (!hasChange || applying) return;
     const choices: AdjustChoices = { servings, dietary, cuisine, sousVoice };
+    // Checked here, not by the browser (the form is noValidate): the input's
+    // own range would block every change on a recipe that serves over 36.
+    const outOfRange = servingsError(servings, base);
+    if (outOfRange) {
+      setError(outOfRange);
+      return;
+    }
     if (!artifact) {
+      setError(null);
       pending?.onQueue(choices);
       return;
     }
@@ -206,7 +228,7 @@ export default function AdjustPanel({
           ready.
         </p>
       )}
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} noValidate>
         <div className="adjust-grid">
           <label className="field">
             <span>Servings (now {base})</span>

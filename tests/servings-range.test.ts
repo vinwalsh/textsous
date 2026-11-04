@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import AdjustPanel from "../src/app/AdjustPanel";
+import AdjustPanel, { adjustRequestBody, servingsError } from "../src/app/AdjustPanel";
 import type { CookAlongArtifact } from "../src/lib/schema/artifact";
 import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../src/lib/scaling/servings";
 import * as stage from "../src/lib/stages/scaling";
@@ -86,5 +86,44 @@ describe("servings range", () => {
     expect(button(panel(36), "One more serving")).toContain("disabled");
     expect(button(panel(35), "One more serving")).not.toContain("disabled");
     expect(button(panel(1), "One fewer serving")).toContain("disabled");
+  });
+
+  it("lets a recipe that serves 48 take a dietary change: the browser's range check is off", () => {
+    // The input starts at 48, over its own max of 36; the browser's check
+    // would block every submit, dietary, cuisine and voice included.
+    const html = panel(48);
+    expect(/<input type="number"[^>]*>/.exec(html)?.[0]).toContain('value="48"');
+    expect(/<form[^>]*>/.exec(html)?.[0]).toMatch(/novalidate=""/i);
+    // The same form takes choices while the cook along is being written.
+    const queued = renderToStaticMarkup(
+      createElement(AdjustPanel, {
+        artifact: null,
+        pending: { servings: 48, queued: null, onQueue: () => {} },
+      }),
+    );
+    expect(/<form[^>]*>/.exec(queued)?.[0]).toMatch(/novalidate=""/i);
+    // Unchanged servings are left out of the request, so the route never sees 48.
+    const body = adjustRequestBody(artifactServing(48), {
+      servings: 48,
+      dietary: "gluten-free",
+      cuisine: "",
+      sousVoice: false,
+    });
+    expect(body).not.toHaveProperty("servings");
+    expect(body.dietary).toBe("gluten-free");
+  });
+
+  it("checks a servings change in code, with the route's bounds", () => {
+    expect(servingsError(48, 48)).toBeNull();
+    expect(servingsError(36, 48)).toBeNull();
+    expect(servingsError(4, 2)).toBeNull();
+    expect(servingsError(0.5, 2)).toBeNull();
+    expect(servingsError(47, 48)).toEqual({
+      title: "That number of servings won't work",
+      detail: "Choose between 0.5 and 36 servings.",
+    });
+    for (const bad of [0, 0.25, 37, Number.NaN]) {
+      expect(servingsError(bad, 2), String(bad)).not.toBeNull();
+    }
   });
 });
