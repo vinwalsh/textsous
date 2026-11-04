@@ -31,7 +31,8 @@ For the next agent picking up this repo. Last updated: 2026-10-30.
   the Standard tier" but `/api/health` has no tier field — ask the owner
   what that check wants before closing.
 - Owner items still open: O3 cap sizing (~20–25k tokens/conversion
-  measured), O4 Baseten key, O6 `/open`+`/import` on textsous.com, O7
+  measured), O4 Baseten key, O6 `/open`+`/import` on textsous.com (in
+  progress: /import in dev, /open in design; past Nov 1 due date), O7
   privacy line, O8 demo video, O9 submission.
 - M6: M6.2 + M6.5 closed; M6.1/M6.3/M6.4/M6.6 built, owner
   re-checks pending one push + deploy. Attribute tags deferred (owner

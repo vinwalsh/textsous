@@ -296,6 +296,7 @@ A milestone is done when all of these hold:
 - [x] O5 Choose the takedown and privacy contact address. Needed for M4.5.
   - 2026-10-29: owner chose privacy@textsous.com; footer shipped in M4.5.
 - [ ] O6 Build /open and /import on textsous.com in the private repo by Nov 1.
+  - 2026-11-03: in progress, past due date — /import in development (done soon), /open still being designed (owner may ask for design help).
 - [ ] O7 Add the imported-recipes line to the textsous.com privacy policy.
 - [ ] O8 Record the three-minute demo video (Nov 3).
 - [ ] O9 Submit on the Cerebral Valley platform by Nov 4, 9:00 PM ET, with the

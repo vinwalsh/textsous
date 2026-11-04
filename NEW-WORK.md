@@ -1,5 +1,35 @@
 # NEW-WORK.md — hackathon build log (Oct 27 – Nov 4, 2026)
 
+## Hackathon build summary (M5.3; finalize Nov 4)
+Everything in this repo was built inside the window: 21 commits from
+`960fe7a` (Initial, Oct 27) through `b343055` (Nov 3; the range extends if
+further commits land before Nov 4). M1 foundation + first conversion (Oct
+27–28), M2 Cook Along pipeline (Oct 28), M3 adjustments (Oct 29), M4 photo,
+web flow and artifact handoff (Oct 29–31), M5 proof and disclosure (Oct
+29–Nov 3), M6 phone-check follow-ups (Nov 1). Detail is in the dated log
+below. Proof: 287 offline tests green, CI green, production
+`/api/health` ok on muse-spark-1.3, full eval 23/23 (739k tokens).
+
+Pre-existing outside this repo: the private TextSous platform (accounts,
+households, weekly meal plans, grocery lists, SOUS over text and MCP — with
+no public recipe import); Vercel project `open-textsous` with
+open.textsous.com attached; Upstash store `textsous_cache`; Meta Model API
+access (muse-spark-1.3) and a Baseten account. (Other accounts, prior
+prototypes, and shared design assets are disclosed separately by the
+owner.) No recipe format, converter, or handoff code existed anywhere
+before Oct 27.
+
+Private-repo handoff changes: O6 (`/open` + `/import` on textsous.com) is
+in progress and past its Nov 1 due date — `/import` in development,
+`/open` still being designed. This section gets the exact changes when O6
+lands.
+
+Outside-repo hackathon work: none (per owner, Nov 3).
+
+Clock note: dated entries from Oct 31 to Nov 2 were written under a stale
+session clock and run up to two days behind their commit dates; the commit
+dates above govern. Every entry falls inside the window regardless.
+
 2026-10-27: Scaffolded the repo as a Next.js 16 app (App Router, TS, ESM, Node 22) and built slice 1: canonical schema + response_format helper, model client (meta/baseten, json_schema with JSON-mode fallback, 2 validation re-prompts), URL intake (SSRF guards, JSON-LD incl. @graph/HowToSection, text fallback) + text intake, canonicalize stage with deterministic checks, CLI (convert/smoke), placeholder home + /api/health + /api/convert (rate limit, daily cap, Upstash/filesystem cache), 3 original CC0 fixtures, 18 offline tests; `npm test`, `typecheck`, `lint`, `next build` green, `docs/schema/canonical.json` generated; live convert runs still need MODEL_API_KEY.
 
 2026-10-27: Verified Vercel access (vinwalsh, open-textsous) and ran slice 1 live: smoke ok on meta (330 tokens), baseten 404 as expected without its endpoint; convert passed all checks on all 3 fixtures first attempt (5.2k–6.9k tokens each, completion-heavy). Fixed model client to pass fetch: globalThis.fetch (SDK default bypasses proxy env). Model notes: kept [Apples] extractor prefixes in step text, left equipment empty despite named pans, split salt/pepper into two to-taste lines.
