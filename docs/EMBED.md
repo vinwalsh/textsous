@@ -125,7 +125,10 @@ servings…", "Making it vegan…" or "Making it more Italian…", until the
 adjusted cook along shows (or the adjustment fails, which the adjust panel
 explains). The adjustment takes the same path as changes a reader queues
 while a cook along is being written: one `/api/adjust` call as soon as the
-cook along is ready, on a cache hit too. The adjust panel then shows what
+cook along is ready, on a cache hit too. Until the adjusted Cook Along
+shows, the sections the change rewrites (the servings line, ingredients,
+prep, steps and timeline) say "Before your changes", with "Adjusting: …"
+and a spinner while it applies. The adjust panel then shows what
 changed and offers "Back to the original". If the reader changes the queued
 choices in the panel while the recipe converts, theirs replace the menu's.
 
