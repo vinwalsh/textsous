@@ -104,7 +104,8 @@ What the server does, in order:
    that fails it uses the body's `source.text` and returns a
    `source_fetch_failed` warning. A private or non-https URL is refused.
    `text` and `photo` require `source.text`.
-3. Fills defaults: `ing-N`, `step-N` and `task-<slug of label>` ids, the
+3. Fills defaults: `ing-N`, `step-N` (a number past the list's length when
+   another entry already uses the position id) and `task-<slug of label>` ids, the
    canonical `version`, `id` and `sourceFingerprint`, empty allergen lists
    (common words like "dairy" map to EU-14 slugs with a warning), lane colors
    and kinds, `cardTitle` from `label` (context ""), `timerEnabledByDefault`
@@ -114,7 +115,8 @@ What the server does, in order:
 4. Validates strictly with the real canonical and timeline zod schemas plus
    path-specific rule checks: references, duplicate ids, lanes, mise en place,
    dependency cycles, source quotes (verbatim in a step and in the source
-   text), numbers in card titles, unused ingredients, long hands-on tasks.
+   text), numbers in card titles, unused ingredients, long hands-on tasks,
+   and the serve task (a finish task that no other task depends on).
 5. Runs `runProcedureChecks`, the code `schedule`, `runCodedReviewChecks` and
    `compile`. The 7 model review judgments are recorded as **not run**
    (`notRun: true`), because the recipe was authored by the person's own

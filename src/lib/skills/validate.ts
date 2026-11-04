@@ -158,7 +158,7 @@ export function validateCookAlong(
       if (id === task.id) {
         errors.push(skillsError(`${at}.dependencies[${j}]`, "self_dependency", `Remove "${id}" from its own dependencies.`));
       } else if (!dep) {
-        errors.push(skillsError(`${at}.dependencies[${j}]`, "unknown_reference", `Depend only on task ids in timeline.tasks; "${id}" does not exist.`));
+        errors.push(skillsError(`${at}.dependencies[${j}]`, "unknown_reference", `Depend only on task ids in timeline.tasks (${list(new Set(taskById.keys()))}); "${id}" does not exist.`));
       } else if (task.phase === "prep" && dep.phase !== "prep") {
         errors.push(skillsError(`${at}.dependencies[${j}]`, "prep_depends_on_cook", `Prep task "${task.id}" cannot wait for ${dep.phase} task "${id}": mise en place comes first. Make "${task.id}" a cook task or drop the dependency.`));
       }
@@ -211,8 +211,19 @@ export function validateCookAlong(
     }
   });
 
-  if (timeline.serveTaskId && !taskById.has(timeline.serveTaskId)) {
+  const serveTask = timeline.serveTaskId ? taskById.get(timeline.serveTaskId) : undefined;
+  if (timeline.serveTaskId && !serveTask) {
     errors.push(skillsError("timeline.serveTaskId", "unknown_reference", `Set serveTaskId to the id of the final serving task; "${timeline.serveTaskId}" is not a task.`));
+  } else if (serveTask) {
+    // The schedule places the serve task after every other task, so it must
+    // be a finish task that nothing waits for.
+    const waiting = timeline.tasks.filter((t) => t.dependencies.includes(serveTask.id)).map((t) => t.id);
+    const fix = "Name the final plating or serving task (phase \"finish\", no task depends on it), or leave serveTaskId out to use the last finish task.";
+    if (serveTask.phase !== "finish") {
+      errors.push(skillsError("timeline.serveTaskId", "invalid_value", `serveTaskId "${serveTask.id}" is a ${serveTask.phase} task. ${fix}`));
+    } else if (waiting.length > 0) {
+      errors.push(skillsError("timeline.serveTaskId", "invalid_value", `serveTaskId "${serveTask.id}" is not the last task: ${waiting.join(", ")} depend(s) on it. ${fix}`));
+    }
   }
 
   const cycle = findCycle(timeline);

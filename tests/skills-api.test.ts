@@ -9,6 +9,7 @@ import { GET as artifactGET } from "../src/app/api/artifact/[id]/route";
 import { CookAlongArtifactSchema } from "../src/lib/schema/artifact";
 import { COOK_ALONG_EXAMPLE, CookAlongRequestSchema, prepareCookAlong } from "../src/lib/skills";
 import { resetSkillsRateLimits } from "../src/lib/skills/http";
+import { normalize } from "../src/lib/skills/normalize";
 import type { ProcedureRecordingFile } from "../src/lib/stages/procedure";
 
 const SECRET = "test-skills-secret";
@@ -234,6 +235,43 @@ describe("defaults", () => {
   });
 });
 
+describe("default ids beside given ids", () => {
+  it("never gives a missing ingredient or step id one another entry uses", async () => {
+    const body = clone(COOK_ALONG_EXAMPLE) as unknown as {
+      recipe: { ingredients: Array<{ id?: string }>; steps: Array<{ id?: string }> };
+    };
+    // The assistant renumbered: oats is "ing-2", milk has no id, so its
+    // position id (ing-2) is taken.
+    body.recipe.ingredients[0].id = "ing-2";
+    delete body.recipe.ingredients[1].id;
+    body.recipe.steps[0].id = "step-2";
+    delete body.recipe.steps[1].id;
+    const res = await cookAlongPOST(post("/api/skills/cook-along", body));
+    expect(res.status).toBe(422);
+    const json = (await res.json()) as { errors: Array<{ path: string; code: string; message: string }> };
+    // No duplicate id error on a field the assistant never sent.
+    expect(json.errors.filter((e) => e.code === "duplicate_id")).toEqual([]);
+    // Citations of ing-1 now point at an id that does not exist, and the
+    // message lists the ids that do, including the assigned ing-8.
+    const unknown = json.errors.find((e) => e.code === "unknown_reference" && /ingredientIds/.test(e.path));
+    expect(unknown?.message).toMatch(/ing-2, ing-8, ing-3/);
+  });
+
+  it("warns which id it assigned", () => {
+    const body = CookAlongRequestSchema.parse(clone(COOK_ALONG_EXAMPLE));
+    body.recipe.ingredients[0].id = "ing-2";
+    body.recipe.ingredients[1].id = undefined;
+    body.recipe.ingredients[2].id = undefined;
+    const { recipe, warnings } = normalize(body, {
+      kind: "text", url: null, site: null, author: null, book: null, page: null, license: null, text: null,
+    });
+    // Position 3 keeps ing-3; position 2 clashes with the given ing-2.
+    expect(recipe.ingredients.map((i) => i.id)).toEqual(["ing-2", "ing-8", "ing-3", "ing-4", "ing-5", "ing-6", "ing-7"]);
+    expect(warnings).toContainEqual(expect.objectContaining({ code: "id_assigned", path: "recipe.ingredients[1].id" }));
+    expect(warnings.find((w) => w.code === "id_assigned")?.message).toMatch(/"ing-8"/);
+  });
+});
+
 describe("actionable errors", () => {
   async function errorsFor(mutate: (body: ReturnType<typeof clone<typeof COOK_ALONG_EXAMPLE>>) => void) {
     const body = clone(COOK_ALONG_EXAMPLE);
@@ -305,6 +343,29 @@ describe("actionable errors", () => {
       b.timeline.tasks[0].dependencies = ["task-toast-oats"];
     });
     expect(prep).toContainEqual(expect.objectContaining({ path: "timeline.tasks[0].dependencies[0]", code: "prep_depends_on_cook" }));
+  });
+
+  it("names serveTaskId when it is not the final finish task", async () => {
+    const cook = await errorsFor((b) => {
+      b.timeline.serveTaskId = "task-simmer-porridge";
+    });
+    expect(cook).toContainEqual(expect.objectContaining({ path: "timeline.serveTaskId", code: "invalid_value" }));
+    expect(cook.find((e) => e.path === "timeline.serveTaskId")?.message).toMatch(/is a cook task.*phase "finish"/);
+    const waitedOn = await errorsFor((b) => {
+      b.timeline.tasks[5].phase = "finish";
+      b.timeline.serveTaskId = "task-cook-apples";
+    });
+    expect(waitedOn).toContainEqual(expect.objectContaining({ path: "timeline.serveTaskId", code: "invalid_value" }));
+    expect(waitedOn.find((e) => e.path === "timeline.serveTaskId")?.message).toMatch(/task-serve depend/);
+  });
+
+  it("lists the task ids that exist for an unknown dependency", async () => {
+    const errors = await errorsFor((b) => {
+      b.timeline.tasks[2].dependencies = ["task-Toast the oats"];
+    });
+    const dep = errors.find((e) => e.path === "timeline.tasks[2].dependencies[0]");
+    expect(dep?.code).toBe("unknown_reference");
+    expect(dep?.message).toMatch(/task-dice-apple, task-toast-oats, task-add-milk/);
   });
 
   it("keeps numbers out of card titles", async () => {

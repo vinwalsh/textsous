@@ -142,12 +142,15 @@ is no longer needed.
 **Do not schedule.** Never give start times. TextSous computes the schedule
 from phases, dependencies, attention and resources.
 
-**Optional fields.** You may leave out ids (\`ing-1\`, \`step-1\`,
-\`task-<label>\` are filled in), lane colors, \`cardTitle\` (derived from
+**Optional fields.** You may leave out ids (\`ing-1\`, \`step-1\` and
+\`task-<slug>\` are filled in; the slug is the label lowercased, every run of
+other characters turned into one hyphen, cut to 40 characters, with \`-2\`,
+\`-3\` added on a clash: "Toast the oats (lightly)" becomes
+\`task-toast-the-oats-lightly\`), lane colors, \`cardTitle\` (derived from
 \`label\`), \`checkpoints\`, \`dependencies\`, \`ingredientIds\`, \`resourceIds\`,
 \`resources\`, \`resourceHolds\` and \`serveTaskId\`. If you leave out ids,
 reference ingredients and steps by their position ids (\`ing-3\` is the third
-ingredient).
+ingredient). Give every ingredient (and every step) an id, or none.
 
 ## 4. Fixing errors
 

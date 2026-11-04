@@ -115,6 +115,40 @@ function roundMinutes(value: number, path: string, warnings: SkillsWarning[]): n
 }
 
 /**
+ * Ids for entries the assistant sent without one: `<prefix>-<position>`.
+ * When another entry already uses that id, the entry gets the next free
+ * number past the list's length (so it never takes a position id a task may
+ * cite) and a warning names it. Given ids are kept as they are.
+ */
+function fillIds(
+  given: Array<string | null | undefined>,
+  prefix: string,
+  path: string,
+  warnings: SkillsWarning[],
+): string[] {
+  const taken = new Set(given.map((id) => clean(id)).filter((id): id is string => !!id));
+  let next = given.length + 1;
+  return given.map((raw, i) => {
+    const id = clean(raw);
+    if (id) return id;
+    const positional = `${prefix}-${i + 1}`;
+    if (!taken.has(positional)) {
+      taken.add(positional);
+      return positional;
+    }
+    while (taken.has(`${prefix}-${next}`)) next += 1;
+    const assigned = `${prefix}-${next}`;
+    taken.add(assigned);
+    warnings.push({
+      code: "id_assigned",
+      path: `${path}[${i}].id`,
+      message: `This entry had no id and "${positional}" is used by another entry, so it was given "${assigned}". Give every entry an id, or none.`,
+    });
+    return assigned;
+  });
+}
+
+/**
  * Fill the C3.3 defaults: ids, canonical version/id/fingerprint, allergen
  * lists, lane colors and kinds, card titles, timers, checkpoints, scheduling
  * and the serve task. Pure. Does not validate: `validateCookAlong` does that
@@ -124,8 +158,9 @@ export function normalize(body: CookAlongRequest, source: ResolvedSource): Norma
   const warnings: SkillsWarning[] = [];
   const { recipe: r, timeline: t } = body;
 
+  const ingredientIds = fillIds(r.ingredients.map((ing) => ing.id), "ing", "recipe.ingredients", warnings);
   const ingredients = r.ingredients.map((ing, i) => ({
-    id: clean(ing.id) ?? `ing-${i + 1}`,
+    id: ingredientIds[i],
     name: ing.name.trim(),
     quantity: ing.quantity === null || ing.quantity === undefined ? "" : String(ing.quantity).trim(),
     unit: (ing.unit ?? "").trim(),
@@ -138,8 +173,9 @@ export function normalize(body: CookAlongRequest, source: ResolvedSource): Norma
     note: clean(ing.note),
   })) as CanonicalRecipe["ingredients"];
 
+  const stepIds = fillIds(r.steps.map((step) => step.id), "step", "recipe.steps", warnings);
   const steps = r.steps.map((step, i) => ({
-    id: clean(step.id) ?? `step-${i + 1}`,
+    id: stepIds[i],
     kind: step.kind ?? "active",
     text: step.text.trim(),
   }));
