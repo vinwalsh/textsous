@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import type { CookAlongArtifact } from "../lib/schema/artifact";
 import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
 import type { ScaleFlag } from "../lib/stages/scaling";
@@ -53,44 +53,94 @@ function labelTarget(target: string): string {
   return target.charAt(0).toUpperCase() + target.slice(1);
 }
 
+/** What the cook chose in the panel. Empty dietary and cuisine mean no change. */
+export interface AdjustChoices {
+  servings: number;
+  dietary: string;
+  cuisine: string;
+  sousVoice: boolean;
+}
+
+/** Whether the choices change a recipe that serves `baseServings`. Pure. */
+export function hasAdjustment(choices: AdjustChoices, baseServings: number): boolean {
+  return (
+    choices.servings !== baseServings ||
+    choices.dietary !== "" ||
+    choices.cuisine.trim() !== "" ||
+    choices.sousVoice
+  );
+}
+
+/** The POST /api/adjust body for these choices. Pure. */
+export function adjustRequestBody(artifact: CookAlongArtifact, choices: AdjustChoices): Record<string, unknown> {
+  const body: Record<string, unknown> = { artifact };
+  if (choices.servings !== artifact.recipe.servings) body.servings = choices.servings;
+  if (choices.dietary !== "") body.dietary = choices.dietary;
+  if (choices.cuisine.trim() !== "") body.cuisine = choices.cuisine.trim();
+  if (choices.sousVoice) body.voice = "sous";
+  return body;
+}
+
+/** "serves 2 → 4 · Gluten-free · Italian style · SOUS voice". Pure. */
+export function adjustSummary(baseServings: number, choices: AdjustChoices): string {
+  const parts: string[] = [];
+  if (choices.servings !== baseServings) parts.push(`serves ${baseServings} → ${choices.servings}`);
+  if (choices.dietary !== "") parts.push(labelTarget(choices.dietary));
+  if (choices.cuisine.trim() !== "") parts.push(`${choices.cuisine.trim()} style`);
+  if (choices.sousVoice) parts.push("SOUS voice");
+  return parts.join(" · ");
+}
+
+/** Queued mode: the cook along is still being written, so choices wait for it. */
+export interface PendingAdjust {
+  /** Servings the recipe is written for. */
+  servings: number;
+  queued: AdjustChoices | null;
+  onQueue: (choices: AdjustChoices | null) => void;
+}
+
 export default function AdjustPanel({
   artifact,
-  modified,
+  modified = false,
   onAdjusted,
   onReset,
+  pending,
+  autoApply,
 }: {
-  artifact: CookAlongArtifact;
-  modified: boolean;
-  onAdjusted: (next: CookAlongArtifact, summary: string, flags: ScaleFlag[]) => void;
-  onReset: () => void;
+  /** The finished cook along; null while it is being written (queued mode, see `pending`). */
+  artifact: CookAlongArtifact | null;
+  modified?: boolean;
+  onAdjusted?: (next: CookAlongArtifact, summary: string, flags: ScaleFlag[]) => void;
+  onReset?: () => void;
+  pending?: PendingAdjust;
+  /** Choices queued before the cook along was ready: applied once, as soon as this shows. */
+  autoApply?: AdjustChoices | null;
 }) {
-  const [servings, setServings] = useState(artifact.recipe.servings);
-  const [dietary, setDietary] = useState("");
-  const [cuisine, setCuisine] = useState("");
-  const [sousVoice, setSousVoice] = useState(false);
-  const [applying, setApplying] = useState(false);
+  const base = artifact ? artifact.recipe.servings : (pending?.servings ?? 1);
+  const preset = artifact ? autoApply : pending?.queued;
+  const autoRun = artifact !== null && autoApply != null && hasAdjustment(autoApply, base);
+  const [servings, setServings] = useState(preset?.servings ?? base);
+  const [dietary, setDietary] = useState(preset?.dietary ?? "");
+  const [cuisine, setCuisine] = useState(preset?.cuisine ?? "");
+  const [sousVoice, setSousVoice] = useState(preset?.sousVoice ?? false);
+  const [applying, setApplying] = useState(autoRun);
   const [error, setError] = useState<FriendlyError | null>(null);
   const [summary, setSummary] = useState("");
   const [flags, setFlags] = useState<ScaleFlag[]>([]);
+  const autoRan = useRef(false);
 
-  const servingsChanged = servings !== artifact.recipe.servings;
-  const hasChange = servingsChanged || dietary !== "" || cuisine.trim() !== "" || sousVoice;
+  const hasChange = hasAdjustment({ servings, dietary, cuisine, sousVoice }, base);
+  const queued = artifact ? null : (pending?.queued ?? null);
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    if (!hasChange || applying) return;
+  async function apply(choices: AdjustChoices) {
+    if (!artifact) return;
     setApplying(true);
     setError(null);
-    const body: Record<string, unknown> = { artifact };
-    if (servingsChanged) body.servings = servings;
-    if (dietary !== "") body.dietary = dietary;
-    if (cuisine.trim() !== "") body.cuisine = cuisine.trim();
-    if (sousVoice) body.voice = "sous";
     const res = await withScreenOn(() =>
       apiFetch("/api/adjust", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(adjustRequestBody(artifact, choices)),
       }),
     );
     const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
@@ -99,12 +149,7 @@ export default function AdjustPanel({
       setApplying(false);
       return;
     }
-    const parts: string[] = [];
-    if (servingsChanged) parts.push(`serves ${artifact.recipe.servings} → ${servings}`);
-    if (dietary !== "") parts.push(labelTarget(dietary));
-    if (cuisine.trim() !== "") parts.push(`${cuisine.trim()} style`);
-    if (sousVoice) parts.push("SOUS voice");
-    const nextSummary = parts.join(" · ");
+    const nextSummary = adjustSummary(artifact.recipe.servings, choices);
     setSummary(nextSummary);
     setFlags(data.scaleFlags);
     setServings(data.artifact.recipe.servings);
@@ -112,16 +157,53 @@ export default function AdjustPanel({
     setCuisine("");
     setSousVoice(false);
     setApplying(false);
-    onAdjusted(data.artifact, nextSummary, data.scaleFlags);
+    onAdjusted?.(data.artifact, nextSummary, data.scaleFlags);
+  }
+
+  // Choices queued while the cook along was being written: apply them once.
+  const applyQueued = useEffectEvent(() => {
+    if (autoRan.current || !autoApply) return;
+    autoRan.current = true;
+    void apply(autoApply);
+  });
+  useEffect(() => {
+    if (!autoRun) return;
+    const id = setTimeout(() => applyQueued(), 0);
+    return () => clearTimeout(id);
+  }, [autoRun]);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!hasChange || applying) return;
+    const choices: AdjustChoices = { servings, dietary, cuisine, sousVoice };
+    if (!artifact) {
+      pending?.onQueue(choices);
+      return;
+    }
+    await apply(choices);
+  }
+
+  function cancelQueued() {
+    pending?.onQueue(null);
+    setServings(base);
+    setDietary("");
+    setCuisine("");
+    setSousVoice(false);
   }
 
   return (
     <section aria-label="Adjust this recipe" className="card adjust-panel">
       <h2 className="card-title">Adjust this recipe</h2>
+      {artifact ? null : (
+        <p className="meta adjust-pending">
+          Your cook along is still being written. Choose changes now and they apply as soon as it&apos;s
+          ready.
+        </p>
+      )}
       <form onSubmit={onSubmit}>
         <div className="adjust-grid">
           <label className="field">
-            <span>Servings (now {artifact.recipe.servings})</span>
+            <span>Servings (now {base})</span>
             <span className="stepper">
               <button
                 type="button"
@@ -204,8 +286,21 @@ export default function AdjustPanel({
               Back to the original
             </button>
           ) : null}
+          {queued ? (
+            <button type="button" className="btn" onClick={cancelQueued}>
+              Cancel changes
+            </button>
+          ) : null}
         </div>
       </form>
+      {queued ? (
+        <div className="adjust-summary" role="status">
+          <p>
+            <strong>Will apply when ready:</strong> {adjustSummary(base, queued)}
+          </p>
+          <p className="meta">You can change these until your cook along is ready.</p>
+        </div>
+      ) : null}
       {summary ? (
         <div className="adjust-summary">
           <p>
@@ -214,7 +309,7 @@ export default function AdjustPanel({
           {flags.length > 0 ? (
             <ul className="changes">
               {flags.map((f, i) => (
-                <li key={`${f.stepId}-${i}`}>{scaleFlagText(f, artifact.recipe.steps)}</li>
+                <li key={`${f.stepId}-${i}`}>{scaleFlagText(f, artifact?.recipe.steps ?? [])}</li>
               ))}
             </ul>
           ) : null}
