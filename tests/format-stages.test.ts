@@ -85,7 +85,7 @@ describe("procedure output format", () => {
     const result = await procedure(recording.recipe, { client: fake(JSON.stringify(response), calls) });
     const user = JSON.parse(String(calls[0].messages[1].content));
     expect(user.ingredients[0].note).toBe("drained and rinsed");
-    expect(calls[0].reasoning_effort).toBe("low");
+    expect(calls[0].reasoning_effort).toBe("minimal");
     expect(result.timeline.tasks[0].cardTitle.context).toBe("");
     expect(result.timeline.tasks[0].why).toBe("Mashing half keeps texture.");
     expect(result.checks.filter((c) => !c.passed)).toEqual([]);

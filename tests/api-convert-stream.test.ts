@@ -192,7 +192,7 @@ describe("POST /api/convert as NDJSON events", () => {
       expect.arrayContaining([
         { name: "recipe_overview_v1", effort: "minimal" },
         { name: "canonical_recipe_v1", effort: "low" },
-        { name: "timeline_definition_v1", effort: "low" },
+        { name: "timeline_definition_v1", effort: "minimal" },
         { name: "review_judgments_v1", effort: "low" },
       ]),
     );
@@ -328,16 +328,16 @@ describe("POST /api/convert as NDJSON events", () => {
 
 describe("the x-textsous-efforts header", () => {
   it("overrides efforts on preview deployments only, for convert and adjust", async () => {
-    const header = { "x-textsous-efforts": "procedure=minimal,scaling=low" };
+    const header = { "x-textsous-efforts": "procedure=high,scaling=low" };
     await convertPOST(post({ recipe: proc.recipe }, "10.61.0.1", { ...header, accept: "application/json" }));
-    expect(state.calls.find((c) => c.name === "timeline_definition_v1")?.effort).toBe("low");
+    expect(state.calls.find((c) => c.name === "timeline_definition_v1")?.effort).toBe("minimal");
     await adjustPOST(post({ artifact: fixtureArtifact(), servings: 4 }, "10.61.0.1", header, "/api/adjust"));
     expect(state.calls.find((c) => c.name === "scaling_rules_v1")?.effort).toBe("minimal");
 
     process.env.VERCEL_ENV = "preview";
     state.calls = [];
     await convertPOST(post({ recipe: proc.recipe }, "10.61.0.2", { ...header, accept: "application/json" }));
-    expect(state.calls.find((c) => c.name === "timeline_definition_v1")?.effort).toBe("minimal");
+    expect(state.calls.find((c) => c.name === "timeline_definition_v1")?.effort).toBe("high");
     expect(state.calls.find((c) => c.name === "review_judgments_v1")?.effort).toBe("low");
     const adjusted = await adjustPOST(post({ artifact: fixtureArtifact(), servings: 4 }, "10.61.0.2", header, "/api/adjust"));
     expect(adjusted.status).toBe(200);

@@ -113,8 +113,8 @@ describe("pipeline progress events", () => {
     expect(procedure.type === "procedure" && procedure.timeline.tasks.length).toBeGreaterThan(0);
     expect(result.usageTotal.totalTokens).toBe(7 + 100 + 1000 + 10_000);
     expect(result.overview).toMatchObject({ status: "ok", usage: { totalTokens: 7 } });
-    expect(result.efforts).toEqual({ overview: "minimal", canonicalize: "low", procedure: "low", review: "low" });
-    expect(calls.sort()).toEqual(["canonicalize:low", "overview:minimal", "procedure:low", "review:low"]);
+    expect(result.efforts).toEqual({ overview: "minimal", canonicalize: "low", procedure: "minimal", review: "low" });
+    expect(calls.sort()).toEqual(["canonicalize:low", "overview:minimal", "procedure:minimal", "review:low"]);
   });
 
   it("sends a page's facts before any model call, then the overview's additions", async () => {
@@ -145,7 +145,7 @@ describe("pipeline progress events", () => {
     expect(calls.some((c) => c.startsWith("overview"))).toBe(false);
     expect(result.overview).toBeUndefined();
     expect(result.usageTotal.totalTokens).toBe(100 + 1000 + 10_000);
-    expect(result.efforts).toEqual({ canonicalize: "low", procedure: "low", review: "low" });
+    expect(result.efforts).toEqual({ canonicalize: "low", procedure: "minimal", review: "low" });
     expect(Object.keys(result.timings)).toEqual(["canonicalizeMs", "procedureMs", "reviewMs"]);
   });
 
