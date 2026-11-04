@@ -1,0 +1,738 @@
+{
+  "formatVersion": 1,
+  "id": "art-46a5b53fb683",
+  "recipe": {
+    "title": "Skillet Cornbread with Honey Butter",
+    "servings": 8,
+    "nativeServings": 8,
+    "ingredients": [
+      {
+        "id": "ing-1",
+        "name": "yellow cornmeal",
+        "quantity": "1 1/2",
+        "unit": "cups",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "(210 g)"
+      },
+      {
+        "id": "ing-2",
+        "name": "all-purpose flour",
+        "quantity": "1",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "gluten"
+        ],
+        "allergenTraces": [],
+        "note": "(125 g)"
+      },
+      {
+        "id": "ing-3",
+        "name": "sugar",
+        "quantity": "2",
+        "unit": "tablespoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-4",
+        "name": "baking powder",
+        "quantity": "1",
+        "unit": "tablespoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-5",
+        "name": "salt",
+        "quantity": "1",
+        "unit": "teaspoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "fine"
+      },
+      {
+        "id": "ing-6",
+        "name": "eggs",
+        "quantity": "2",
+        "unit": "",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "egg"
+        ],
+        "allergenTraces": [],
+        "note": "large"
+      },
+      {
+        "id": "ing-7",
+        "name": "buttermilk",
+        "quantity": "1 1/2",
+        "unit": "cups",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "(360 ml)"
+      },
+      {
+        "id": "ing-8",
+        "name": "butter",
+        "quantity": "6",
+        "unit": "tablespoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "unsalted, melted, divided"
+      },
+      {
+        "id": "ing-9",
+        "name": "butter",
+        "quantity": "1/2",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "(113 g), unsalted, softened"
+      },
+      {
+        "id": "ing-10",
+        "name": "honey",
+        "quantity": "3",
+        "unit": "tablespoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-11",
+        "name": "salt",
+        "quantity": "Pinch",
+        "unit": "of",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "flaky"
+      }
+    ],
+    "equipment": [
+      "10-inch cast-iron skillet",
+      "oven",
+      "large bowl",
+      "bowl",
+      "whisk",
+      "toothpick"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "kind": "prep",
+        "text": "Whisk the cornmeal, flour, sugar, baking powder and salt in a large bowl."
+      },
+      {
+        "id": "step-2",
+        "kind": "prep",
+        "text": "In another bowl, whisk the eggs and buttermilk, then whisk in 4 tablespoons of the melted butter."
+      },
+      {
+        "id": "step-3",
+        "kind": "prep",
+        "text": "Beat the softened butter, honey and flaky salt until fluffy."
+      },
+      {
+        "id": "step-4",
+        "kind": "active",
+        "text": "Put a 10-inch cast-iron skillet in the oven and heat the oven to 425F with the skillet inside, about 15 minutes."
+      },
+      {
+        "id": "step-5",
+        "kind": "active",
+        "text": "Pour the wet ingredients into the dry and stir just until combined. Do not overmix; a few lumps are fine."
+      },
+      {
+        "id": "step-6",
+        "kind": "active",
+        "text": "Carefully take the hot skillet out, add the remaining 2 tablespoons of butter and swirl to coat. Pour in the batter; it should sizzle."
+      },
+      {
+        "id": "step-7",
+        "kind": "active",
+        "text": "Bake 20 to 25 minutes, until golden and a toothpick in the center comes out clean."
+      },
+      {
+        "id": "step-8",
+        "kind": "active",
+        "text": "Cool the cornbread 10 minutes in the skillet, then cut into wedges and serve with the honey butter."
+      }
+    ],
+    "allergens": [
+      "egg",
+      "gluten",
+      "milk"
+    ],
+    "originalMethod": "bake",
+    "methodLabel": "Baked",
+    "methodNotice": "",
+    "credit": {
+      "kind": "photo",
+      "site": null,
+      "author": null,
+      "url": null,
+      "book": null,
+      "page": null,
+      "license": null
+    }
+  },
+  "timelineDefinition": {
+    "lanes": [
+      {
+        "id": "lane-cornbread",
+        "label": "Cornbread",
+        "color": "#C9A86A",
+        "kind": "component"
+      },
+      {
+        "id": "lane-honey-butter",
+        "label": "Honey Butter",
+        "color": "#E8C872",
+        "kind": "component"
+      },
+      {
+        "id": "lane-kitchen",
+        "label": "Kitchen",
+        "color": "#9AA5A1",
+        "kind": "kitchen"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "task-preheat",
+        "phase": "prep",
+        "label": "Preheat oven with skillet",
+        "cardTitle": {
+          "action": "Heat",
+          "subject": "the oven",
+          "context": "with skillet inside"
+        },
+        "description": "Heat the oven to 425\u00b0F with the 10-inch cast-iron skillet inside.",
+        "completionCue": "Oven heating to temperature",
+        "minutes": 1,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [],
+        "sourceStepIds": [
+          "step-4"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": "oven-on",
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-oven",
+            "res-skillet"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "task-prep-dry",
+        "phase": "prep",
+        "label": "Mix dry ingredients",
+        "cardTitle": {
+          "action": "Whisk",
+          "subject": "the dry mix",
+          "context": "in large bowl"
+        },
+        "description": "Whisk 1 1/2 cups yellow cornmeal, 1 cup all-purpose flour, 2 tablespoons sugar, 1 tablespoon baking powder and 1 teaspoon fine salt in a large bowl.",
+        "completionCue": "Evenly mixed dry ingredients",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-preheat"
+        ],
+        "sourceStepIds": [
+          "step-1"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-1",
+            "ing-2",
+            "ing-3",
+            "ing-4",
+            "ing-5"
+          ]
+        }
+      },
+      {
+        "id": "task-prep-wet",
+        "phase": "prep",
+        "label": "Mix wet ingredients",
+        "cardTitle": {
+          "action": "Whisk",
+          "subject": "the wet mix",
+          "context": "with melted butter"
+        },
+        "description": "Whisk 2 large eggs and 1 1/2 cups buttermilk in another bowl, then whisk in 4 tablespoons of the 6 tablespoons unsalted butter, melted.",
+        "completionCue": "Smooth egg mixture with butter whisked in",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-prep-dry"
+        ],
+        "sourceStepIds": [
+          "step-2"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-6",
+            "ing-7",
+            "ing-8"
+          ]
+        }
+      },
+      {
+        "id": "task-prep-honey-butter",
+        "phase": "prep",
+        "label": "Make honey butter",
+        "cardTitle": {
+          "action": "Beat",
+          "subject": "the honey butter",
+          "context": "until fluffy"
+        },
+        "description": "Beat 1/2 cup unsalted butter, softened, with 3 tablespoons honey and a pinch of flaky salt until fluffy.",
+        "completionCue": "Fluffy honey butter",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-honey-butter"
+        ],
+        "dependencies": [
+          "task-prep-wet"
+        ],
+        "sourceStepIds": [
+          "step-3"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-9",
+            "ing-10",
+            "ing-11"
+          ]
+        }
+      },
+      {
+        "id": "task-heat-skillet",
+        "phase": "cook",
+        "label": "Heat skillet",
+        "cardTitle": {
+          "action": "Heat",
+          "subject": "the skillet",
+          "context": "in the oven"
+        },
+        "description": "Heat the skillet in the oven for about 15 minutes.",
+        "completionCue": "Hot skillet after heating",
+        "minutes": 15,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "about 15 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "task-prep-honey-butter"
+        ],
+        "sourceStepIds": [
+          "step-4"
+        ],
+        "checkpoints": [
+          "Skillet is very hot when removed"
+        ],
+        "tip": null,
+        "why": "A fully heated skillet sears the batter on contact for a crisp crust.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-oven",
+            "res-skillet"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "task-mix-batter",
+        "phase": "cook",
+        "label": "Combine batter",
+        "cardTitle": {
+          "action": "Stir",
+          "subject": "the batter",
+          "context": "just until combined"
+        },
+        "description": "Pour the wet ingredients into the dry and stir just until combined; do not overmix, a few lumps are fine.",
+        "completionCue": "Just combined batter with a few lumps",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-heat-skillet"
+        ],
+        "sourceStepIds": [
+          "step-5"
+        ],
+        "checkpoints": [],
+        "tip": "Do not overmix; a few lumps are fine.",
+        "why": "Minimal mixing keeps the cornbread tender.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "task-fill-skillet",
+        "phase": "cook",
+        "label": "Butter skillet and add batter",
+        "cardTitle": {
+          "action": "Coat",
+          "subject": "the hot skillet",
+          "context": "and add batter"
+        },
+        "description": "Carefully take the hot skillet out, add the remaining 2 tablespoons butter and swirl to coat. Pour in the batter; it should sizzle.",
+        "completionCue": "Batter sizzling in buttered skillet",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-mix-batter"
+        ],
+        "sourceStepIds": [
+          "step-6"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Hot buttered iron fries the edges so they turn crisp and golden.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [
+            600
+          ],
+          "resourceIds": [
+            "res-skillet"
+          ],
+          "ingredientIds": [
+            "ing-8"
+          ]
+        }
+      },
+      {
+        "id": "task-bake",
+        "phase": "cook",
+        "label": "Bake cornbread",
+        "cardTitle": {
+          "action": "Bake",
+          "subject": "the cornbread",
+          "context": "until golden"
+        },
+        "description": "Bake 20 to 25 minutes, until golden and a toothpick in the center comes out clean.",
+        "completionCue": "Golden, toothpick clean in center",
+        "minutes": 22,
+        "range": {
+          "low": 20,
+          "high": 25
+        },
+        "timingBasis": "source",
+        "sourceQuote": "20 to 25 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-fill-skillet"
+        ],
+        "sourceStepIds": [
+          "step-7"
+        ],
+        "checkpoints": [
+          "Golden top and edges",
+          "Toothpick comes out clean"
+        ],
+        "tip": null,
+        "why": "Full baking sets the crumb and browns the crust.",
+        "equipmentEvent": "oven-off",
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-oven",
+            "res-skillet"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "task-cool",
+        "phase": "cook",
+        "label": "Cool cornbread",
+        "cardTitle": {
+          "action": "Cool",
+          "subject": "the cornbread",
+          "context": "in the skillet"
+        },
+        "description": "Cool the cornbread 10 minutes in the skillet.",
+        "completionCue": "Warm, sliceable wedges",
+        "minutes": 10,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "10 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-bake"
+        ],
+        "sourceStepIds": [
+          "step-8"
+        ],
+        "checkpoints": [
+          "Set enough to slice cleanly"
+        ],
+        "tip": null,
+        "why": "Brief resting firms the crumb for clean wedges.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-skillet"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "task-serve",
+        "phase": "finish",
+        "label": "Slice and serve",
+        "cardTitle": {
+          "action": "Serve",
+          "subject": "the cornbread",
+          "context": "with honey butter"
+        },
+        "description": "Cut the cornbread into wedges and serve with the honey butter.",
+        "completionCue": "Wedges with honey butter",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-cornbread"
+        ],
+        "dependencies": [
+          "task-cool"
+        ],
+        "sourceStepIds": [
+          "step-8"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": []
+        }
+      }
+    ],
+    "resources": [
+      {
+        "id": "res-oven",
+        "label": "Oven",
+        "kind": "oven"
+      },
+      {
+        "id": "res-skillet",
+        "label": "10-inch cast-iron skillet",
+        "kind": "skillet"
+      }
+    ],
+    "resourceHolds": [
+      {
+        "taskId": "task-preheat",
+        "resourceId": "res-oven"
+      },
+      {
+        "taskId": "task-heat-skillet",
+        "resourceId": "res-oven"
+      },
+      {
+        "taskId": "task-heat-skillet",
+        "resourceId": "res-skillet"
+      },
+      {
+        "taskId": "task-fill-skillet",
+        "resourceId": "res-skillet"
+      },
+      {
+        "taskId": "task-bake",
+        "resourceId": "res-oven"
+      },
+      {
+        "taskId": "task-bake",
+        "resourceId": "res-skillet"
+      },
+      {
+        "taskId": "task-cool",
+        "resourceId": "res-skillet"
+      }
+    ],
+    "serveTaskId": "task-serve"
+  },
+  "equipmentProfile": {
+    "burners": 4,
+    "oven": true
+  },
+  "changes": [
+    {
+      "kind": "estimate",
+      "detail": "Timing for Preheat oven with skillet is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Mix dry ingredients is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Mix wet ingredients is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Make honey butter is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Combine batter is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Butter skillet and add batter is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Slice and serve is an estimate; the recipe does not give one."
+    }
+  ],
+  "reviewNotes": [
+    {
+      "check": "source_relationships",
+      "status": "failed",
+      "detail": "The automatic review flagged the order of the steps: The 10-minute wait between mixing the batter and filling the hot skillet leaves leavened batter sitting and the heated skillet idle, misrepresenting the real cooking order. Compare with the original recipe if something looks off."
+    }
+  ]
+}

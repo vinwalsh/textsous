@@ -1,0 +1,928 @@
+{
+  "formatVersion": 1,
+  "id": "art-be62404b4e40",
+  "recipe": {
+    "title": "Lemon Blueberry Muffins",
+    "servings": 12,
+    "nativeServings": 12,
+    "ingredients": [
+      {
+        "id": "ing-1",
+        "name": "all-purpose flour",
+        "quantity": "1 and 3/4",
+        "unit": "cups",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "gluten"
+        ],
+        "allergenTraces": [],
+        "note": "(219g)"
+      },
+      {
+        "id": "ing-2",
+        "name": "baking powder",
+        "quantity": "2",
+        "unit": "teaspoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-3",
+        "name": "baking soda",
+        "quantity": "1/4",
+        "unit": "teaspoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-4",
+        "name": "salt",
+        "quantity": "1/2",
+        "unit": "teaspoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "fine"
+      },
+      {
+        "id": "ing-5",
+        "name": "granulated sugar",
+        "quantity": "3/4",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "(150g)"
+      },
+      {
+        "id": "ing-6",
+        "name": "lemons",
+        "quantity": "2",
+        "unit": "",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "zest of"
+      },
+      {
+        "id": "ing-7",
+        "name": "unsalted butter",
+        "quantity": "1/2",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "(113g), melted and cooled slightly"
+      },
+      {
+        "id": "ing-8",
+        "name": "eggs",
+        "quantity": "2",
+        "unit": "",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "egg"
+        ],
+        "allergenTraces": [],
+        "note": "large, at room temperature"
+      },
+      {
+        "id": "ing-9",
+        "name": "plain whole-milk yogurt",
+        "quantity": "1/2",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "(120g)"
+      },
+      {
+        "id": "ing-10",
+        "name": "milk",
+        "quantity": "1/4",
+        "unit": "cup",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "milk"
+        ],
+        "allergenTraces": [],
+        "note": "(60ml)"
+      },
+      {
+        "id": "ing-11",
+        "name": "lemon juice",
+        "quantity": "2",
+        "unit": "tablespoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "fresh"
+      },
+      {
+        "id": "ing-12",
+        "name": "vanilla extract",
+        "quantity": "1",
+        "unit": "teaspoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      },
+      {
+        "id": "ing-13",
+        "name": "blueberries",
+        "quantity": "1 and 1/2",
+        "unit": "cups",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": "fresh, (225g)"
+      },
+      {
+        "id": "ing-14",
+        "name": "all-purpose flour",
+        "quantity": "1",
+        "unit": "tablespoon",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [
+          "gluten"
+        ],
+        "allergenTraces": [],
+        "note": "for the berries"
+      },
+      {
+        "id": "ing-15",
+        "name": "turbinado sugar",
+        "quantity": "2",
+        "unit": "tablespoons",
+        "quantity4": null,
+        "scaleRule": null,
+        "cookQuantity": null,
+        "buyQuantity": null,
+        "allergens": [],
+        "allergenTraces": [],
+        "note": null
+      }
+    ],
+    "equipment": [
+      "oven",
+      "12-cup muffin tin",
+      "paper liners",
+      "large bowl",
+      "second bowl",
+      "spatula",
+      "toothpick",
+      "rack"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "kind": "active",
+        "text": "Heat the oven to 375\u00b0F (190\u00b0C). Line a 12-cup muffin tin with paper liners."
+      },
+      {
+        "id": "step-2",
+        "kind": "active",
+        "text": "In a large bowl, whisk together the 1 and 3/4 cups of flour, the baking powder, baking soda and salt."
+      },
+      {
+        "id": "step-3",
+        "kind": "active",
+        "text": "In a second bowl, rub the lemon zest into the granulated sugar with your fingertips until it is fragrant and looks like damp sand."
+      },
+      {
+        "id": "step-4",
+        "kind": "active",
+        "text": "Whisk the melted butter into the lemon sugar, then the eggs one at a time, then the yogurt, milk, lemon juice and vanilla until smooth."
+      },
+      {
+        "id": "step-5",
+        "kind": "active",
+        "text": "Toss the blueberries with the 1 tablespoon of flour so they don't sink."
+      },
+      {
+        "id": "step-6",
+        "kind": "active",
+        "text": "Pour the wet ingredients into the dry ones and fold with a spatula until only a few streaks of flour remain. Gently fold in the blueberries. The batter will be thick."
+      },
+      {
+        "id": "step-7",
+        "kind": "active",
+        "text": "Divide the batter among the muffin cups; they will be quite full. Sprinkle the tops with the turbinado sugar."
+      },
+      {
+        "id": "step-8",
+        "kind": "active",
+        "text": "Bake for 20 to 22 minutes, until the tops are golden and a toothpick in the center of a muffin comes out clean."
+      },
+      {
+        "id": "step-9",
+        "kind": "active",
+        "text": "Cool the muffins in the tin for 5 minutes, then move them to a rack."
+      }
+    ],
+    "allergens": [
+      "egg",
+      "gluten",
+      "milk"
+    ],
+    "originalMethod": "bake",
+    "methodLabel": "Baked",
+    "methodNotice": "",
+    "credit": {
+      "kind": "url",
+      "site": "Demo Batter Club",
+      "author": "TextSous Kitchen",
+      "url": "https://open.textsous.com/demo-sites/lemon-blueberry-muffins",
+      "book": null,
+      "page": null,
+      "license": null
+    }
+  },
+  "timelineDefinition": {
+    "lanes": [
+      {
+        "id": "lane-muffins",
+        "label": "Muffins",
+        "color": "#8AA8C8",
+        "kind": "component"
+      },
+      {
+        "id": "lane-kitchen",
+        "label": "Kitchen",
+        "color": "#9A9A9A",
+        "kind": "kitchen"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "t-preheat",
+        "phase": "prep",
+        "label": "Preheat oven",
+        "cardTitle": {
+          "action": "Heat",
+          "subject": "the oven",
+          "context": ""
+        },
+        "description": "Heat the oven to 375\u00b0F. Line a 12-cup muffin tin with paper liners.",
+        "completionCue": "Oven heating",
+        "minutes": 1,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [],
+        "sourceStepIds": [
+          "step-1"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": "oven-on",
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-oven"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "t-prep-zest",
+        "phase": "prep",
+        "label": "Zest lemons",
+        "cardTitle": {
+          "action": "Zest",
+          "subject": "the lemons",
+          "context": ""
+        },
+        "description": "Zest 2 lemons to get the zest for the batter.",
+        "completionCue": "Zest collected",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-preheat"
+        ],
+        "sourceStepIds": [
+          "step-3"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-6"
+          ]
+        }
+      },
+      {
+        "id": "t-prep-dry",
+        "phase": "prep",
+        "label": "Measure dry mix",
+        "cardTitle": {
+          "action": "Measure",
+          "subject": "the dry ingredients",
+          "context": "dry mix"
+        },
+        "description": "Measure out 1 and 3/4 cups all-purpose flour (219g), 2 teaspoons baking powder, 1/4 teaspoon baking soda, and 1/2 teaspoon fine salt.",
+        "completionCue": "Ingredients measured",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-preheat"
+        ],
+        "sourceStepIds": [
+          "step-2"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-1",
+            "ing-2",
+            "ing-3",
+            "ing-4"
+          ]
+        }
+      },
+      {
+        "id": "t-prep-butter-eggs",
+        "phase": "prep",
+        "label": "Melt butter, ready eggs",
+        "cardTitle": {
+          "action": "Ready",
+          "subject": "butter and eggs",
+          "context": ""
+        },
+        "description": "Melt 1/2 cup unsalted butter (113g) and let cool slightly. Bring 2 large eggs to room temperature.",
+        "completionCue": "Butter fluid, eggs at room temp",
+        "minutes": 4,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-preheat"
+        ],
+        "sourceStepIds": [
+          "step-4"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Room-temperature eggs blend smoothly and melted butter mixes evenly into the batter.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-7",
+            "ing-8"
+          ]
+        }
+      },
+      {
+        "id": "t-mix-dry",
+        "phase": "cook",
+        "label": "Mix dry ingredients",
+        "cardTitle": {
+          "action": "Whisk",
+          "subject": "the dry mix",
+          "context": ""
+        },
+        "description": "In a large bowl, whisk together the measured flour, baking powder, baking soda, and salt.",
+        "completionCue": "Evenly combined",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-prep-dry",
+          "t-prep-zest",
+          "t-prep-butter-eggs"
+        ],
+        "sourceStepIds": [
+          "step-2"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Even distribution of leaveners gives an even rise.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-bowl-large"
+          ],
+          "ingredientIds": [
+            "ing-1",
+            "ing-2",
+            "ing-3",
+            "ing-4"
+          ]
+        }
+      },
+      {
+        "id": "t-lemon-sugar",
+        "phase": "cook",
+        "label": "Make lemon sugar",
+        "cardTitle": {
+          "action": "Rub",
+          "subject": "the lemon zest",
+          "context": "into sugar"
+        },
+        "description": "In a second bowl, rub the lemon zest into 3/4 cup granulated sugar (150g) with your fingertips until fragrant and like damp sand.",
+        "completionCue": "Fragrant, like damp sand",
+        "minutes": 2,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-mix-dry"
+        ],
+        "sourceStepIds": [
+          "step-3"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Rubbing releases oils from the zest so the crumb tastes brightly of lemon.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-bowl-second"
+          ],
+          "ingredientIds": [
+            "ing-5",
+            "ing-6"
+          ]
+        }
+      },
+      {
+        "id": "t-mix-wet",
+        "phase": "cook",
+        "label": "Mix wet ingredients",
+        "cardTitle": {
+          "action": "Whisk",
+          "subject": "the wet mix",
+          "context": ""
+        },
+        "description": "Whisk the melted butter into the lemon sugar, then the eggs one at a time, then 1/2 cup plain whole-milk yogurt (120g), 1/4 cup milk (60ml), 2 tablespoons fresh lemon juice, and 1 teaspoon vanilla extract until smooth.",
+        "completionCue": "Smooth batter base",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-lemon-sugar"
+        ],
+        "sourceStepIds": [
+          "step-4"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Adding eggs one at a time keeps the mixture smooth and emulsified.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-bowl-second"
+          ],
+          "ingredientIds": [
+            "ing-7",
+            "ing-8",
+            "ing-9",
+            "ing-10",
+            "ing-11",
+            "ing-12"
+          ]
+        }
+      },
+      {
+        "id": "t-toss-berries",
+        "phase": "cook",
+        "label": "Coat blueberries",
+        "cardTitle": {
+          "action": "Toss",
+          "subject": "the blueberries",
+          "context": "in flour"
+        },
+        "description": "Toss 1 and 1/2 cups fresh blueberries (225g) with 1 tablespoon all-purpose flour for the berries so they don't sink.",
+        "completionCue": "Berries lightly coated",
+        "minutes": 1,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-mix-wet"
+        ],
+        "sourceStepIds": [
+          "step-5"
+        ],
+        "checkpoints": [],
+        "tip": "Toss the blueberries with the 1 tablespoon of flour so they don't sink.",
+        "why": "A light flour coating helps suspend the berries in the thick batter.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": [
+            "ing-13",
+            "ing-14"
+          ]
+        }
+      },
+      {
+        "id": "t-fold",
+        "phase": "cook",
+        "label": "Fold batter",
+        "cardTitle": {
+          "action": "Fold",
+          "subject": "the batter",
+          "context": ""
+        },
+        "description": "Pour the wet ingredients into the dry ones and fold with a spatula until only a few streaks of flour remain. Gently fold in the floured blueberries. The batter will be thick.",
+        "completionCue": "Thick batter, few flour streaks",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-muffins"
+        ],
+        "dependencies": [
+          "t-toss-berries"
+        ],
+        "sourceStepIds": [
+          "step-6"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Gentle folding avoids overmixing so the muffins stay tender.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "t-fill",
+        "phase": "cook",
+        "label": "Fill cups",
+        "cardTitle": {
+          "action": "Fill",
+          "subject": "the muffin cups",
+          "context": "and top"
+        },
+        "description": "Divide the batter among the muffin cups; they will be quite full. Sprinkle the tops with 2 tablespoons turbinado sugar.",
+        "completionCue": "Cups full, sugar sprinkled",
+        "minutes": 3,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "t-fold"
+        ],
+        "sourceStepIds": [
+          "step-7"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": "Full cups give tall, domed muffin tops.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [
+            600
+          ],
+          "resourceIds": [
+            "res-tin"
+          ],
+          "ingredientIds": [
+            "ing-15"
+          ]
+        }
+      },
+      {
+        "id": "t-bake",
+        "phase": "cook",
+        "label": "Bake muffins",
+        "cardTitle": {
+          "action": "Bake",
+          "subject": "the muffins",
+          "context": ""
+        },
+        "description": "Bake for 20 to 22 minutes, until the tops are golden and a toothpick in the center of a muffin comes out clean.",
+        "completionCue": "Golden tops, clean toothpick",
+        "minutes": 21,
+        "range": {
+          "low": 20,
+          "high": 22
+        },
+        "timingBasis": "source",
+        "sourceQuote": "20 to 22 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "t-fill"
+        ],
+        "sourceStepIds": [
+          "step-8"
+        ],
+        "checkpoints": [
+          "Tops turning golden",
+          "Toothpick comes out clean"
+        ],
+        "tip": null,
+        "why": "Full heat sets the crumb and browns the sugared tops.",
+        "equipmentEvent": "oven-off",
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-oven",
+            "res-tin"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "t-cool",
+        "phase": "finish",
+        "label": "Cool in tin",
+        "cardTitle": {
+          "action": "Cool",
+          "subject": "the muffins",
+          "context": "in tin"
+        },
+        "description": "Cool the muffins in the tin for 5 minutes.",
+        "completionCue": "Set enough to move",
+        "minutes": 5,
+        "range": null,
+        "timingBasis": "source",
+        "sourceQuote": "for 5 minutes",
+        "attention": "unattended",
+        "timerEnabledByDefault": true,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "t-bake"
+        ],
+        "sourceStepIds": [
+          "step-9"
+        ],
+        "checkpoints": [
+          "Muffins firm enough to lift"
+        ],
+        "tip": null,
+        "why": "A short rest lets the crumb set so muffins release cleanly.",
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [
+            "res-tin"
+          ],
+          "ingredientIds": []
+        }
+      },
+      {
+        "id": "t-serve",
+        "phase": "finish",
+        "label": "Move to rack and serve",
+        "cardTitle": {
+          "action": "Move",
+          "subject": "the muffins",
+          "context": "to rack"
+        },
+        "description": "Move the muffins to a rack to finish cooling and serve.",
+        "completionCue": "Muffins on rack",
+        "minutes": 1,
+        "range": null,
+        "timingBasis": "estimate",
+        "sourceQuote": null,
+        "attention": "hands-on",
+        "timerEnabledByDefault": false,
+        "laneIds": [
+          "lane-kitchen"
+        ],
+        "dependencies": [
+          "t-cool"
+        ],
+        "sourceStepIds": [
+          "step-9"
+        ],
+        "checkpoints": [],
+        "tip": null,
+        "why": null,
+        "equipmentEvent": null,
+        "scheduling": {
+          "waits": [],
+          "resourceIds": [],
+          "ingredientIds": []
+        }
+      }
+    ],
+    "resources": [
+      {
+        "id": "res-oven",
+        "label": "Oven",
+        "kind": "oven"
+      },
+      {
+        "id": "res-tin",
+        "label": "Muffin tin",
+        "kind": "12-cup muffin tin"
+      },
+      {
+        "id": "res-bowl-large",
+        "label": "Large bowl",
+        "kind": "bowl"
+      },
+      {
+        "id": "res-bowl-second",
+        "label": "Second bowl",
+        "kind": "bowl"
+      }
+    ],
+    "resourceHolds": [
+      {
+        "taskId": "t-preheat",
+        "resourceId": "res-oven"
+      },
+      {
+        "taskId": "t-bake",
+        "resourceId": "res-oven"
+      },
+      {
+        "taskId": "t-fill",
+        "resourceId": "res-tin"
+      },
+      {
+        "taskId": "t-bake",
+        "resourceId": "res-tin"
+      },
+      {
+        "taskId": "t-cool",
+        "resourceId": "res-tin"
+      }
+    ],
+    "serveTaskId": "t-serve"
+  },
+  "equipmentProfile": {
+    "burners": 4,
+    "oven": true
+  },
+  "changes": [
+    {
+      "kind": "estimate",
+      "detail": "Timing for Preheat oven is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Zest lemons is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Measure dry mix is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Melt butter, ready eggs is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Mix dry ingredients is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Make lemon sugar is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Mix wet ingredients is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Coat blueberries is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Fold batter is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Fill cups is an estimate; the recipe does not give one."
+    },
+    {
+      "kind": "estimate",
+      "detail": "Timing for Move to rack and serve is an estimate; the recipe does not give one."
+    }
+  ]
+}
