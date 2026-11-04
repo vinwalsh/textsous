@@ -11,9 +11,12 @@ import {
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../lib/schema/artifact";
 import type { CanonicalRecipe } from "../lib/schema/canonical";
 import type { PhotoTranscription } from "../lib/intake/photo";
+import type { AdjustChoices } from "./AdjustPanel";
 import ArtifactViewer from "./ArtifactViewer";
+import type { ConvertBody } from "./conversion";
 import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
+import ProgressiveView from "./ProgressiveView";
 import ProgressNote from "./ProgressNote";
 import {
   apiFetch,
@@ -23,15 +26,10 @@ import {
   type FriendlyError,
 } from "./request";
 import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
+import { useConversion } from "./useConversion";
 import { withScreenOn } from "./wake-lock";
 
 type Tab = "url" | "text" | "photo";
-
-interface ConvertOk {
-  artifact: CookAlongArtifact;
-  cached: boolean;
-  warnings?: unknown;
-}
 
 // Shared with the /embed overlay; re-exported for existing importers.
 export { convertNotices };
@@ -96,47 +94,30 @@ export default function ConverterForm({
   } | null>(null);
   const autoRan = useRef(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  // The conversion streams in part by part (useConversion keeps the screen on).
+  const conversion = useConversion();
+  const { start: startConversion, reset: resetConversion } = conversion;
+  // Adjustments chosen before the cook along is ready, applied when it is.
+  const [queued, setQueued] = useState<AdjustChoices | null>(null);
 
   const convert = useCallback(
-    async (body: Record<string, unknown>) => {
+    async (body: ConvertBody) => {
       setBusy("convert");
       setError(null);
-      // Keep the phone's screen on: a lock drops the 3-4 minute request.
-      const res = await withScreenOn(() =>
-        apiFetch("/api/convert", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        }),
-      );
-      const data = res.data as (ConvertOk & { error?: string; reason?: string }) | null;
-      if (!res.ok || !data || !data.artifact) {
-        const recipeUrl = typeof body.url === "string" ? body.url : undefined;
-        setError(
-          friendlyError(res.status, data?.error ?? "", {
-            timeout: res.timeout,
-            reason: data?.reason,
-            recipeUrl,
-            mayFinish: recipeUrl !== undefined,
-          }),
-        );
-        setBusy(null);
-        return;
-      }
-      const valid = CookAlongArtifactSchema.safeParse(data.artifact);
-      if (!valid.success) {
-        setError(friendlyError(res.status, "The server returned an invalid artifact. Try again."));
-        setBusy(null);
+      setQueued(null);
+      // The page fills in from the top as each part arrives.
+      window.scrollTo(0, 0);
+      const final = await startConversion(body);
+      setBusy(null);
+      if (!final) return;
+      if (final.status !== "done") {
+        setError(final.error ?? friendlyError(null, ""));
         return;
       }
       if (confirm) URL.revokeObjectURL(confirm.photoUrl);
       setConfirm(null);
-      setNotices(convertNotices(data.warnings));
-      setArtifact(valid.data);
-      setBusy(null);
-      window.scrollTo(0, 0);
     },
-    [confirm],
+    [confirm, startConversion],
   );
 
   const loadFromSrc = useCallback(async (src: string) => {
@@ -264,10 +245,29 @@ export default function ConverterForm({
     setArtifact(null);
     setNotices([]);
     setError(null);
+    setQueued(null);
+    resetConversion();
   }
 
   if (artifact) {
     return <ArtifactViewer artifact={artifact} onStartOver={startOver} notices={notices} />;
+  }
+
+  const run = conversion.state;
+  if (run.status === "done" && run.artifact) {
+    return (
+      <ArtifactViewer
+        artifact={run.artifact}
+        onStartOver={startOver}
+        notices={run.notices}
+        overview={run.overview}
+        queuedAdjustments={queued}
+      />
+    );
+  }
+
+  if (run.status === "working") {
+    return <ProgressiveView state={run} queued={queued} onQueue={setQueued} />;
   }
 
   if (confirm) {

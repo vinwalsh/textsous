@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import type { RecipeOverview } from "../../lib/convert-events";
 import { CookAlongArtifactSchema, type CookAlongArtifact } from "../../lib/schema/artifact";
 import {
   EMBED_ARTIFACT_MESSAGE,
@@ -14,9 +15,11 @@ import {
   samePageCheck,
   type EmbedRequest,
 } from "../../lib/embed";
+import type { AdjustChoices } from "../AdjustPanel";
 import ArtifactViewer from "../ArtifactViewer";
+import { initialConversionState, type ConversionState } from "../conversion";
 import ErrorBox from "../ErrorBox";
-import ProgressNote from "../ProgressNote";
+import ProgressiveView from "../ProgressiveView";
 import {
   apiFetch,
   convertNotices,
@@ -24,7 +27,7 @@ import {
   type ApiResult,
   type FriendlyError,
 } from "../request";
-import { withScreenOn } from "../wake-lock";
+import { useConversion } from "../useConversion";
 import styles from "./embed.module.css";
 
 export type EmbedState =
@@ -34,7 +37,20 @@ export type EmbedState =
   | { kind: "loading" }
   | { kind: "mismatch"; recipeHost: string; pageHost: string; url: string }
   | { kind: "error"; error: FriendlyError; url: string | null }
-  | { kind: "ready"; artifact: CookAlongArtifact; notices: string[] };
+  | {
+      kind: "ready";
+      artifact: CookAlongArtifact;
+      notices: string[];
+      /** The quick read from a streamed conversion, when there was one. */
+      overview?: RecipeOverview | null;
+    };
+
+/** The conversion as it streams in, and the adjustments queued meanwhile. */
+export interface EmbedProgress {
+  conversion: ConversionState;
+  queued: AdjustChoices | null;
+  onQueue: (choices: AdjustChoices | null) => void;
+}
 
 const HANDOFF_TIMEOUT_MS = 8000;
 
@@ -94,9 +110,12 @@ function offersAssistants(error: FriendlyError): boolean {
 export function EmbedStatus({
   state,
   onClose,
+  progress,
 }: {
   state: Exclude<EmbedState, { kind: "ready" }>;
   onClose?: () => void;
+  /** While converting: the parts that have arrived so far. */
+  progress?: EmbedProgress;
 }) {
   const closeButton = onClose ? (
     <button type="button" className="btn" onClick={onClose}>
@@ -127,14 +146,20 @@ export function EmbedStatus({
     case "converting": {
       const host = hostOf(state.url);
       return (
-        <section className={styles.status} aria-live="polite">
-          <h1 className={styles.title}>Turning this recipe into a Cook Along…</h1>
-          <p>
-            Reading the recipe{host ? ` from ${host}` : ""}, planning a timeline with mise en place
-            first, then checking it against the original. You stay on this page the whole time.
-          </p>
-          <ProgressNote kind="convert" />
-        </section>
+        <>
+          <section className={styles.status}>
+            <h1 className={styles.title}>Turning this recipe into a Cook Along…</h1>
+            <p>
+              Converting the recipe{host ? ` from ${host}` : ""}. Each part shows here as soon as
+              it&apos;s ready. You stay on this page the whole time.
+            </p>
+          </section>
+          <ProgressiveView
+            state={progress?.conversion ?? STARTED}
+            queued={progress?.queued ?? null}
+            onQueue={progress?.onQueue ?? (() => {})}
+          />
+        </>
       );
     }
     case "mismatch":
@@ -209,6 +234,9 @@ function requestFromParent(src: string, origin: string | null): Promise<unknown 
   });
 }
 
+/** A conversion that has started but heard nothing yet. */
+const STARTED: ConversionState = { ...initialConversionState, status: "working" };
+
 const EXPIRED: FriendlyError = {
   title: "That link has expired",
   detail: "Saved recipes are kept for 24 hours. Convert the recipe again to get a fresh link.",
@@ -223,6 +251,11 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
   const [state, setState] = useState<EmbedState>(() => initialEmbedState(request));
   const [framed, setFramed] = useState(false);
   const started = useRef(false);
+  // The conversion streams in part by part (useConversion keeps the screen on).
+  const conversion = useConversion();
+  const startConversion = conversion.start;
+  // Adjustments chosen before the cook along is ready, applied when it is.
+  const [queued, setQueued] = useState<AdjustChoices | null>(null);
 
   const close = useCallback(() => {
     if (!inFrame()) return;
@@ -230,31 +263,20 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
     window.parent.postMessage({ type: EMBED_CLOSE_MESSAGE }, parentOrigin() ?? "*");
   }, []);
 
-  const convert = useCallback(async (url: string) => {
-    setState({ kind: "converting", url });
-    const res = await withScreenOn(() =>
-      apiFetch("/api/convert", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
-      }),
-    );
-    const data = res.data as { artifact?: unknown; error?: string } | null;
-    if (!res.ok || !data || !data.artifact) {
-      setState({ kind: "error", error: convertFailure(res, url), url });
-      return;
-    }
-    const ready = readyFromConvert(data);
-    if (!ready) {
-      setState({
-        kind: "error",
-        error: friendlyError(res.status, "The server returned an invalid artifact. Try again."),
-        url,
-      });
-      return;
-    }
-    setState(ready);
-  }, []);
+  const convert = useCallback(
+    async (url: string) => {
+      setState({ kind: "converting", url });
+      const final = await startConversion({ url });
+      if (!final) return;
+      if (final.status === "done" && final.artifact) {
+        setState({ kind: "ready", artifact: final.artifact, notices: final.notices, overview: final.overview });
+        return;
+      }
+      // Same copy as the JSON answers: the 429 reason, the recipe URL, "may still finish".
+      setState({ kind: "error", error: final.error ?? convertFailure({ status: null, timeout: false, data: null }, url), url });
+    },
+    [startConversion],
+  );
 
   const load = useCallback(async (src: string) => {
     setState({ kind: "loading" });
@@ -340,6 +362,8 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
           <ArtifactViewer
             artifact={state.artifact}
             notices={state.notices}
+            overview={state.overview ?? null}
+            queuedAdjustments={queued}
             embedded
             onClose={onClose}
             onStartOver={() => {
@@ -347,7 +371,11 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
             }}
           />
         ) : (
-          <EmbedStatus state={state} onClose={onClose} />
+          <EmbedStatus
+            state={state}
+            onClose={onClose}
+            progress={{ conversion: conversion.state, queued, onQueue: setQueued }}
+          />
         )}
       </main>
       <p className={styles.footer}>
