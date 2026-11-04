@@ -108,6 +108,8 @@ export interface ScaleFlag {
 export interface ApplyScalingResult {
   artifact: CookAlongArtifact;
   flags: ScaleFlag[];
+  /** Fixes made in code, e.g. an ingredient the rules left out. */
+  warnings: string[];
 }
 
 /**
@@ -117,7 +119,9 @@ export interface ApplyScalingResult {
  * in step and task text that read as an ingredient's current amount (the
  * number directly followed by its unit or name) are rescaled; times,
  * temperatures and pan sizes never are. Other amount-like numbers in steps
- * and step cards are flagged for the cook to verify. Pure.
+ * and step cards are flagged for the cook to verify. An ingredient the rules
+ * leave out keeps the rule it already has (from the recipe or an earlier
+ * rescale), else linear, and gets a warning. Pure.
  */
 export function applyScaling(
   artifact: CookAlongArtifact,
@@ -131,13 +135,17 @@ export function applyScaling(
   const native = nativeServingsOf(recipe, artifact.changes);
   const factor = targetServings / native;
   const byId = new Map(rules.map((r) => [r.ingredientId, r.rule] as const));
-  const missing = recipe.ingredients.map((i) => i.id).filter((id) => !byId.has(id));
-  if (missing.length > 0) {
-    throw new Error(`missing scale rule for ${missing.join(", ")}`);
-  }
+  const warnings: string[] = [];
   const mappings: AmountMapping[] = [];
   const ingredients = recipe.ingredients.map((ingredient) => {
-    const rule = byId.get(ingredient.id) ?? "linear";
+    // A reply that skips an id never fails the adjustment (a retry at the
+    // same settings would likely skip it again and spend another unit).
+    const rule = byId.get(ingredient.id) ?? ingredient.scaleRule ?? "linear";
+    if (!byId.has(ingredient.id)) {
+      warnings.push(
+        `No scaling rule came back for "${ingredient.name}", so it used the ${rule} rule; check its amount.`,
+      );
+    }
     const scaled = scaleIngredient({ ...ingredient, scaleRule: rule }, factor);
     const original = parseAmount(ingredient.quantity);
     const current = parseAmount(ingredient.cookQuantity ?? ingredient.quantity);
@@ -228,5 +236,6 @@ export function applyScaling(
       ],
     },
     flags,
+    warnings,
   };
 }

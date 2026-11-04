@@ -259,10 +259,24 @@ describe("applyScaling", () => {
     expect(again.recipe.steps[0].text).toBe("Add 18 cups stock and simmer 20 minutes.");
   });
 
-  it("throws when a rule is missing", () => {
-    expect(() => applyScaling(makeArtifact(), 4, RULES.slice(0, 1))).toThrow(
-      /missing scale rule for ing-2/,
-    );
+  it("scales an ingredient the rules left out by the rule it has, else linearly, with a warning", () => {
+    // salt (ing-2) carries "to-taste" from the recipe; the reply names only stock.
+    const kept = applyScaling(makeArtifact(), 4, RULES.slice(0, 1));
+    expect(kept.artifact.recipe.ingredients.map((i) => i.scaleRule)).toEqual(["linear", "to-taste"]);
+    expect(kept.artifact.recipe.ingredients[0].cookQuantity).toBe("4");
+    expect(kept.warnings).toEqual([
+      'No scaling rule came back for "salt", so it used the to-taste rule; check its amount.',
+    ]);
+    // stock has no rule of its own, so it scales linearly.
+    const linear = applyScaling(makeArtifact(), 4, RULES.slice(1));
+    expect(linear.artifact.recipe.ingredients[0].scaleRule).toBe("linear");
+    expect(linear.artifact.recipe.ingredients[0].cookQuantity).toBe("4");
+    expect(linear.artifact.recipe.steps[0].text).toBe("Add 4 cups stock and simmer 20 minutes.");
+    expect(linear.warnings).toEqual([
+      'No scaling rule came back for "stock", so it used the linear rule; check its amount.',
+    ]);
+    // A full set of rules warns about nothing.
+    expect(applyScaling(makeArtifact(), 4, RULES).warnings).toEqual([]);
   });
 
   it("rescales mapped step numbers and leaves timings unflagged", () => {

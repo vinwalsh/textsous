@@ -174,6 +174,29 @@ describe("adjustArtifact", () => {
     expect(result.scaleFlags).toEqual([]);
   });
 
+  it("finishes a rescale when the scaling reply leaves an ingredient out", async () => {
+    const order: string[] = [];
+    const result = await adjustArtifact(
+      makeArtifact(),
+      { servings: 4 },
+      {
+        clients: {
+          scaling: fakeClient(order, "scaling", {
+            rules: [{ ingredientId: "ing-1", rule: "linear", reason: "main" }],
+          }),
+        },
+      },
+    );
+    // One call, no failure: salt (no rule of its own) scales linearly and is named.
+    expect(order).toEqual(["scaling"]);
+    expect(result.artifact.recipe.servings).toBe(4);
+    expect(result.artifact.recipe.ingredients[0].cookQuantity).toBe("4");
+    expect(result.artifact.recipe.ingredients[1].scaleRule).toBe("linear");
+    expect(result.warnings).toEqual([
+      'No scaling rule came back for "salt", so it used the linear rule; check its amount.',
+    ]);
+  });
+
   it("validates every adjustment before any model call", async () => {
     const order: string[] = [];
     const clients = {

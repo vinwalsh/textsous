@@ -496,6 +496,7 @@ export async function adjustArtifact(
     );
     usage.scaling = assigned.usage;
     const applied = applyScaling(current, servings, assigned.rules);
+    warnings.push(...applied.warnings);
     current = applied.artifact;
     scaleFlags = applied.flags;
   }
