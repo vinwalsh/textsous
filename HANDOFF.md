@@ -125,7 +125,7 @@ done.
   - Closing the overlay ends the reader's wait, not the server's work: a
     URL conversion still finishes and is cached. Reopening (or converting
     the same link again) before then starts a second live conversion, with
-    another daily unit and a fresh 3 to 4 minute wait. Sharing one
+    another daily unit and a fresh wait of about a minute. Sharing one
     in-flight conversion per URL would avoid that. EMBED.md documents the
     behavior.
   - The skills secret budget stays at 600 requests an hour: raising it

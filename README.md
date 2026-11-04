@@ -18,8 +18,8 @@ export MODEL_API_KEY=your-key-here
 npx tsx src/cli.ts convert eval/fixtures/herby-white-bean-toast.txt --out /tmp/herby.json
 ```
 
-That converts one of the bundled sample recipes (about three minutes of model
-time) and writes the Cook Along artifact to `/tmp/herby.json`. Add
+That converts one of the bundled sample recipes (about a minute of model time)
+and writes the Cook Along artifact to `/tmp/herby.json`. Add
 `--timeline` to print the cooking timeline, or `--servings 4 --dietary vegan`
 to adjust it. `npx tsx src/cli.ts convert --help` lists every flag.
 
