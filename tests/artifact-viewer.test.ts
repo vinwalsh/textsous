@@ -117,9 +117,11 @@ describe("artifact viewer layout", () => {
     expect(html).toContain("<summary>What changed</summary>");
   });
 
-  it("prompts for cuisine as a free-form request", () => {
+  it("prompts for a cuisine with a short example that fits a phone", () => {
     const html = renderViewer();
-    expect(html).toContain('placeholder="Can you make this dish more Italian-style?"');
+    // The summary prints "<value> style", and a question was cut off at 390 px.
+    expect(html).toContain('placeholder="e.g. Italian"');
+    expect(html).toContain('maxLength="80"');
   });
 
   it("shows every step timer in one style, with minute adjusters", () => {

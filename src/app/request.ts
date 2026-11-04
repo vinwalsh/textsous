@@ -51,6 +51,15 @@ export function convertNotices(warnings: unknown): string[] {
   return warnings.filter((w): w is string => typeof w === "string" && w.trim().length > 0);
 }
 
+/**
+ * Class for a form's submit button: primary, except next to the daily-cap
+ * error, whose "Continue in your AI assistant" is then the one primary button
+ * (submitting again would only hit the cap again).
+ */
+export function submitButtonClass(error: Pick<FriendlyError, "action"> | null | undefined): string {
+  return error?.action === "assistants" ? "btn" : "btn btn-primary";
+}
+
 /** Where people continue when the free daily conversions run out (C7). */
 export function assistantsHref(recipeUrl?: string): string {
   const url = (recipeUrl ?? "").trim();

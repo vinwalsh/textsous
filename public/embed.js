@@ -208,7 +208,7 @@
   var BUTTON_CSS =
     ":host{display:inline-block}" +
     "button{all:initial;box-sizing:border-box;display:inline-flex;align-items:center;gap:.5em;" +
-    "padding:.7em 1.2em;border-radius:30px;background:#B74725;color:#fff;cursor:pointer;" +
+    "min-height:44px;padding:.7em 1.2em;border-radius:30px;background:#B74725;color:#fff;cursor:pointer;" +
     "font:600 16px/1.2 " + FONT + "}" +
     "button:hover{background:#9D3D20}" +
     "button:focus-visible{outline:2px solid #D45A35;outline-offset:2px}" +
@@ -255,7 +255,7 @@
     "border-bottom:1px solid #E2DBD5;background:#FFFFFF;" +
     "font:600 15px/1.3 " + FONT + ";color:#22201C}" +
     ".close{all:initial;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" +
-    "padding:8px 14px;border:1px solid #E2DBD5;border-radius:30px;background:#FFFFFF;color:#22201C;" +
+    "min-height:44px;padding:10px 16px;border:1px solid #E2DBD5;border-radius:30px;background:#FFFFFF;color:#22201C;" +
     "font:600 15px/1 " + FONT + "}" +
     ".close:hover{background:#F1EBE4}" +
     ".close:focus-visible{outline:2px solid #D45A35;outline-offset:2px}" +

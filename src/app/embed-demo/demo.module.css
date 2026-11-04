@@ -88,4 +88,7 @@
   background: var(--ts-secondary, #f1ebe4);
   border-radius: 8px;
   font-size: 0.85rem;
+  /* Wrap on phones so the whole snippet can be read and copied. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

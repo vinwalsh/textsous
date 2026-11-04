@@ -18,7 +18,8 @@ export default function SiteFooter() {
         </p>
         <p>
           Converted recipes are private to you: they are never listed, indexed, or shared,
-          and photos are processed in memory and never stored.
+          and photos are processed in memory and never stored. Recipe takedown requests:{" "}
+          <a href={`mailto:${TAKEDOWN_EMAIL}`}>{TAKEDOWN_EMAIL}</a>.
         </p>
       </div>
     </footer>

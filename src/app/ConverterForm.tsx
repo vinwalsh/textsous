@@ -15,7 +15,13 @@ import ArtifactViewer from "./ArtifactViewer";
 import ErrorBox from "./ErrorBox";
 import PhotoConfirm from "./PhotoConfirm";
 import ProgressNote from "./ProgressNote";
-import { apiFetch, convertNotices, friendlyError, type FriendlyError } from "./request";
+import {
+  apiFetch,
+  convertNotices,
+  friendlyError,
+  submitButtonClass,
+  type FriendlyError,
+} from "./request";
 import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
 import { withScreenOn } from "./wake-lock";
 
@@ -316,7 +322,7 @@ export default function ConverterForm({
             <div className="btn-row">
               <button
                 type="submit"
-                className="btn btn-primary"
+                className={submitButtonClass(error)}
                 disabled={!photoFile || busy !== null}
               >
                 {busy === "transcribe" ? "Transcribing…" : "Transcribe photo"}
@@ -351,7 +357,11 @@ export default function ConverterForm({
             )}
             {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
             <div className="btn-row">
-              <button type="submit" className="btn btn-primary" disabled={busy !== null}>
+              <button
+                type="submit"
+                className={submitButtonClass(error)}
+                disabled={busy !== null}
+              >
                 {busy === "convert" ? "Converting…" : "Convert"}
               </button>
             </div>

@@ -41,6 +41,8 @@
 .promptCard {
   border-color: var(--ts-accent, #d45a35);
   background: var(--ts-accent-soft, #f7e9e1);
+  /* Muted text stays 4.5:1 on the tinted card (4.96:1; #726A65 is 4.46:1). */
+  --ts-muted: #6b635e;
 }
 
 .cardTitle {

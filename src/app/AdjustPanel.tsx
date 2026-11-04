@@ -6,7 +6,7 @@ import { DIETARY_TARGETS, MAX_CUISINE_CHARS } from "../lib/schema/variant";
 import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
-import { apiFetch, friendlyError, type FriendlyError } from "./request";
+import { apiFetch, friendlyError, submitButtonClass, type FriendlyError } from "./request";
 import { withScreenOn } from "./wake-lock";
 
 interface AdjustOk {
@@ -164,7 +164,7 @@ export default function AdjustPanel({
             <span>Cuisine style</span>
             <input
               type="text"
-              placeholder="Can you make this dish more Italian-style?"
+              placeholder="e.g. Italian"
               maxLength={MAX_CUISINE_CHARS}
               value={cuisine}
               disabled={applying}
@@ -184,7 +184,11 @@ export default function AdjustPanel({
         {error ? <ErrorBox error={error} /> : null}
         {applying ? <ProgressNote kind="adjust" /> : null}
         <div className="btn-row">
-          <button type="submit" className="btn btn-primary" disabled={!hasChange || applying}>
+          <button
+            type="submit"
+            className={submitButtonClass(error)}
+            disabled={!hasChange || applying}
+          >
             {applying ? "Adjusting…" : "Apply adjustments"}
           </button>
           {modified ? (
