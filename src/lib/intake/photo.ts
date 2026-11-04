@@ -222,25 +222,25 @@ function orientationNotes(orientations: readonly number[]): string {
 }
 
 function transcribeSystemPrompt(orientations: readonly number[]): string {
-  const pages =
-    orientations.length > 1
-      ? "The photos are consecutive pages of ONE recipe, in order: transcribe them as one " +
-        "continuous text, page 1 first, without page markers. "
-      : "";
+  const several = orientations.length > 1;
+  const which = several
+    ? "The photos are consecutive pages of ONE recipe, in order: transcribe them as one " +
+      "continuous text, page 1 first, without page markers. Transcribe ONE recipe: the first " +
+      "recipe that starts on the first photo (when none starts there, the recipe the first " +
+      "photo shows), with its continuation on the later photos."
+    : "Transcribe ONE recipe: the first recipe that starts in the photo (when none starts " +
+      "there, the recipe the photo shows).";
   return (
-    "You are transcribing a cookbook or recipe photo for TextSous. " +
-    pages +
-    "Transcribe EVERY visible recipe word verbatim: ingredient lines with quantities and units " +
+    `You are transcribing ${several ? "cookbook or recipe photos" : "a cookbook or recipe photo"} ` +
+    `for TextSous. ${which} Parts of the same dish, such as a sauce, dough, filling or topping, ` +
+    "belong to it. Never merge two recipes: leave out the end of an earlier recipe and any " +
+    "other recipe, and set otherRecipeSkipped to true when you left one out (false otherwise). " +
+    "Transcribe every word of that recipe verbatim: ingredient lines with quantities and units " +
     "exactly as printed, instruction steps in order, and any servings, yield or timing lines. " +
     "Never invent, correct, reorder or summarize recipe words. Skip non-recipe text such as page " +
-    "headers, footers and advertisements. Transcribe ONE recipe: the first recipe that starts on " +
-    "the first photo (when none starts there, the recipe the first photo shows), with its " +
-    "continuation on any later photo. Parts of the same dish, such as a sauce, dough, filling or " +
-    "topping, belong to it. Never merge two recipes: leave out the end of an earlier recipe and " +
-    "any other recipe, and set otherRecipeSkipped to true when you left one out (false " +
-    `otherwise).${orientationNotes(orientations)} Read any visible book title, author and the ` +
-    "page number where the recipe starts into book, author and page (null when not visible). " +
-    "Reply with only JSON matching the schema, no prose."
+    `headers, footers and advertisements.${orientationNotes(orientations)} Read any visible ` +
+    "book title, author and the page number where the recipe starts into book, author and page " +
+    "(null when not visible). Reply with only JSON matching the schema, no prose."
   );
 }
 
