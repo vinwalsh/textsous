@@ -242,6 +242,7 @@ export default function ConverterForm({
         notices={run.notices}
         overview={run.overview}
         queuedAdjustments={queued}
+        built
       />
     );
   }

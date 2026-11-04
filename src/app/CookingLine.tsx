@@ -49,10 +49,13 @@ const ICONS: ReadonlyArray<{ key: string; icon: ReactNode }> = [
 
 /**
  * One line of cooking icons that take turns, left to right, over a thin
- * moving line, with the stage and elapsed time under it. Motion stops under
- * prefers-reduced-motion (globals.css).
+ * moving line, with the stage and elapsed time under it. It sticks to the
+ * top of the screen while the page scrolls (globals.css), so the reader
+ * always sees that the cook along is still being written. Motion stops under
+ * prefers-reduced-motion. The stage is a polite live region (milestones
+ * only, never the clock) unless `live` is false.
  */
-export default function CookingLine({ status }: { status: string }) {
+export default function CookingLine({ status, live = true }: { status: string; live?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const started = Date.now();
@@ -72,14 +75,70 @@ export default function CookingLine({ status }: { status: string }) {
         <span className="cooking-line-runner" />
       </div>
       <p className="cooking-line-status">
-        <span role="status" aria-live="polite">
-          {status}…
-        </span>{" "}
+        {live ? (
+          <span role="status" aria-live="polite">
+            {status}…
+          </span>
+        ) : (
+          <span>{status}…</span>
+        )}{" "}
         <span className="cooking-line-time">
           <span className="visually-hidden">Elapsed </span>
           {formatElapsed(elapsed)}
         </span>
       </p>
     </div>
+  );
+}
+
+/** How long the top line says the cook along is ready before it goes. */
+export const READY_MS = 2600;
+
+/**
+ * The top line on the finished page. While an adjustment applies it is the
+ * cooking line with "Adjusting…"; then "Your Cook Along is ready" for a
+ * moment; then nothing. `built`: the cook along was just written on this
+ * page, so it opens with Ready. Screen readers hear each milestone once, from
+ * a live region that exists before its words change.
+ */
+export function FinishLine({ adjusting, built = false }: { adjusting: boolean; built?: boolean }) {
+  const [phase, setPhase] = useState<"ready" | "hidden">(built ? "ready" : "hidden");
+  const [wasAdjusting, setWasAdjusting] = useState(adjusting);
+  if (adjusting !== wasAdjusting) {
+    // An adjustment just finished: say Ready again.
+    setWasAdjusting(adjusting);
+    if (!adjusting) setPhase("ready");
+  }
+  useEffect(() => {
+    if (adjusting || phase !== "ready") return;
+    const id = setTimeout(() => setPhase("hidden"), READY_MS);
+    return () => clearTimeout(id);
+  }, [adjusting, phase]);
+
+  const message = adjusting ? "Adjusting your Cook Along." : phase === "ready" ? "Your Cook Along is ready." : "";
+  const [said, setSaid] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setSaid(message), 100);
+    return () => clearTimeout(id);
+  }, [message]);
+
+  return (
+    <>
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {said}
+      </p>
+      {adjusting ? (
+        <CookingLine status="Adjusting" live={false} />
+      ) : phase === "ready" ? (
+        <div className="cooking-line cooking-line-ready">
+          <p className="cooking-line-status">
+            <span className="cooking-line-check" aria-hidden="true">
+              ✓
+            </span>
+            Your Cook Along is ready
+          </p>
+        </div>
+      ) : null}
+    </>
   );
 }

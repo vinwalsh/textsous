@@ -22,6 +22,7 @@ import ArtifactViewer from "../ArtifactViewer";
 import { initialConversionState, type ConversionState } from "../conversion";
 import ErrorBox from "../ErrorBox";
 import ProgressiveView from "../ProgressiveView";
+import type { PendingChoices } from "../section-states";
 import {
   apiFetch,
   convertNotices,
@@ -45,6 +46,8 @@ export type EmbedState =
       notices: string[];
       /** The quick read from a streamed conversion, when there was one. */
       overview?: RecipeOverview | null;
+      /** Just converted in this overlay (not a ?src= artifact): the top line says Ready. */
+      built?: boolean;
     };
 
 /** The conversion as it streams in, and the adjustments queued meanwhile. */
@@ -52,6 +55,8 @@ export interface EmbedProgress {
   conversion: ConversionState;
   queued: AdjustChoices | null;
   onQueue: (choices: AdjustChoices | null) => void;
+  /** The address's adjustment while the recipe's servings are unknown: its sections say "Before your changes". */
+  requested?: PendingChoices | null;
 }
 
 const HANDOFF_TIMEOUT_MS = 8000;
@@ -210,6 +215,7 @@ export function EmbedStatus({
             state={progress?.conversion ?? STARTED}
             queued={progress?.queued ?? null}
             onQueue={progress?.onQueue ?? (() => {})}
+            requested={progress?.requested ?? null}
           />
         </>
       );
@@ -331,7 +337,13 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
       const final = await startConversion({ url });
       if (!final) return;
       if (final.status === "done" && final.artifact) {
-        setState({ kind: "ready", artifact: final.artifact, notices: final.notices, overview: final.overview });
+        setState({
+          kind: "ready",
+          artifact: final.artifact,
+          notices: final.notices,
+          overview: final.overview,
+          built: true,
+        });
         return;
       }
       // Same copy as the JSON answers: the 429 reason, the recipe URL, "may still finish".
@@ -436,6 +448,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
             overview={state.overview ?? null}
             queuedAdjustments={queuedNow}
             onQueuedApplied={onQueuedApplied}
+            built={state.built === true}
             embedded
             onClose={onClose}
             onStartOver={() => {
@@ -446,7 +459,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
           <EmbedStatus
             state={state}
             onClose={onClose}
-            progress={{ conversion: conversion.state, queued: queuedNow, onQueue }}
+            progress={{ conversion: conversion.state, queued: queuedNow, onQueue, requested: ownQueue ? null : requested }}
           />
         )}
       </main>

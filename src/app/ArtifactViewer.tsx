@@ -12,7 +12,10 @@ import { formatQuantityWithUnit } from "../lib/scaling/units";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
-import AdjustPanel, { type AdjustChoices } from "./AdjustPanel";
+import AdjustPanel, { adjustingLine, hasAdjustment, type AdjustChoices } from "./AdjustPanel";
+import { adjustedSections, type SectionKey } from "./section-states";
+import { PreAdjustMark } from "./SectionStatus";
+import { FinishLine } from "./CookingLine";
 import TimelineView from "./TimelineView";
 import Timer from "./Timer";
 
@@ -81,11 +84,16 @@ export function handsOnMinutes(tasks: Array<{ attention: string; minutes: number
   return tasks.filter((t) => t.attention === "hands-on").reduce((sum, t) => sum + t.minutes, 0);
 }
 
-/** A quick read of the recipe: what you'll do, and each component with how it is made. */
-export function OverviewCard({ overview }: { overview: RecipeOverview }) {
+/**
+ * A quick read of the recipe: what you'll do, and each component with how it
+ * is made. `mark` shows beside the heading (the progressive view's "Ready").
+ */
+export function OverviewCard({ overview, mark }: { overview: RecipeOverview; mark?: ReactNode }) {
   return (
     <section className="card overview" aria-label="What you'll do">
-      <h3>What you&apos;ll do</h3>
+      <h3>
+        What you&apos;ll do{mark}
+      </h3>
       <p>{overview.summary}</p>
       {overview.components.length > 0 ? (
         <>
@@ -104,10 +112,20 @@ export function OverviewCard({ overview }: { overview: RecipeOverview }) {
   );
 }
 
-export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredient[] }) {
+/** `mark` shows beside the heading, `status` under it (Ready, Before your changes). */
+export function IngredientsCard({
+  ingredients,
+  mark,
+  status,
+}: {
+  ingredients: readonly Ingredient[];
+  mark?: ReactNode;
+  status?: ReactNode;
+}) {
   return (
     <section className="card">
-      <h3>Ingredients</h3>
+      <h3>Ingredients{mark}</h3>
+      {status}
       <ul className="ingredients">
         {ingredients.map((ing) => (
           <li key={ing.id}>
@@ -132,21 +150,27 @@ export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredi
 /**
  * Time to serve, hands-on minutes, the components and the equipment. Before
  * the steps are laid out (timeline null) it shows the equipment only.
+ * `mark` shows beside the heading, `status` under it.
  */
 export function BeforeYouStart({
   equipment,
   timeline,
   totalMinutes,
+  mark,
+  status,
 }: {
   equipment: readonly string[];
   timeline: TimelineDefinition | null;
   totalMinutes: number | null;
+  mark?: ReactNode;
+  status?: ReactNode;
 }) {
   const components = timeline ? timeline.lanes.filter((lane) => lane.kind === "component") : [];
   const colors = laneDisplayColors(timeline?.lanes ?? []);
   return (
     <section className="card before-start" aria-label="Before you start">
-      <h3>Before you start</h3>
+      <h3>Before you start{mark}</h3>
+      {status}
       {timeline ? (
         <p className="before-start-summary">
           {totalMinutes !== null ? `About ${totalMinutes} min to serve · ` : ""}
@@ -270,18 +294,20 @@ export function hasTaskNotes(tasks: ReadonlyArray<{ tip?: string | null; why?: s
 
 /**
  * "Prep (Mise en Place style)": every prep task before the first cook step.
- * With `onToggle` each card has a checkbox.
+ * With `onToggle` each card has a checkbox. `status` shows under the heading.
  */
 export function PrepSection({
   timeline,
   tipsMode,
   done,
   onToggle,
+  status,
 }: {
   timeline: TimelineDefinition;
   tipsMode: TipsMode;
   done?: ReadonlySet<string>;
   onToggle?: (id: string) => void;
+  status?: ReactNode;
 }) {
   const prepTasks = timeline.tasks.filter((t) => t.phase === "prep");
   // Lanes are colored by position, not by the color the artifact stored.
@@ -289,6 +315,7 @@ export function PrepSection({
   return (
     <>
       <h3>Prep (Mise en Place style)</h3>
+      {status}
       {prepTasks.length > 0 ? (
         <>
           <PhaseBand phase="prep" count={prepTasks.length} noun="task" />
@@ -432,6 +459,7 @@ export default function ArtifactViewer({
   overview = null,
   queuedAdjustments = null,
   onQueuedApplied,
+  built = false,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -448,6 +476,8 @@ export default function ArtifactViewer({
   queuedAdjustments?: AdjustChoices | null;
   /** Called once the queued adjustments were applied, or failed to apply. */
   onQueuedApplied?: () => void;
+  /** Just written on this page: the top line says Ready for a moment. */
+  built?: boolean;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -459,6 +489,11 @@ export default function ArtifactViewer({
   const [saveError, setSaveError] = useState<FriendlyError | null>(null);
   const [importUrl, setImportUrl] = useState<string | null>(null);
   const [tipsMode, setTipsMode] = useState<TipsMode>(readTipsMode);
+  // The adjustment being applied (queued ones start at once): the sections
+  // it rewrites say "Before your changes" until the adjusted cook along shows.
+  const [adjusting, setAdjusting] = useState<AdjustChoices | null>(() =>
+    queuedAdjustments && hasAdjustment(queuedAdjustments, floored.recipe.servings) ? queuedAdjustments : null,
+  );
 
   function chooseTipsMode(mode: TipsMode) {
     setTipsMode(mode);
@@ -475,6 +510,9 @@ export default function ArtifactViewer({
 
   const recipe = current.recipe;
   const timeline = current.timelineDefinition;
+  const rewriting = new Set<SectionKey>(adjustedSections(adjusting, recipe.servings));
+  const adjustingText = adjusting ? adjustingLine(recipe.servings, adjusting) : null;
+  const before = (key: SectionKey) => (rewriting.has(key) ? <PreAdjustMark adjusting={adjustingText} /> : null);
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
 
@@ -527,14 +565,16 @@ export default function ArtifactViewer({
 
   return (
     <article aria-label="Cook Along recipe">
+      <FinishLine adjusting={adjusting !== null} built={built} />
       <div className="recipe-head">
-        <p className="label">Your cook along</p>
+        <p className="label">Your Cook Along</p>
         <h2 className="recipe-title">{recipe.title}</h2>
         <p className="meta">
           Serves {recipe.servings} · {recipe.ingredients.length} ingredients
           {totalMinutes !== null ? ` · About ${totalMinutes} minutes` : ""}
           {recipe.methodLabel ? ` · Method: ${recipe.methodLabel}` : ""}
         </p>
+        {before("facts")}
       </div>
 
       <Credit credit={recipe.credit} />
@@ -569,17 +609,24 @@ export default function ArtifactViewer({
         onReset={handleReset}
         autoApply={queuedAdjustments}
         onAutoApplied={onQueuedApplied}
+        onApplyingChange={setAdjusting}
       />
 
-      <IngredientsCard ingredients={recipe.ingredients} />
+      <IngredientsCard ingredients={recipe.ingredients} status={before("ingredients")} />
 
       <BeforeYouStart equipment={recipe.equipment} timeline={timeline} totalMinutes={totalMinutes} />
 
       <TipsToggle mode={tipsMode} onChange={chooseTipsMode} />
 
-      <PrepSection timeline={timeline} tipsMode={tipsMode} done={prepDone} onToggle={togglePrep} />
+      <PrepSection
+        timeline={timeline}
+        tipsMode={tipsMode}
+        done={prepDone}
+        onToggle={togglePrep}
+        status={before("prep")}
+      />
 
-      <StepsSection timeline={timeline} tipsMode={tipsMode} />
+      <StepsSection timeline={timeline} tipsMode={tipsMode} status={before("steps")} />
 
       {current.changes.length > 0 ? (
         <details>
@@ -597,6 +644,7 @@ export default function ArtifactViewer({
       <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
 
       <h3>Timeline</h3>
+      {before("timeline")}
       <TimelineView timeline={timeline} />
 
       {saveError ? <ErrorBox error={saveError} /> : null}

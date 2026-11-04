@@ -8,7 +8,7 @@
  * Attributes (on a placement or on the script tag; a placement's own attribute wins):
  *   data-recipe-url  recipe page to convert (default: <link rel="canonical">, else this page)
  *   data-src         a pre-converted artifact JSON URL (made with the TextSous CLI)
- *   data-label       button text (default "Cook along with TextSous" / "Adjust with SOUS")
+ *   data-label       button text (default "Build “Cook Along” with TextSous" / "Adjust with SOUS")
  *   data-autoopen    open the overlay right away (Cook Along buttons)
  * On the script tag only:
  *   data-mode="adjust"  the default button (no placement on the page) is "Adjust with SOUS"
@@ -33,12 +33,15 @@
 
   var VERSION = 1;
   var DEFAULT_ORIGIN = "https://open.textsous.com";
-  var DEFAULT_LABEL = "Cook along with TextSous";
+  // The product is called Cook Along: the button says so in title case, in curly quotes.
+  var DEFAULT_LABEL = "Build \u201cCook Along\u201d with TextSous";
   var CLOSE = "textsous:close";
   var NEED_ARTIFACT = "textsous:need-artifact";
   var ARTIFACT = "textsous:artifact";
   var MAX_ARTIFACT_BYTES = 1024 * 1024;
   var DEFAULT_ADJUST_LABEL = "Adjust with SOUS";
+  // The Adjust with SOUS menu's last choice: the full Cook Along, unchanged.
+  var COOK_ALONG_CHOICE = "Build \u201cCook Along\u201d";
   // The same list, in the same order, as DIETARY_TARGETS in src/lib/schema/variant.ts (a test checks).
   var DIETS = ["dairy-free", "egg-free", "gluten-free", "nut-free", "soy-free", "vegetarian", "vegan"];
   var MENU_MIN_SERVINGS = 1;
@@ -295,6 +298,7 @@
     backgroundElements: backgroundElements,
     isOn: isOn,
     diets: DIETS.slice(),
+    labels: { cookAlong: DEFAULT_LABEL, adjust: DEFAULT_ADJUST_LABEL, cookAlongChoice: COOK_ALONG_CHOICE },
     modeOf: modeOf,
     yieldServings: yieldServings,
     findRecipeYield: findRecipeYield,
@@ -351,8 +355,8 @@
   var FONT = "Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif";
 
   var BUTTON_CSS =
-    ":host{display:inline-block}" +
-    "button{all:initial;box-sizing:border-box;display:inline-flex;align-items:center;gap:.5em;" +
+    ":host{display:inline-block;max-width:100%}" +
+    "button{all:initial;box-sizing:border-box;display:inline-flex;align-items:center;gap:.5em;max-width:100%;" +
     "min-height:44px;padding:.7em 1.2em;border-radius:30px;background:#B74725;color:#fff;cursor:pointer;" +
     "font:600 16px/1.2 " + FONT + "}" +
     "button:hover{background:#9D3D20}" +
@@ -533,7 +537,7 @@
     var showCuisine = h("button", { type: "button", class: "go", "aria-describedby": "ts-cuisine-label", text: "Show it" });
     var cuisineHint = h("p", { class: "hint", "aria-live": "polite" });
     // d. The full Cook Along.
-    var cookAlong = h("button", { type: "button", class: "go", text: "Cook along" });
+    var cookAlong = h("button", { type: "button", class: "go", text: COOK_ALONG_CHOICE });
 
     var menu = h("div", { class: "menu", id: "ts-menu", role: "dialog", "aria-labelledby": "ts-title", tabindex: "-1" }, [
       h("p", { class: "title", id: "ts-title", text: "What would you like?" }),

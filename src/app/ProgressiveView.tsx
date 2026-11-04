@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { RecipeFacts } from "../lib/convert-events";
 import type { ArtifactCredit } from "../lib/schema/artifact";
 import type { CanonicalRecipe } from "../lib/schema/canonical";
@@ -20,6 +20,8 @@ import {
 } from "./ArtifactViewer";
 import { conversionStage, type ConversionState } from "./conversion";
 import CookingLine from "./CookingLine";
+import { adjustedSections, sectionStates, type PendingChoices, type SectionKey } from "./section-states";
+import { PreAdjustMark, ReadyMark, SectionPlaceholder, WorkingNote } from "./SectionStatus";
 
 function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
@@ -79,8 +81,21 @@ export function AllergenFacts({ allergens, traces }: { allergens: readonly strin
   );
 }
 
-/** Title, credit, the posted servings, counts and times, and the allergens. */
-export function FactsCard({ facts, recipe }: { facts: RecipeFacts; recipe: CanonicalRecipe | null }) {
+/**
+ * Title, credit, the posted servings, counts and times, and the allergens.
+ * `mark` shows beside the title, `status` under the servings line.
+ */
+export function FactsCard({
+  facts,
+  recipe,
+  mark,
+  status,
+}: {
+  facts: RecipeFacts;
+  recipe: CanonicalRecipe | null;
+  mark?: ReactNode;
+  status?: ReactNode;
+}) {
   const line = factsLine(facts);
   const credit: ArtifactCredit = {
     kind: facts.source.kind,
@@ -94,9 +109,13 @@ export function FactsCard({ facts, recipe }: { facts: RecipeFacts; recipe: Canon
   return (
     <section className="facts progressive-in" aria-label="About this recipe">
       <div className="recipe-head">
-        <p className="label">Your cook along</p>
-        <h2 className="recipe-title">{facts.title ?? recipe?.title ?? "Your recipe"}</h2>
+        <p className="label">Your Cook Along</p>
+        <h2 className="recipe-title">
+          {facts.title ?? recipe?.title ?? "Your recipe"}
+          {mark}
+        </h2>
         {line ? <p className="meta">{line}</p> : null}
+        {status}
       </div>
       <Credit credit={credit} />
       <AllergenFacts allergens={facts.allergens} traces={facts.traces} />
@@ -105,19 +124,25 @@ export function FactsCard({ facts, recipe }: { facts: RecipeFacts; recipe: Canon
 }
 
 /**
- * The cook along while it is written: the cooking line on top, then each
- * part as soon as it arrives, in the finished page's order. Steps show as
- * essentials first, with tips one tap away once they exist. Adjustments
- * chosen here wait for the finished cook along (`onQueue`).
+ * The cook along while it is written: the cooking line on top (it sticks to
+ * the top of the screen), then every section of the finished page in its
+ * order, each coming up, being written (a spinner), checked or ready (see
+ * section-states.ts). Steps show as essentials first, with tips one tap
+ * away once they exist. Adjustments chosen here wait for the finished cook
+ * along (`onQueue`); until they apply, the sections they change say "Before
+ * your changes". `requested` is an adjustment asked for before the recipe's
+ * servings are known (the /embed address).
  */
 export default function ProgressiveView({
   state,
   queued,
   onQueue,
+  requested = null,
 }: {
   state: ConversionState;
   queued: AdjustChoices | null;
   onQueue: (choices: AdjustChoices | null) => void;
+  requested?: PendingChoices | null;
 }) {
   const { facts, overview, recipe, timeline } = state;
   // Essentials first; the cook can switch to With tips once tips exist.
@@ -132,6 +157,13 @@ export default function ProgressiveView({
   }, [timeline]);
   const withTips = timeline ? hasTaskNotes(timeline.tasks) : false;
   const mode: TipsMode = withTips ? tipsMode : "essentials";
+  const sections = sectionStates(state);
+  const base = recipe?.nativeServings ?? null;
+  const changed = new Set<SectionKey>(adjustedSections(queued ?? (base === null ? requested : null), base));
+  const before = (key: SectionKey) => (changed.has(key) ? <PreAdjustMark /> : null);
+  const placeholder = (key: SectionKey, level: 2 | 3 = 3) => (
+    <SectionPlaceholder section={key} state={sections[key]} level={level} mark={before(key)} />
+  );
 
   function chooseTipsMode(next: TipsMode) {
     setTipsMode(next);
@@ -141,31 +173,77 @@ export default function ProgressiveView({
   return (
     <article aria-label="Cook Along recipe, being written" className="progressive">
       <CookingLine status={conversionStage(state)} />
-      {facts ? <FactsCard facts={facts} recipe={recipe} /> : null}
+      {facts ? (
+        <FactsCard facts={facts} recipe={recipe} mark={<ReadyMark />} status={before("facts")} />
+      ) : (
+        placeholder("facts", 2)
+      )}
       {overview ? (
         <div className="progressive-in">
-          <OverviewCard overview={overview} />
+          <OverviewCard overview={overview} mark={<ReadyMark />} />
         </div>
-      ) : null}
+      ) : (
+        placeholder("overview")
+      )}
       {recipe ? (
         <div className="progressive-in">
           <AdjustPanel artifact={null} pending={{ servings: recipe.nativeServings, queued, onQueue }} />
-          <IngredientsCard ingredients={recipe.ingredients} />
-          <BeforeYouStart equipment={recipe.equipment} timeline={timeline} totalMinutes={totalMinutes} />
         </div>
-      ) : null}
-      {timeline ? (
+      ) : (
+        placeholder("adjust", 2)
+      )}
+      {recipe ? (
         <div className="progressive-in">
+          <IngredientsCard ingredients={recipe.ingredients} mark={<ReadyMark />} status={before("ingredients")} />
+        </div>
+      ) : (
+        placeholder("ingredients")
+      )}
+      {recipe ? (
+        <div className="progressive-in" aria-busy={timeline ? undefined : true}>
+          <BeforeYouStart
+            equipment={recipe.equipment}
+            timeline={timeline}
+            totalMinutes={totalMinutes}
+            mark={timeline ? <ReadyMark /> : null}
+            status={sections.before.phase === "working" ? <WorkingNote>{sections.before.note}</WorkingNote> : null}
+          />
+        </div>
+      ) : (
+        placeholder("before")
+      )}
+      {timeline ? (
+        <div className="progressive-in progressive-checked" aria-busy="true">
           {withTips ? <TipsToggle mode={tipsMode} onChange={chooseTipsMode} /> : null}
-          <PrepSection timeline={timeline} tipsMode={mode} />
+          <PrepSection
+            timeline={timeline}
+            tipsMode={mode}
+            status={
+              <>
+                <WorkingNote className="progressive-checking">{sections.prep.note}</WorkingNote>
+                {before("prep")}
+              </>
+            }
+          />
           <StepsSection
             timeline={timeline}
             tipsMode={mode}
             timers={false}
-            status={<p className="meta progressive-checking">Checking against the original…</p>}
+            status={
+              <>
+                <WorkingNote className="progressive-checking">{sections.steps.note}</WorkingNote>
+                {before("steps")}
+              </>
+            }
           />
         </div>
-      ) : null}
+      ) : (
+        <>
+          {placeholder("prep")}
+          {placeholder("steps")}
+        </>
+      )}
+      {placeholder("timeline")}
     </article>
   );
 }
