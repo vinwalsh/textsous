@@ -23,9 +23,21 @@ export function jsonResponse(body: unknown, status = 200, headers: Record<string
   });
 }
 
-export function failure(status: number, code: string, message: string): Response {
-  return jsonResponse({ ok: false, error: { code, message } }, status);
+export function failure(
+  status: number,
+  code: string,
+  message: string,
+  extra: Record<string, string> = {},
+): Response {
+  return jsonResponse({ ok: false, error: { code, message, ...extra } }, status);
 }
+
+/**
+ * Which limit refused a request: "account" (this person's 60 an hour) or
+ * "service" (the shared 600 an hour). Sent as error.scope on every 429, so
+ * callers never have to read the English message.
+ */
+export type RateLimitScope = "account" | "service";
 
 const sha256 = (value: string): Buffer => createHash("sha256").update(value, "utf8").digest();
 
@@ -120,13 +132,20 @@ export async function checkSkillsRateLimit(req: Request): Promise<Response | nul
   if (account) {
     const accountKey = `account:${sha256(account.slice(0, 256)).toString("hex").slice(0, 32)}`;
     if (!(await hit(accountKey, ACCOUNT_LIMIT_PER_HOUR))) {
-      return failure(429, "rate_limited", "This account made too many cook along requests this hour. Try again later.");
+      return failure(
+        429,
+        "rate_limited",
+        "This account made too many cook along requests this hour. Try again later.",
+        { scope: "account" satisfies RateLimitScope },
+      );
     }
   }
   const secret = process.env.SKILLS_API_SECRET?.trim() ?? "";
   const secretKey = `secret:${sha256(secret).toString("hex").slice(0, 16)}`;
   if (!(await hit(secretKey, SECRET_LIMIT_PER_HOUR))) {
-    return failure(429, "rate_limited", "Too many skills requests this hour. Try again later.");
+    return failure(429, "rate_limited", "Too many skills requests this hour. Try again later.", {
+      scope: "service" satisfies RateLimitScope,
+    });
   }
   return null;
 }

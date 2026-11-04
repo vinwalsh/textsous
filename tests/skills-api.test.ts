@@ -469,9 +469,21 @@ describe("auth, size and rate limits", () => {
     }
     const limited = await sourcePOST(post("/api/skills/source", { nope: true }, headers));
     expect(limited.status).toBe(429);
-    expect(await limited.json()).toMatchObject({ ok: false, error: { code: "rate_limited" } });
+    const body = (await limited.json()) as { ok: boolean; error: { code: string; scope: string; message: string } };
+    expect(body).toMatchObject({ ok: false, error: { code: "rate_limited", scope: "account" } });
+    // textsous.com's MCP also reads the word "account" from older servers.
+    expect(body.error.message).toMatch(/\baccount\b/i);
     const other = await sourcePOST(post("/api/skills/source", { nope: true }, { "x-textsous-account": "acct-hash-2" }));
     expect(other.status).toBe(422);
+  });
+
+  it("names the shared limit as scope service, without the word account", async () => {
+    for (let i = 0; i < 600; i += 1) await sourcePOST(post("/api/skills/source", { nope: true }));
+    const limited = await sourcePOST(post("/api/skills/source", { nope: true }));
+    expect(limited.status).toBe(429);
+    const body = (await limited.json()) as { error: { code: string; scope: string; message: string } };
+    expect(body.error).toMatchObject({ code: "rate_limited", scope: "service" });
+    expect(body.error.message).not.toMatch(/\baccount\b/i);
   });
 
   it("does not spend the shared secret budget on requests an account limit refuses", async () => {

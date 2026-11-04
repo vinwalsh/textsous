@@ -166,7 +166,7 @@ The full list of error codes and their fixes is in the `instructions`
 | 401 | `{ "ok": false, "error": { "code": "unauthorized" } }` | missing or wrong `Authorization: Bearer <secret>` |
 | 413 | `{ "ok": false, "error": { "code": "too_large" } }` | body over 256 KB |
 | 400 | `{ "ok": false, "error": { "code": "invalid_json" } }` | body is not JSON |
-| 429 | `{ "ok": false, "error": { "code": "rate_limited" } }` | over 600 requests/hour per secret, or 60/hour per `X-TextSous-Account` |
+| 429 | `{ "ok": false, "error": { "code": "rate_limited", "scope": "account" \| "service" } }` | over 60/hour per `X-TextSous-Account` (`scope: "account"`), or 600 requests/hour per secret (`scope: "service"`) |
 
 The secret is compared in constant time. `X-TextSous-Account` is optional:
 an opaque per-person hash the caller sends so one person cannot use up the
