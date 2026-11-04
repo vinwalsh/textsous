@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { APIConnectionError, APIConnectionTimeoutError } from "openai";
 import { z } from "zod";
 import { toResponseJsonSchema } from "../schema/json";
 import { assertUsableInProduction, resolveProvider, type ProviderName } from "./profiles";
@@ -119,18 +119,27 @@ function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
   };
 }
 
-/** Timeouts may have spent tokens upstream; HTTP errors and refused connections did not. */
-function mayHaveSpent(error: unknown): boolean {
+/**
+ * An error's class names, for errors that are not the SDK's own classes
+ * (test doubles, DOM AbortError). The SDK classes are matched with
+ * instanceof: the SDK never sets `.name`, and a production build renames
+ * classes, so their names are not "APIConnectionError" there.
+ */
+function errorNames(error: unknown): string {
   const err = error as { name?: string; constructor?: { name?: string } };
-  const name = `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
-  return /Timeout|AbortError/i.test(name);
+  return `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
 }
 
 /** The SDK's own per-call timeout (APIConnectionTimeoutError, "Request timed out."). */
 function isCallTimeout(error: unknown): boolean {
-  const err = error as { name?: string; message?: string; constructor?: { name?: string } };
-  const name = `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
-  return /Timeout/i.test(name) || /^request timed out/i.test(err?.message ?? "");
+  if (error instanceof APIConnectionTimeoutError) return true;
+  const message = (error as { message?: string })?.message ?? "";
+  return /Timeout/i.test(errorNames(error)) || /^request timed out/i.test(message);
+}
+
+/** Timeouts may have spent tokens upstream; HTTP errors and refused connections did not. */
+function mayHaveSpent(error: unknown): boolean {
+  return isCallTimeout(error) || /Timeout|AbortError/i.test(errorNames(error));
 }
 
 /**
@@ -139,10 +148,10 @@ function isCallTimeout(error: unknown): boolean {
  * a second one would run into the deadline.
  */
 function isTransient(error: unknown): boolean {
-  if (isCallTimeout(error) || mayHaveSpent(error)) return false;
-  const err = error as { status?: unknown; name?: string; constructor?: { name?: string } };
-  if (typeof err?.status === "number") return err.status === 429 || err.status >= 500;
-  return /APIConnectionError/.test(`${err?.name ?? ""} ${err?.constructor?.name ?? ""}`);
+  if (mayHaveSpent(error)) return false;
+  const status = (error as { status?: unknown })?.status;
+  if (typeof status === "number") return status === 429 || status >= 500;
+  return error instanceof APIConnectionError || /APIConnectionError/.test(errorNames(error));
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

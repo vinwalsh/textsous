@@ -1,6 +1,7 @@
 import { APIConnectionError, APIConnectionTimeoutError, APIError } from "openai";
 import { beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { runLive } from "../src/app/api/helpers";
 import { ModelTimeoutError, runWithModelBudget } from "../src/lib/model/budget";
 import { callStructured, type StructuredChatClient } from "../src/lib/model/structured";
 
@@ -95,5 +96,56 @@ describe("a quick upstream hiccup (readiness-6)", () => {
     const calls = { count: 0 };
     await expect(call([upstream(503), { content: '{"echo":"ok"}' }], calls)).rejects.toMatchObject({ status: 503 });
     expect(calls.count).toBe(1);
+  });
+});
+
+describe("SDK errors as the production build names them (fix-pass review)", () => {
+  // The SDK never sets `.name`, and the production bundle renames its classes
+  // (APIConnectionError and APIConnectionTimeoutError became "as" and "ar"),
+  // so matching on class names silently stops working there.
+  class RenamedConnectionError extends APIConnectionError {}
+  Object.defineProperty(RenamedConnectionError, "name", { value: "as" });
+  class RenamedTimeoutError extends APIConnectionTimeoutError {}
+  Object.defineProperty(RenamedTimeoutError, "name", { value: "ar" });
+
+  it("carry no class name to match on", () => {
+    const dropped = new RenamedConnectionError({ message: undefined });
+    const slow = new RenamedTimeoutError();
+    expect(`${dropped.name} ${dropped.constructor.name}`).toBe("Error as");
+    expect(`${slow.name} ${slow.constructor.name}`).toBe("Error ar");
+  });
+
+  it("still retries a dropped connection once under a route deadline", async () => {
+    const calls = { count: 0 };
+    const { result } = underDeadline(() =>
+      callStructured(schema, [{ role: "user", content: "hi" }], {
+        schemaName: "echo",
+        client: client([new RenamedConnectionError({ message: undefined }), { content: '{"echo":"ok"}' }], calls),
+        retryDelayMs: 0,
+      }),
+    );
+    await expect(result).resolves.toMatchObject({ data: { echo: "ok" }, attempts: 2 });
+    expect(calls.count).toBe(2);
+  });
+
+  it("still counts a first-call timeout as spent, so the daily unit is kept", async () => {
+    const calls = { count: 0 };
+    let released = 0;
+    const reservation = {
+      allowed: true,
+      remaining: 1,
+      release: async () => {
+        released += 1;
+      },
+    };
+    const pending = runLive(reservation, () =>
+      callStructured(schema, [{ role: "user", content: "hi" }], {
+        schemaName: "echo",
+        client: client([new RenamedTimeoutError()], calls),
+      }),
+    );
+    await expect(pending).rejects.toBeInstanceOf(ModelTimeoutError);
+    expect(calls.count).toBe(1);
+    expect(released).toBe(0);
   });
 });
