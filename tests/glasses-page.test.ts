@@ -196,9 +196,10 @@ describe("HUD", () => {
     expect(hud()).not.toContain("Press any button");
   });
 
-  it("shows the voice toggle state", () => {
-    expect(hud({ voice: true })).toContain('aria-pressed="true"');
-    expect(hud({ voice: false })).toContain("Voice off");
+  it("names the voice state in the button's label alone", () => {
+    expect(hud({ voice: true })).toContain('<button type="button" class="g-voice">Voice on</button>');
+    expect(hud({ voice: false })).toContain('<button type="button" class="g-voice">Voice off</button>');
+    expect(hud()).not.toContain("aria-pressed");
   });
 });
 

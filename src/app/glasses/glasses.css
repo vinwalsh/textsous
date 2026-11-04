@@ -87,7 +87,7 @@ body:has(.ts-glasses-root) > main {
   background: transparent;
   color: var(--g-ink);
   font: inherit;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .g-hint {
@@ -369,7 +369,7 @@ body:has(.ts-glasses-root) > main {
 
 .g-pick-host {
   color: var(--g-muted);
-  font-size: 15px;
+  font-size: 17px;
 }
 
 /* Phone or computer only: on the 600 x 600 glasses screen it is hidden. */

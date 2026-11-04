@@ -419,7 +419,7 @@ export function GlassesHud({
           {formatElapsed(guideElapsedMs(guide, now))}
           <span className="g-muted"> / {totalMinutes} min</span>
         </span>
-        <button type="button" className="g-voice" aria-pressed={voice} onClick={onToggleVoice}>
+        <button type="button" className="g-voice" onClick={onToggleVoice}>
           {voice ? "Voice on" : "Voice off"}
         </button>
         <button type="button" className="g-over" onClick={onStartOver}>
