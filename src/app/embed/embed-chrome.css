@@ -1,0 +1,9 @@
+/* Loaded only by /embed: hide the site footer inside the overlay. Scoped with
+   :has() so it is harmless if it ever reaches another route. */
+body:has(.ts-embed-root) {
+  background: var(--ts-bg, #faf8f5);
+}
+
+body:has(.ts-embed-root) > .site-footer {
+  display: none;
+}
