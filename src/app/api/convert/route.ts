@@ -162,6 +162,7 @@ export async function POST(request: Request) {
       };
       const result = await runLive(reservation, () =>
         convertToArtifact(input, { provider: "meta" }),
+        started,
       );
       const checksPassed =
         result.canonicalize.checks.every((c) => c.passed) &&
@@ -213,6 +214,7 @@ export async function POST(request: Request) {
       if (!reservation.allowed) return limited(ROUTE, "daily_cap");
       const result = await runLive(reservation, () =>
         convertRecipeToArtifact(valid.data, { provider: "meta" }),
+        started,
       );
       const checksPassed =
         result.procedure.checks.every((c) => c.passed) &&
@@ -256,6 +258,7 @@ export async function POST(request: Request) {
         },
         { provider: "meta" },
       ),
+      started,
     );
     const checksPassed =
       result.canonicalize.checks.every((c) => c.passed) &&

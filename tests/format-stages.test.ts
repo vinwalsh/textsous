@@ -123,3 +123,12 @@ describe("review format warnings", () => {
     expect(result.warnings?.some((w) => w.code === "amount_missing")).toBe(true);
   });
 });
+
+describe("model call options under a deadline", () => {
+  it("never lets the SDK retry when a second attempt would not fit", async () => {
+    const { callOptions } = await import("../src/lib/model/structured");
+    expect(callOptions(Number.POSITIVE_INFINITY)).toEqual({ timeout: 200_000, maxRetries: 1 });
+    expect(callOptions(270_000)).toEqual({ timeout: 200_000, maxRetries: 0 });
+    expect(callOptions(90_000)).toEqual({ timeout: 90_000, maxRetries: 0 });
+  });
+});

@@ -22,7 +22,7 @@ export const CANONICALIZE_VERSION = 2;
  * reasoning_effort for canonicalize (transcription). Undefined sends nothing,
  * so the provider default applies. Procedure never lowers its effort.
  */
-export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = undefined;
+export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = "low";
 
 /**
  * Source text the model reads when there is no JSON-LD (pasted text, page

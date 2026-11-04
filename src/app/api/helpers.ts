@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { logEvent } from "../../lib/log";
 import { limitBody, type DailyReservation, type LimitReason } from "../../lib/limits";
-import { runWithModelBudget } from "../../lib/model/budget";
+import { PIPELINE_DEADLINE_MS, runWithModelBudget } from "../../lib/model/budget";
 
 /** JSON request bodies above this get 413 (convert, adjust, artifact). */
 export const MAX_JSON_BYTES = 256 * 1024;
@@ -103,8 +103,14 @@ export function limited(route: string, reason: LimitReason): NextResponse {
  * Run live model work under the pipeline deadline. If it throws before any
  * model tokens were spent, the daily unit is given back.
  */
-export async function runLive<T>(reservation: DailyReservation, fn: () => Promise<T>): Promise<T> {
-  const { budget, result } = runWithModelBudget(fn);
+export async function runLive<T>(
+  reservation: DailyReservation,
+  fn: () => Promise<T>,
+  /** Request start (epoch ms): the deadline counts the page fetch too. */
+  startedAt?: number,
+): Promise<T> {
+  const elapsed = startedAt === undefined ? 0 : Math.max(0, Date.now() - startedAt);
+  const { budget, result } = runWithModelBudget(fn, { deadlineMs: PIPELINE_DEADLINE_MS - elapsed });
   try {
     return await result;
   } catch (error) {

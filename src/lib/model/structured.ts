@@ -66,7 +66,7 @@ export interface StructuredChatClient {
         response_format: ResponseFormat;
         max_completion_tokens?: number;
         reasoning_effort?: ReasoningEffort;
-      }, options?: { timeout?: number }): Promise<{
+      }, options?: { timeout?: number; maxRetries?: number }): Promise<{
         choices: Array<{ message: { content: string | null }; finish_reason?: string | null }>;
         usage?: {
           prompt_tokens: number;
@@ -118,6 +118,16 @@ const CONCISE_RETRY =
   "Your previous reply was cut off at the length limit, so it was discarded. " +
   "Reply again with the complete JSON object, more concisely: short descriptions, " +
   "no repeated text, no extra whitespace. No prose.";
+
+/**
+ * Per-call HTTP options. The SDK retry is allowed only when a second full
+ * attempt still fits before the deadline; under a request budget it never
+ * does, so a slow call cannot run the function past its limit.
+ */
+export function callOptions(left: number): { timeout: number; maxRetries: number } {
+  const timeout = Math.min(MODEL_CALL_TIMEOUT_MS, Math.floor(left));
+  return { timeout, maxRetries: left >= 2 * timeout + MIN_CALL_MS ? 1 : 0 };
+}
 
 function isJsonSchemaRejection(error: unknown): boolean {
   const err = error as { status?: number; message?: string; error?: { message?: string } };
@@ -196,7 +206,7 @@ export async function callStructured<T>(
           ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
           ...(opts.reasoningEffort !== undefined ? { reasoning_effort: opts.reasoningEffort } : {}),
         },
-        { timeout: Math.min(MODEL_CALL_TIMEOUT_MS, Math.floor(left)) },
+        callOptions(left),
       );
       markSpent();
       const u = response.usage;

@@ -199,6 +199,16 @@ describe("runLive gives the unit back only when nothing was spent", () => {
   });
 });
 
+describe("runLive deadline counts from the request start", () => {
+  it("subtracts time already spent fetching the page", async () => {
+    const { timeLeftMs } = await import("../src/lib/model/budget");
+    const reservation = { allowed: true, remaining: 1, release: vi.fn(async () => {}) };
+    const left = await runLive(reservation, async () => timeLeftMs(), Date.now() - 30_000);
+    expect(left).toBeLessThanOrEqual(250_000);
+    expect(left).toBeGreaterThan(240_000);
+  });
+});
+
 describe("model call timeouts, deadline and length", () => {
   const schema = z.strictObject({ echo: z.string() });
 

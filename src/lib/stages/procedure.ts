@@ -9,7 +9,7 @@ import { polishTimeline, sourceTimingPool } from "../format";
 
 // Bumped on every prompt round deployed: preview and production share one
 // conversion cache, keyed by stage versions.
-export const PROCEDURE_VERSION = 2;
+export const PROCEDURE_VERSION = 3;
 export const PROCEDURE_MAX_TOKENS = 24000;
 
 export type ProcedureCheckName =
@@ -168,6 +168,7 @@ LANES
 
 2. AMOUNTS WHERE THE COOK READS
 - Every description names each ingredient it uses with its exact amount, unit and name the first time that ingredient appears in the task, copied from the ingredient list: "Season the beef all over with 1 1/2 teaspoons kosher salt." "Dice 1 medium yellow onion."
+- Write amounts the way a cook says them: amount, unit, size, name ("1 small garlic clove", "2 thick slices sourdough bread", "1 (15-ounce) can white beans"). Never paste the ingredient note after the name as a comma list; once an ingredient is prepped, call it by its prepared form ("the grated garlic").
 - Divided ingredients show only the portion this task uses, as the source splits them: "the remaining 1/2 teaspoon salt", "1 tablespoon of the olive oil".
 - Ingredients with no amount ("salt to taste") are named plainly.
 - A finished mixture or an earlier result is named directly, without amounts: "the prepared sauce", "the seared beef".
@@ -180,7 +181,7 @@ LANES
 4. SETUP vs WAITING
 - Heating a pan or the oven, loading a pan, adding ingredients and stirring things in are short hands-on tasks.
 - Simmering, baking, roasting, resting, marinating, chilling, rising and boiling water are separate "unattended" tasks with an observable completionCue and checkpoints, so the cook can do other work meanwhile. Only frequent stirring ("stirring constantly") keeps a cooking interval hands-on.
-- Preheating the oven is its own short task with equipmentEvent "oven-on"; the last oven task carries "oven-off".
+- Preheating the oven is the FIRST prep task: hands-on, 1 minute, equipmentEvent "oven-on", description with the temperature ("Heat the oven to 400°F."). The first task that puts food in the oven depends on it and has scheduling.waits [600] (the oven heats while the cook preps). The last oven task carries "oven-off".
 - When the source turns the heat off or removes the pan from the heat, say so explicitly in the description.
 
 5. PREPARED INPUTS
@@ -194,7 +195,8 @@ LANES
 
 7. TIPS AND WHY
 - tip: at most one short, faithful tip that comes from the source's own advice, else null.
-- why: at most one sentence of pure rationale for the task (why it matters), faithful to the source and general cooking knowledge, else null. No health or nutrition claims.
+- why: one sentence of pure rationale (why this task matters or why it is done this way), for most cook tasks and any prep whose reason is not obvious, else null. Faithful to the source and sound cooking knowledge. No health or nutrition claims.
+- Keep text tight: description 1-2 sentences, completionCue one short phrase, 1-3 checkpoints.
 - completionCue is observable (color, texture, sound, thermometer). Hands-on tasks over 10 minutes and every unattended task get checkpoints (observable sub-cues).
 
 8. STRUCTURE
