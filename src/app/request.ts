@@ -67,6 +67,11 @@ export function friendlyError(
     reason?: string;
     /** The recipe URL being converted, for the assistants link. */
     recipeUrl?: string;
+    /**
+     * The server keeps working after the browser lets go and caches the
+     * result (a URL conversion), so a dropped connection may still finish.
+     */
+    mayFinish?: boolean;
   } = {},
 ): FriendlyError {
   if (opts.timeout) {
@@ -85,7 +90,14 @@ export function friendlyError(
     };
   }
   if (status === null) {
-    return { title: "No connection", detail: "Check your connection and try again." };
+    // A dropped request, usually a phone that locked or a switch to another
+    // app during a 3-4 minute conversion, or no network at all.
+    return {
+      title: "Connection lost",
+      detail: opts.mayFinish
+        ? "The connection dropped, which happens when a phone locks or you switch apps. The recipe may still finish converting: wait a minute and convert the same link again. Finished recipes open instantly."
+        : "The connection dropped, which can happen when a phone locks or you switch apps. Check your connection and try again.",
+    };
   }
   if (status === 400) {
     if (/only https/i.test(message)) {

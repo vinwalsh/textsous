@@ -7,6 +7,7 @@ import type { ScaleFlag } from "../lib/stages/scaling";
 import ErrorBox from "./ErrorBox";
 import ProgressNote from "./ProgressNote";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
+import { withScreenOn } from "./wake-lock";
 
 interface AdjustOk {
   artifact: CookAlongArtifact;
@@ -77,11 +78,13 @@ export default function AdjustPanel({
     if (dietary !== "") body.dietary = dietary;
     if (cuisine.trim() !== "") body.cuisine = cuisine.trim();
     if (sousVoice) body.voice = "sous";
-    const res = await apiFetch("/api/adjust", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const res = await withScreenOn(() =>
+      apiFetch("/api/adjust", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
     const data = res.data as (AdjustOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.artifact) {
       setError(adjustFailure(res, data, artifact));

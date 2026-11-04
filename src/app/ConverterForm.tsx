@@ -17,6 +17,7 @@ import PhotoConfirm from "./PhotoConfirm";
 import ProgressNote from "./ProgressNote";
 import { apiFetch, convertNotices, friendlyError, type FriendlyError } from "./request";
 import { MAX_ORIGINAL_BYTES, prepareUploadPhoto } from "./photo-resize";
+import { withScreenOn } from "./wake-lock";
 
 type Tab = "url" | "text" | "photo";
 
@@ -86,18 +87,23 @@ export default function ConverterForm({
     async (body: Record<string, unknown>) => {
       setBusy("convert");
       setError(null);
-      const res = await apiFetch("/api/convert", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      // Keep the phone's screen on: a lock drops the 3-4 minute request.
+      const res = await withScreenOn(() =>
+        apiFetch("/api/convert", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+      );
       const data = res.data as (ConvertOk & { error?: string; reason?: string }) | null;
       if (!res.ok || !data || !data.artifact) {
+        const recipeUrl = typeof body.url === "string" ? body.url : undefined;
         setError(
           friendlyError(res.status, data?.error ?? "", {
             timeout: res.timeout,
             reason: data?.reason,
-            recipeUrl: typeof body.url === "string" ? body.url : undefined,
+            recipeUrl,
+            mayFinish: recipeUrl !== undefined,
           }),
         );
         setBusy(null);
@@ -186,7 +192,7 @@ export default function ConverterForm({
     }
     const form = new FormData();
     form.set("photo", upload);
-    const res = await apiFetch("/api/photo", { method: "POST", body: form });
+    const res = await withScreenOn(() => apiFetch("/api/photo", { method: "POST", body: form }));
     const data = res.data as (PhotoOk & { error?: string; reason?: string }) | null;
     if (!res.ok || !data || !data.recipe) {
       setError(friendlyError(res.status, data?.error ?? "", { timeout: res.timeout, reason: data?.reason }));

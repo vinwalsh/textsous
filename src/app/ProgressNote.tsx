@@ -11,7 +11,7 @@ export type ProgressKind = "convert" | "transcribe" | "adjust";
 export function progressCopy(kind: ProgressKind): string {
   switch (kind) {
     case "convert":
-      return "Usually 3 to 4 minutes: reading the recipe, planning the timeline, then checking it.";
+      return "Usually 3 to 4 minutes: reading the recipe, planning the timeline, then checking it. Keep this page open.";
     case "transcribe":
       return "Usually under a minute: reading the photo, then transcribing the recipe.";
     case "adjust":

@@ -37,11 +37,11 @@ describe("friendlyError", () => {
       detailPart: /paste just the ingredients and steps/,
     },
     {
-      name: "offline",
+      name: "offline or dropped",
       status: null,
       message: "",
-      title: "No connection",
-      detailPart: /connection/,
+      title: "Connection lost",
+      detailPart: /phone locks or you switch apps\. Check your connection/,
     },
     {
       name: "non-https URL",
@@ -178,6 +178,13 @@ describe("friendlyError", () => {
       expect(err.action).toBe(c.action ?? undefined);
     });
   }
+
+  it("tells a cook whose URL conversion dropped that it may still finish", () => {
+    const err = friendlyError(null, "", { recipeUrl: "https://example.com/r", mayFinish: true });
+    expect(err.title).toBe("Connection lost");
+    expect(err.detail).toMatch(/may still finish converting: wait a minute and convert the same link again/);
+    expect(friendlyError(null, "").detail).not.toMatch(/still finish/);
+  });
 
   it("keeps a blocked review's check names out of the main copy, behind Details", () => {
     const err = friendlyError(

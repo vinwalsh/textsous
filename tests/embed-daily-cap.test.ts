@@ -26,24 +26,31 @@ describe("/embed daily cap (C2/C7)", () => {
       timeout: false,
       reason: "daily_cap",
       recipeUrl: recipe,
+      mayFinish: true,
     });
   });
 
   it("passes rate_limited through so a message that mentions 'daily' isn't read as the cap", () => {
     expect(
       convertErrorOptions({ timeout: false, data: { error: "daily-ish", reason: "rate_limited" } }, recipe),
-    ).toEqual({ timeout: false, reason: "rate_limited", recipeUrl: recipe });
+    ).toEqual({ timeout: false, reason: "rate_limited", recipeUrl: recipe, mayFinish: true });
   });
 
   it("tolerates a missing or odd reason and a non-JSON body", () => {
     expect(convertErrorOptions({ timeout: false, data: { error: "Daily limit" } }, recipe)).toEqual({
       timeout: false,
       recipeUrl: recipe,
+      mayFinish: true,
     });
-    expect(convertErrorOptions({ timeout: true, data: null }, recipe)).toEqual({ timeout: true, recipeUrl: recipe });
+    expect(convertErrorOptions({ timeout: true, data: null }, recipe)).toEqual({
+      timeout: true,
+      recipeUrl: recipe,
+      mayFinish: true,
+    });
     expect(convertErrorOptions({ timeout: false, data: { reason: 7 } }, recipe)).toEqual({
       timeout: false,
       recipeUrl: recipe,
+      mayFinish: true,
     });
   });
 

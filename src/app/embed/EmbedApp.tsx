@@ -24,6 +24,7 @@ import {
   type ApiResult,
   type FriendlyError,
 } from "../request";
+import { withScreenOn } from "../wake-lock";
 import styles from "./embed.module.css";
 
 export type EmbedState =
@@ -55,10 +56,13 @@ function openSiteHref(url: string | null): string {
 export function convertErrorOptions(
   res: Pick<ApiResult, "timeout" | "data">,
   url: string,
-): { timeout: boolean; reason?: string; recipeUrl: string } {
+): { timeout: boolean; reason?: string; recipeUrl: string; mayFinish: true } {
   const data = res.data as { reason?: unknown } | null;
   const reason = data && typeof data.reason === "string" ? data.reason : undefined;
-  return reason ? { timeout: res.timeout, reason, recipeUrl: url } : { timeout: res.timeout, recipeUrl: url };
+  // A URL conversion finishes and caches on the server even if the overlay lets go.
+  return reason
+    ? { timeout: res.timeout, reason, recipeUrl: url, mayFinish: true }
+    : { timeout: res.timeout, recipeUrl: url, mayFinish: true };
 }
 
 /** Friendly copy for a failed /api/convert inside the overlay. */
@@ -228,11 +232,13 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
 
   const convert = useCallback(async (url: string) => {
     setState({ kind: "converting", url });
-    const res = await apiFetch("/api/convert", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
+    const res = await withScreenOn(() =>
+      apiFetch("/api/convert", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      }),
+    );
     const data = res.data as { artifact?: unknown; error?: string } | null;
     if (!res.ok || !data || !data.artifact) {
       setState({ kind: "error", error: convertFailure(res, url), url });
