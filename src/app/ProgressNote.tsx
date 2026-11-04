@@ -19,7 +19,8 @@ export function progressCopy(kind: ProgressKind): string {
   }
 }
 
-function formatElapsed(totalSeconds: number): string {
+/** "1:05" for 65 seconds. Pure. */
+export function formatElapsed(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
   return `${m}:${String(s).padStart(2, "0")}`;

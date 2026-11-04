@@ -839,6 +839,202 @@ details summary {
   color: var(--ts-ink);
 }
 
+/* ---------- Progressive conversion (M8): cooking line, facts, overview ---------- */
+
+/* One line of cooking icons that take turns, left to right, over a thin
+   moving line. Nine icons share the width, so the line fits 320 px. */
+.cooking-line {
+  margin: 8px 0 16px;
+  padding: 14px 16px 12px;
+  background: var(--ts-card);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+}
+
+.cooking-line-icons {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  align-items: end;
+  margin: 0;
+  padding: 4px 0 0;
+  list-style: none;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.cooking-line-icon {
+  display: flex;
+  justify-content: center;
+  opacity: 0.45;
+  animation: ts-cooking-turn 3.6s ease-in-out infinite;
+  animation-delay: calc(var(--ts-turn, 0) * 0.4s);
+}
+
+.cooking-line-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
+.cooking-line-track {
+  position: relative;
+  height: 3px;
+  margin: 10px 0;
+  overflow: hidden;
+  background: var(--ts-secondary);
+  border-radius: var(--ts-pill);
+}
+
+.cooking-line-runner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(100% / 9);
+  background: var(--ts-accent);
+  border-radius: var(--ts-pill);
+  animation: ts-cooking-run 3.6s linear infinite;
+}
+
+.cooking-line-status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cooking-line-time {
+  color: var(--ts-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes ts-cooking-turn {
+  0%,
+  12%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0) scale(1);
+  }
+  5% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.18);
+  }
+}
+
+@keyframes ts-cooking-run {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(900%);
+  }
+}
+
+/* Each part fades in as it arrives. */
+.progressive-in {
+  animation: ts-part-in 0.35s ease-out both;
+}
+
+@keyframes ts-part-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.progressive-checking {
+  margin: 0 0 8px;
+  font-style: italic;
+}
+
+.allergen-facts .label {
+  margin-bottom: 4px;
+}
+
+.allergen-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 6px 0;
+}
+
+.allergen-row .chips {
+  margin: 0;
+}
+
+.chip-allergen {
+  background: var(--ts-card);
+  border-color: var(--ts-warn-line);
+  color: var(--ts-warn-ink);
+  font-weight: 650;
+}
+
+.chip-trace {
+  border-style: dashed;
+  font-weight: 550;
+}
+
+.allergen-check {
+  margin: 6px 0 0;
+  font-weight: 600;
+}
+
+.overview h4 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+.overview-parts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-parts li {
+  padding: 10px 12px;
+  background: var(--ts-phase);
+  border: 1px solid var(--ts-task-border);
+  border-radius: 8px;
+}
+
+.overview-parts strong {
+  display: block;
+}
+
+.adjust-pending {
+  margin: -4px 0 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cooking-line-icon,
+  .cooking-line-runner,
+  .progressive-in {
+    animation: none;
+  }
+
+  .cooking-line-icon {
+    opacity: 1;
+  }
+
+  .cooking-line-runner {
+    width: 100%;
+    opacity: 0.35;
+  }
+}
+
+/* ---------- End of the progressive conversion styles ---------- */
+
 /* Timeline (a .card): lane rows with task bars placed by the schedule. */
 .lanes {
   overflow-x: auto;
