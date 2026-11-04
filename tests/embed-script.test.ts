@@ -33,6 +33,7 @@ interface EmbedApi {
   }) => { url?: string | null; src?: string };
   backgroundElements: (children: ArrayLike<unknown>, overlayHost: unknown) => unknown[];
   diets: string[];
+  labels: { cookAlong: string; adjust: string; cookAlongChoice: string };
   modeOf: (value: string | null) => "adjust" | "cook-along";
   yieldServings: (value: unknown) => number | null;
   findRecipeYield: (texts: string[]) => unknown;
@@ -435,5 +436,30 @@ describe("embed.js Adjust with SOUS: wiring (source checks)", () => {
   it("opens the existing overlay with the choice, returning focus to the button", () => {
     expect(code).toContain("open(targetFor(el), trigger, adjust)");
     expect(code).toMatch(/closeMenu\(true\);[^\n]*\n\s*open\(targetFor\(el\), trigger, adjust\)/);
+  });
+});
+
+describe("embed.js labels", () => {
+  const api = load();
+
+  it("names the product Cook Along: Build “Cook Along” with TextSous, and Build “Cook Along” in the menu", () => {
+    expect(api.labels).toEqual({
+      cookAlong: "Build \u201cCook Along\u201d with TextSous",
+      adjust: "Adjust with SOUS",
+      cookAlongChoice: "Build \u201cCook Along\u201d",
+    });
+    expect(code).not.toMatch(/"Cook along with TextSous"|text: "Cook along"/);
+  });
+
+  it("lets a long label wrap inside a narrow column instead of overflowing it", () => {
+    expect(code).toContain('":host{display:inline-block;max-width:100%}"');
+    expect(code).toMatch(/button\{all:initial;[^"]*max-width:100%;/);
+  });
+
+  it("documents the same labels", () => {
+    const docs = readFileSync("docs/EMBED.md", "utf8");
+    expect(docs).toContain("| `data-label` | `Build “Cook Along” with TextSous` | The button text. |");
+    expect(docs).toContain("- **Build “Cook Along”**: the plain Cook Along");
+    expect(docs).not.toContain("Cook along with TextSous");
   });
 });

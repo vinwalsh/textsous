@@ -64,7 +64,7 @@ CI fails when the committed copies differ from a fresh run.
 
 ## Cook Along button for recipe sites
 
-Recipe sites can add a "Cook along with TextSous" button. A tap opens the
+Recipe sites can add a **Build “Cook Along” with TextSous** button. A tap opens the
 Cook Along in an overlay on the same page, so readers never leave the site:
 
 ```html

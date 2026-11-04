@@ -190,7 +190,7 @@ export const CONVERSION_STAGES = [
   "Reading the ingredients",
   "Laying out the prep and steps",
   "Checking against the original",
-  "Building your cook along",
+  "Building your Cook Along",
 ] as const;
 
 export type ConversionStage = (typeof CONVERSION_STAGES)[number];

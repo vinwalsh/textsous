@@ -528,7 +528,7 @@ export default function ArtifactViewer({
   return (
     <article aria-label="Cook Along recipe">
       <div className="recipe-head">
-        <p className="label">Your cook along</p>
+        <p className="label">Your Cook Along</p>
         <h2 className="recipe-title">{recipe.title}</h2>
         <p className="meta">
           Serves {recipe.servings} · {recipe.ingredients.length} ingredients

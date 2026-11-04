@@ -1,6 +1,6 @@
 # Cook Along button for recipe sites
 
-Add a "Cook along with TextSous" button to your recipe pages. A reader taps
+Add a **Build “Cook Along” with TextSous** button to your recipe pages. A reader taps
 it and gets a Cook Along for that recipe: mise en place first, a timeline
 with one lane per component, and a timer on every step. It opens in an
 overlay on top of your page, so the reader never leaves your site.
@@ -42,7 +42,7 @@ script tag's `data-src` or `data-recipe-url`.
 |---|---|---|
 | `data-recipe-url` | canonical link, else this page | The recipe page to convert. Relative URLs resolve against the page. |
 | `data-src` | none | A pre-converted Cook Along artifact JSON URL (see below). Shown instead of converting. |
-| `data-label` | `Cook along with TextSous` | The button text. |
+| `data-label` | `Build “Cook Along” with TextSous` | The button text. |
 | `data-autoopen` | off | Open the overlay as soon as the page loads (demos and screenshots). |
 
 Example with two recipes on one page:
@@ -79,7 +79,7 @@ A tap opens a small menu under the button, titled "What would you like?":
   Vegetarian or Vegan, one button each.
 - **Make it more…**: free text up to 80 characters ("Italian", "Thai
   street food") and "Show it".
-- **Cook along**: the plain Cook Along, the same as the Cook Along button.
+- **Build “Cook Along”**: the plain Cook Along, the same as the Cook Along button.
 
 Each choice opens the same overlay as the Cook Along button (focus inside,
 Esc and Close, focus back to the button afterwards), and the choice is
@@ -101,7 +101,7 @@ On the script tag only:
 
 | Attribute | What it does |
 |---|---|
-| `data-mode="adjust"` | With no placement on the page, the default button (right after the script tag) is "Adjust with SOUS" instead of "Cook along with TextSous". |
+| `data-mode="adjust"` | With no placement on the page, the default button (right after the script tag) is "Adjust with SOUS" instead of "Build “Cook Along” with TextSous". |
 | `data-floating` | With no placement on the page, the default button is fixed at the bottom right of the window instead, and its menu opens upward. The bookmarklet uses this. |
 
 A page with any `data-textsous-adjust` placement gets no default button.

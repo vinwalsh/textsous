@@ -168,7 +168,7 @@ describe("reduceConversion", () => {
     expect(conversionStage(withRecipe)).toBe("Laying out the prep and steps");
     const withTimeline = reduceAll([{ type: "procedure", timeline: TIMELINE }], withRecipe);
     expect(conversionStage(withTimeline)).toBe("Checking against the original");
-    expect(conversionStage({ ...withTimeline, status: "done" })).toBe("Building your cook along");
+    expect(conversionStage({ ...withTimeline, status: "done" })).toBe("Building your Cook Along");
   });
 });
 

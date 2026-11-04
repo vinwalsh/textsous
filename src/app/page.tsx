@@ -9,7 +9,7 @@ export default async function Home({
   return (
     <main>
       {/* The site header carries the visible title and intro. */}
-      <h1 className="visually-hidden">TextSous Open: turn a recipe into a cook along</h1>
+      <h1 className="visually-hidden">TextSous Open: turn a recipe into a Cook Along</h1>
       <ConverterForm initialUrl={params.url ?? ""} initialSrc={params.src ?? ""} />
     </main>
   );

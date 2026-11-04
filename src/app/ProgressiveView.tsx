@@ -94,7 +94,7 @@ export function FactsCard({ facts, recipe }: { facts: RecipeFacts; recipe: Canon
   return (
     <section className="facts progressive-in" aria-label="About this recipe">
       <div className="recipe-head">
-        <p className="label">Your cook along</p>
+        <p className="label">Your Cook Along</p>
         <h2 className="recipe-title">{facts.title ?? recipe?.title ?? "Your recipe"}</h2>
         {line ? <p className="meta">{line}</p> : null}
       </div>
