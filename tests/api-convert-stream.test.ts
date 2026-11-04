@@ -273,7 +273,9 @@ describe("POST /api/convert as NDJSON events", () => {
     expect((await convertPOST(post({ text: "x".repeat(70_000) }, "10.60.0.7"))).status).toBe(400);
 
     process.env.RATE_LIMIT_PER_HOUR = "1";
-    expect((await convertPOST(post({ recipe: proc.recipe }, "10.60.0.8"))).status).toBe(200);
+    const first = await convertPOST(post({ recipe: proc.recipe }, "10.60.0.8"));
+    expect(first.status).toBe(200);
+    expect((await events(first)).at(-1)?.type).toBe("done");
     const limited = await convertPOST(post({ recipe: proc.recipe }, "10.60.0.8"));
     expect(limited.status).toBe(429);
     expect(await limited.json()).toMatchObject({ reason: "rate_limited" });
