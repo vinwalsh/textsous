@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EmbedRescan from "../../EmbedRescan";
 import Link from "next/link";
 import {
   DEMO_SITE_BYLINE,
@@ -221,6 +222,7 @@ export default function BlogPost({ recipe, origin }: { recipe: DemoSiteRecipe; o
         </p>
       </footer>
       <script src="/embed.js" async />
+      <EmbedRescan />
     </div>
   );
 }

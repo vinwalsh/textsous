@@ -1,4 +1,5 @@
 import Bookmarklet from "./Bookmarklet";
+import EmbedRescan from "../EmbedRescan";
 import { DEMO_RECIPE, demoJsonLd } from "./recipe";
 import styles from "./demo.module.css";
 
@@ -121,6 +122,7 @@ export default function DemoPost({
       </section>
       <Bookmarklet />
       <script src="/embed.js" async />
+      <EmbedRescan />
     </div>
   );
 }
