@@ -47,19 +47,29 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function positiveIntFromEnv(name: string, fallback: number): number {
-  const raw = Number(process.env[name]);
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : fallback;
+/** A whole number from env; unset, blank, junk or below `min` means the default. */
+function intFromEnv(name: string, fallback: number, min: number): number {
+  const text = (process.env[name] ?? "").trim();
+  if (!text) return fallback;
+  const raw = Number(text);
+  return Number.isFinite(raw) && raw >= min ? Math.floor(raw) : fallback;
 }
 
-/** Live conversions per IP per hour: RATE_LIMIT_PER_HOUR (default 20). */
+/**
+ * Live requests per IP per hour, per route: convert, adjust and photo each
+ * keep their own bucket of RATE_LIMIT_PER_HOUR (default 20). All three draw
+ * on the one daily cap below.
+ */
 export function ratePerHour(): number {
-  return positiveIntFromEnv("RATE_LIMIT_PER_HOUR", DEFAULT_RATE_LIMIT_PER_HOUR);
+  return intFromEnv("RATE_LIMIT_PER_HOUR", DEFAULT_RATE_LIMIT_PER_HOUR, 1);
 }
 
-/** Global live conversions per UTC day: DAILY_CONVERSION_CAP (default 300). */
+/**
+ * Global live conversions per UTC day: DAILY_CONVERSION_CAP (default 300).
+ * 0 pauses every live conversion (cache hits keep working).
+ */
 export function dailyCap(): number {
-  return positiveIntFromEnv("DAILY_CONVERSION_CAP", DEFAULT_DAILY_CONVERSION_CAP);
+  return intFromEnv("DAILY_CONVERSION_CAP", DEFAULT_DAILY_CONVERSION_CAP, 0);
 }
 
 /**

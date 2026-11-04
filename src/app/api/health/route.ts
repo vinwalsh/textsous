@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { dailyCap } from "../../../lib/limits";
+import { dailyCap, ratePerHour } from "../../../lib/limits";
 import { isContributorModel, resolveProvider } from "../../../lib/model";
 
 export async function GET() {
@@ -29,6 +29,11 @@ export async function GET() {
         process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
       ),
       dailyCap: dailyCap(),
+      ratePerHour: ratePerHour(),
+      // Whether the secrets are set (never their values): skills routes and
+      // "Save to TextSous" need them.
+      skillsConfigured: Boolean(process.env.SKILLS_API_SECRET?.trim()),
+      signingConfigured: Boolean(process.env.ARTIFACT_SIGNING_SECRET?.trim()),
     },
     { status: productionContributorError ? 500 : 200 },
   );

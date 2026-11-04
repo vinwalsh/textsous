@@ -9,6 +9,7 @@ import {
   resetMemoryLimits,
 } from "../src/lib/limits";
 import { POST as convert } from "../src/app/api/convert/route";
+import { GET as health } from "../src/app/api/health/route";
 import { POST as adjust, maxDuration as adjustMax } from "../src/app/api/adjust/route";
 import { POST as storeArtifact, maxDuration as artifactMax } from "../src/app/api/artifact/route";
 import { CONVERT_DEADLINE_MS, maxDuration as convertMax } from "../src/app/api/convert/route";
@@ -64,6 +65,43 @@ describe("limit configuration", () => {
     expect(ratePerHour()).toBe(5);
     process.env.RATE_LIMIT_PER_HOUR = "nonsense";
     expect(ratePerHour()).toBe(20);
+  });
+
+  it("reads DAILY_CONVERSION_CAP=0 as a pause, and junk as the default", async () => {
+    for (const [raw, cap] of [
+      ["", 300],
+      ["junk", 300],
+      ["-5", 300],
+      [" 40 ", 40],
+      ["2.9", 2],
+      ["0", 0],
+    ] as const) {
+      process.env.DAILY_CONVERSION_CAP = raw;
+      expect(dailyCap(), JSON.stringify(raw)).toBe(cap);
+    }
+    // 0 refuses the very first live conversion.
+    expect((await reserveDailyUnit()).reason).toBe("daily_cap");
+    for (const raw of ["0", "", "-1", "0.5"]) {
+      process.env.RATE_LIMIT_PER_HOUR = raw;
+      expect(ratePerHour(), JSON.stringify(raw)).toBe(20);
+    }
+  });
+
+  it("reports the hourly limit and whether the secrets are set in /api/health", async () => {
+    process.env.RATE_LIMIT_PER_HOUR = "7";
+    process.env.DAILY_CONVERSION_CAP = "0";
+    const saved = { skills: process.env.SKILLS_API_SECRET, signing: process.env.ARTIFACT_SIGNING_SECRET };
+    process.env.SKILLS_API_SECRET = "dummy-skills-secret";
+    delete process.env.ARTIFACT_SIGNING_SECRET;
+    try {
+      const body = (await (await health()).json()) as Record<string, unknown>;
+      expect(body).toMatchObject({ dailyCap: 0, ratePerHour: 7, skillsConfigured: true, signingConfigured: false });
+      expect(JSON.stringify(body)).not.toContain("dummy-skills-secret");
+    } finally {
+      if (saved.skills === undefined) delete process.env.SKILLS_API_SECRET;
+      else process.env.SKILLS_API_SECRET = saved.skills;
+      if (saved.signing !== undefined) process.env.ARTIFACT_SIGNING_SECRET = saved.signing;
+    }
   });
 
   it("refused reservations take nothing; release gives one unit back once", async () => {
