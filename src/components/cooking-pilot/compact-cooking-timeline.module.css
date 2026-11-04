@@ -1,0 +1,52 @@
+.compact { width: 100%; max-width: 100%; min-width: 0; }
+.header { padding: 0 0 16px; color: var(--pilot-muted); }
+.compact .header > p { font-size: 12px; line-height: 1.7; margin: 0 0 9px; }
+.header > span { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--pilot-ink); }
+.board { position: relative; min-width: 0; width: 100%; }
+.phase { position: absolute; left: 0; right: 0; display: flex; align-items: center; border-top: 1px solid var(--pilot-line); color: var(--pilot-ink); font-size: 17px; line-height: 1.4; font-weight: 650; padding: 5px 4px; }
+.overlapGroup { position: absolute; left: 0; width: 100%; min-width: 0; }
+.task { position: absolute; min-width: 0; border: 1px solid color-mix(in srgb, var(--step-color) 40%, white); border-left: 3px solid var(--step-color); border-radius: 10px; background: color-mix(in srgb, var(--step-color) 12%, var(--pilot-cream)); color: var(--pilot-ink); cursor: pointer; }
+.task:hover { border-color: var(--step-color); }
+.task[data-guide-current="true"] { border-color: var(--step-color); box-shadow: inset 0 0 0 1px var(--step-color), 0 3px 8px #26352d14; }
+.task[data-selected="true"] { border-color: var(--pilot-ink); box-shadow: inset 0 0 0 1px var(--pilot-ink); }
+.contentTrack { min-width: 0; height: 100%; }
+.cardContent { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 10px 8px; }
+.detailButton { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+.detailButton:hover .taskHeading { color: var(--pilot-action); }
+.detailButton:focus-visible { outline: 2px solid var(--pilot-action); outline-offset: 3px; border-radius: 4px; }
+.taskHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; width: 100%; }
+.taskHeading > strong { min-width: 0; font-size: 15px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.taskHeading > svg { flex-shrink: 0; margin-top: 2px; color: var(--pilot-action); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.chips > span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: 10px; line-height: 1.45; color: var(--pilot-muted); overflow-wrap: anywhere; }
+.chips i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.duration { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; color: #625d52; font-size: 11px; line-height: 1.5; font-weight: 600; }
+.duration > svg { flex-shrink: 0; align-self: center; }
+.taskMeta { color: var(--pilot-muted); font-size: 10px; line-height: 1.5; }
+.taskTimer { min-width: 0; }
+.compact .taskTimer button, .compact .taskTimer input, .compact .taskTimer select { min-height: 44px; max-width: 100%; }
+.taskTimer input, .taskTimer select { font-size: 16px; }
+.checkpoint { position: absolute; left: 3px; right: 3px; transform: translateY(-100%); border-top: 1px dashed color-mix(in srgb, var(--step-color) 65%, white); padding: 4px 3px; background: var(--pilot-cream); color: var(--pilot-muted); font-size: 10px; line-height: 1.4; pointer-events: none; }
+.serving { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 9px; padding: 8px; border-top: 2px solid var(--pilot-accent); color: var(--pilot-ink); background: var(--pilot-accent-soft); }
+.serving > svg { flex-shrink: 0; color: var(--pilot-action); }
+.serving strong, .serving small { display: block; }
+.serving strong { font-size: 14px; line-height: 1.4; }
+.serving small { margin-top: 3px; color: var(--pilot-muted); font-size: 11px; line-height: 1.5; }
+.servingMark { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--pilot-action); z-index: 3; pointer-events: none; }
+.servingMark > span { display: inline-block; position: absolute; right: 0; bottom: 1px; background: var(--pilot-accent-soft); color: var(--pilot-action); font-size: 10px; padding: 3px 5px; border-radius: 4px; }
+.guideLine { position: absolute; left: -3px; right: -3px; height: 0; border-top: 2px solid var(--pilot-action); z-index: 5; pointer-events: none; }
+.guideLine::before { content: ""; position: absolute; left: -2px; top: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--pilot-action); }
+.guideLine > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.paused { border-top-style: dashed; }
+.paused::before { background: #746c5d; }
+.compact .afterEstimate { margin-top: 8px; font-size: 12px; line-height: 1.7; color: var(--pilot-muted); }
+.parallelPicker { position: absolute; left: 0; right: 0; padding: 7px 0; }
+.parallelPicker > p { font-size: 12px; line-height: 1.6; color: var(--pilot-muted); }
+.parallelPicker > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
+.parallelPicker button { min-height: 44px; min-width: 0; padding: 3px; border: 1px solid var(--pilot-line); border-radius: 6px; color: var(--pilot-muted); background: var(--pilot-surface); font-size: 12px; }
+.parallelPicker button[aria-pressed="true"] { color: var(--pilot-action); border-color: var(--pilot-action); background: var(--pilot-accent-soft); }
+.parallelPicker small { display: block; font-size: 9px; line-height: 1.4; }
+@media (max-width: 360px) {
+  .cardContent { padding-inline: 6px; }
+  .taskHeading > strong { font-size: 14px; }
+}
