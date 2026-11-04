@@ -62,8 +62,29 @@ describe("warm-demo waits for slow conversions (readiness-5)", () => {
   it("reports a timeout only after its own limit", async () => {
     const base = await slowConvert(2_000);
     const warmed = await warmOne(base, "https://a.example/x", 200);
-    expect(warmed).toMatchObject({ status: null, reason: "timeout or network error" });
+    expect(warmed).toMatchObject({ status: null, reason: "timeout or network error", detail: "no answer after 0 s" });
     expect(warmed.ms).toBeGreaterThanOrEqual(190);
     expect(warmed.ms).toBeLessThan(1_500);
+  });
+
+  it("opens a fresh connection for every request, never a kept-alive one", async () => {
+    const ports: number[] = [];
+    const connections: (string | undefined)[] = [];
+    server = createServer((req, res) => {
+      ports.push(req.socket.remotePort ?? 0);
+      connections.push(req.headers.connection);
+      req.resume();
+      req.on("end", () => {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ cached: true }));
+      });
+    });
+    await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", () => resolve()));
+    const base = `http://127.0.0.1:${(server!.address() as AddressInfo).port}`;
+    for (const url of ["https://a.example/x", "https://a.example/y"]) {
+      expect(await warmOne(base, url, 5_000)).toMatchObject({ status: 200, cached: true });
+    }
+    expect(connections).toEqual(["close", "close"]);
+    expect(new Set(ports).size).toBe(2);
   });
 });

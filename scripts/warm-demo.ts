@@ -40,6 +40,9 @@ export function warmTargets(urls: readonly string[], base: string): string[] {
  * POST JSON and wait up to timeoutMs for the whole answer. node:http(s), not
  * fetch: Node's fetch stops waiting for response headers after 300 s, and
  * /api/convert sends nothing until a conversion finishes (up to 400 s).
+ * Each request opens its own connection (agent: false). On the Nov 4 warm,
+ * every request sent on a kept-alive socket after a long conversion lost
+ * its answer after about 40 s, while the server finished converting.
  */
 export function postJson(url: URL, body: unknown, timeoutMs: number): Promise<{ status: number; text: string }> {
   return new Promise((resolve, reject) => {
@@ -49,6 +52,7 @@ export function postJson(url: URL, body: unknown, timeoutMs: number): Promise<{ 
       url,
       {
         method: "POST",
+        agent: false,
         headers: { "content-type": "application/json", "content-length": Buffer.byteLength(payload) },
       },
       (res) => {
@@ -68,7 +72,7 @@ export async function warmOne(
   base: string,
   url: string,
   timeoutMs = TIMEOUT_MS,
-): Promise<{ status: number | null; cached: boolean | null; reason: string | null; ms: number }> {
+): Promise<{ status: number | null; cached: boolean | null; reason: string | null; detail?: string; ms: number }> {
   const started = Date.now();
   try {
     const res = await postJson(new URL("/api/convert", base), { url }, timeoutMs);
@@ -84,8 +88,14 @@ export async function warmOne(
       reason: typeof data?.reason === "string" ? data.reason : null,
       ms: Date.now() - started,
     };
-  } catch {
-    return { status: null, cached: null, reason: "timeout or network error", ms: Date.now() - started };
+  } catch (error) {
+    return {
+      status: null,
+      cached: null,
+      reason: "timeout or network error",
+      detail: error instanceof Error ? error.message : String(error),
+      ms: Date.now() - started,
+    };
   }
 }
 
@@ -105,17 +115,18 @@ async function main(): Promise<void> {
       continue;
     }
     const result = await warmOne(opts.base, url);
-    const what =
-      result.status === 200 ? (result.cached ? "cache hit" : "converted") : `failed (${result.reason ?? "see logs"})`;
+    const why = [result.reason ?? "see logs", result.detail].filter(Boolean).join(": ");
+    const what = result.status === 200 ? (result.cached ? "cache hit" : "converted") : `failed (${why})`;
     console.log(`${i + 1}/${urls.length} ${result.status ?? "-"} ${what} ${Math.round(result.ms / 1000)} s ${url}`);
     if (result.status === 429) {
       console.log("Stopped at a limit. Run again later; cached URLs are skipped for free.");
       process.exitCode = 1;
       return;
     }
-    if (result.status === null && result.ms >= 290_000) {
-      // The server may still be converting: it caches the result when done.
-      console.log("  The server may still be converting this one; a re-run will show it as a cache hit.");
+    if (result.status === null) {
+      // A lost answer is not a lost conversion: the server keeps going and
+      // caches the result when it finishes.
+      console.log("  The server may still be converting this one; run again in five minutes to see it as a cache hit.");
     }
     if (result.status !== 200) failed += 1;
   }
