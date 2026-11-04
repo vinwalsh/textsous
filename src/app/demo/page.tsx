@@ -27,7 +27,8 @@ export default function DemoPage() {
     <main>
       <h1>Demo recipes</h1>
       <p className="tagline">
-        Twenty recipes with pre-warmed conversions — pick one to open it in the converter.
+        Twenty recipes we test with — pick one to open it in the converter. One that was
+        converted recently opens right away; a fresh conversion takes 3 to 4 minutes.
       </p>
       {urls.length === 0 ? (
         <p>No demo recipes are listed yet.</p>

@@ -18,6 +18,7 @@
     "schema": "tsx scripts/generate-schema.ts",
     "docs": "tsx scripts/generate-format.ts",
     "eval": "tsx scripts/eval.ts",
+    "warm": "tsx scripts/warm-demo.ts",
     "cli": "tsx src/cli.ts"
   },
   "dependencies": {
