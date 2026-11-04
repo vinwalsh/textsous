@@ -77,12 +77,14 @@ function storeVoice(on: boolean): void {
   }
 }
 
-/** Say a line out loud when the device can; silence is always safe. */
+/**
+ * Say a line out loud when the device can; silence is always safe. Lines
+ * queue, so a finished timer and a new task in the same second are both said.
+ */
 export function speak(text: string): void {
   try {
     const synth = typeof window !== "undefined" ? window.speechSynthesis : undefined;
     if (!synth || typeof SpeechSynthesisUtterance === "undefined") return;
-    synth.cancel();
     synth.speak(new SpeechSynthesisUtterance(text));
   } catch {
     // No voice on this device.
