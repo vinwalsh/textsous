@@ -95,7 +95,11 @@ export interface CallStructuredOptions {
   client?: StructuredChatClient;
   /** Cap on completion tokens (max_completion_tokens). Unset by default. */
   maxTokens?: number;
-  /** reasoning_effort for the call; unset sends nothing (provider default, high on Meta). */
+  /**
+   * reasoning_effort for the call; unset sends nothing (provider default,
+   * high on Meta). Stages pass effortFor(stage) from ./efforts. A provider
+   * that rejects the value gets the call again without it.
+   */
   reasoningEffort?: ReasoningEffort;
   /** Pause before the one manual retry of a transient upstream error. Default 1500 ms. */
   retryDelayMs?: number;
@@ -171,6 +175,18 @@ export function callOptions(left: number): { timeout: number; maxRetries: number
   return { timeout, maxRetries: left >= 2 * timeout + MIN_CALL_MS ? 1 : 0 };
 }
 
+/**
+ * A 400 or 422 naming reasoning_effort: the model or provider does not take
+ * the effort sent. The call is repeated once without it (provider default)
+ * rather than failing a conversion over a tuning parameter.
+ */
+function isEffortRejection(error: unknown): boolean {
+  const err = error as { status?: number; message?: string; error?: { message?: string } };
+  if (err?.status !== 400 && err?.status !== 422) return false;
+  const message = `${err?.message ?? ""} ${err?.error?.message ?? ""}`.toLowerCase();
+  return message.includes("reasoning_effort") || message.includes("reasoning effort");
+}
+
 function isJsonSchemaRejection(error: unknown): boolean {
   const err = error as { status?: number; message?: string; error?: { message?: string } };
   const status = err?.status;
@@ -231,6 +247,7 @@ export async function callStructured<T>(
   let attempts = 0;
   let lengthRetried = false;
   let transientRetried = false;
+  let reasoningEffort = opts.reasoningEffort;
   const retryDelayMs = opts.retryDelayMs ?? TRANSIENT_RETRY_DELAY_MS;
 
   for (let validationAttempt = 0; ; validationAttempt += 1) {
@@ -248,7 +265,7 @@ export async function callStructured<T>(
           temperature,
           response_format: format,
           ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
-          ...(opts.reasoningEffort !== undefined ? { reasoning_effort: opts.reasoningEffort } : {}),
+          ...(reasoningEffort !== undefined ? { reasoning_effort: reasoningEffort } : {}),
         },
         http,
       );
@@ -265,6 +282,11 @@ export async function callStructured<T>(
       finishReason = response.choices[0]?.finish_reason;
     } catch (error) {
       if (mayHaveSpent(error)) markSpent();
+      if (reasoningEffort !== undefined && isEffortRejection(error)) {
+        reasoningEffort = undefined;
+        validationAttempt -= 1;
+        continue;
+      }
       if (!fallbackUsed && isJsonSchemaRejection(error)) {
         fallbackUsed = true;
         format = { type: "json_object" };

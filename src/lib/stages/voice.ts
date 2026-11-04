@@ -2,7 +2,10 @@ import { z } from "zod";
 import type { TimelineDefinition, TimelineTask } from "../schema/timeline";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -86,10 +89,18 @@ interface RewriteCall {
   attempts: number;
 }
 
+export interface VoiceOptions {
+  provider?: ProviderName;
+  client?: StructuredChatClient;
+  /** Wins over efforts and the env/code default (effortFor("voice")). */
+  reasoningEffort?: ReasoningEffort;
+  efforts?: EffortOverrides;
+}
+
 async function rewriteTasks(
   tasks: Pick<TimelineTask, "id" | "label" | "description" | "completionCue">[],
   retry: boolean,
-  opts: { provider?: ProviderName; client?: StructuredChatClient },
+  opts: VoiceOptions,
 ): Promise<RewriteCall> {
   const result = await callStructured(
     VoiceRewritesSchema,
@@ -97,7 +108,12 @@ async function rewriteTasks(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(tasks, retry) },
     ],
-    { provider: opts.provider, schemaName: VOICE_SCHEMA_NAME, client: opts.client },
+    {
+      provider: opts.provider,
+      schemaName: VOICE_SCHEMA_NAME,
+      client: opts.client,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("voice", opts.efforts),
+    },
   );
   return {
     rewrites: result.data.tasks,
@@ -114,7 +130,7 @@ async function rewriteTasks(
  */
 export async function voice(
   timeline: TimelineDefinition,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: VoiceOptions = {},
 ): Promise<VoiceResult> {
   const byId = new Map(timeline.tasks.map((t) => [t.id, t] as const));
   const first = await rewriteTasks(timeline.tasks, false, opts);

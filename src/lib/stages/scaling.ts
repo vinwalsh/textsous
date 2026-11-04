@@ -3,7 +3,10 @@ import { ScaleRuleSchema } from "../schema/canonical";
 import type { CookAlongArtifact } from "../schema/artifact";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -64,7 +67,13 @@ function buildUserPrompt(recipe: ScalableRecipe): string {
 /** One model call assigning a rule and reason per ingredient. Code does all the math. */
 export async function assignScaleRules(
   recipe: ScalableRecipe,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    /** Wins over efforts and the env/code default (effortFor("scaling")). */
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
+  } = {},
 ): Promise<AssignedRules> {
   const result = await callStructured(
     ScaleRulesSchema,
@@ -72,7 +81,12 @@ export async function assignScaleRules(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(recipe) },
     ],
-    { provider: opts.provider, schemaName: SCALING_SCHEMA_NAME, client: opts.client },
+    {
+      provider: opts.provider,
+      schemaName: SCALING_SCHEMA_NAME,
+      client: opts.client,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("scaling", opts.efforts),
+    },
   );
   return {
     rules: result.data.rules,
