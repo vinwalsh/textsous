@@ -14,6 +14,7 @@ import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
 import { logEvent } from "../../../lib/log";
 import { isContributorModel, resolveProvider } from "../../../lib/model";
 import { applyArtifactAllergenFloor } from "../../../lib/allergens";
+import { reviewNoteTexts } from "../../../lib/review-notes";
 import type { CanonicalizeInput } from "../../../lib/stages/canonicalize";
 import {
   clientIp as sharedClientIp,
@@ -142,6 +143,8 @@ export async function POST(request: Request) {
           artifact: floorCached(cached.artifact),
           schedule: cached.schedule,
           cached: true,
+          // Advisory review notes travel with the artifact (D1).
+          warnings: reviewNoteTexts(cached.artifact),
         });
       }
       const gate = await liveGate(request);
@@ -235,6 +238,7 @@ export async function POST(request: Request) {
         artifact: result.artifact,
         schedule: result.schedule,
         cached: false,
+        warnings: result.warnings,
         usage: {
           canonicalize: result.canonicalize.usage,
           procedure: result.procedure.usage,

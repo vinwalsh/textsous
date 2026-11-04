@@ -182,6 +182,10 @@ The handoff document: recipe, timeline, equipment profile and the change record.
 - `changes`: array of object
 - `changes[].kind`: string (one of: merged-steps, estimate, scale, swap, technique)
 - `changes[].detail`: string (min length 1)
+- `reviewNotes`: array of object or null, optional
+- `reviewNotes[].check`: string (one of: equipment_capacity, source_relationships, tips_and_voice)
+- `reviewNotes[].status`: string (one of: failed, not_judged)
+- `reviewNotes[].detail`: string (min length 1)
 
 ## Variant transform (`docs/schema/variant.json`)
 

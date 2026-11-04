@@ -290,18 +290,48 @@ describe("review model judgments", () => {
     expect(result.checks.map((c) => c.name)).toEqual([...REVIEW_CHECK_ORDER]);
   });
 
-  it("blocks compile on failed or missing judgments with readable reasons", async () => {
+  it("blocks compile on failed or missing fidelity and safety judgments", async () => {
+    const input = makeInput(
+      makeRecipe(),
+      makeTimeline([makeTask("a")]),
+      makeSchedule(["a", 0, 5]),
+    );
+    const judgments = ALL_PASS.filter((j) => j.name !== "method_and_safety").map((j) =>
+      j.name === "quantities" ? { ...j, passed: false, detail: "salt amount changed" } : j,
+    );
+    const result = await review(input, { client: fakeClient(judgments) });
+    expect(result.passed).toBe(false);
+    expect(result.blockers).toEqual([
+      "quantities: salt amount changed",
+      "method_and_safety: the model did not judge this check",
+    ]);
+    expect(result.advisories).toEqual([]);
+  });
+
+  it("never blocks on the advisory judgments: their failures become notes", async () => {
     const input = makeInput(
       makeRecipe(),
       makeTimeline([makeTask("a")]),
       makeSchedule(["a", 0, 5]),
     );
     const judgments = ALL_PASS.filter((j) => j.name !== "tips_and_voice").map((j) =>
-      j.name === "quantities" ? { ...j, passed: false, detail: "salt amount changed" } : j,
+      j.name === "source_relationships" || j.name === "equipment_capacity"
+        ? { ...j, passed: false, detail: `${j.name} looks wrong` }
+        : j,
     );
     const result = await review(input, { client: fakeClient(judgments) });
-    expect(result.passed).toBe(false);
-    expect(result.blockers).toContain("quantities: salt amount changed");
-    expect(result.blockers).toContain("tips_and_voice: the model did not judge this check");
+    expect(result.passed).toBe(true);
+    expect(result.blockers).toEqual([]);
+    const advisory = result.checks.filter((c) => c.advisory).map((c) => [c.name, c.passed]);
+    expect(advisory).toEqual([
+      ["equipment_capacity", false],
+      ["source_relationships", false],
+      ["tips_and_voice", false],
+    ]);
+    expect(result.advisories?.map((n) => [n.check, n.status])).toEqual([
+      ["equipment_capacity", "failed"],
+      ["source_relationships", "failed"],
+      ["tips_and_voice", "not_judged"],
+    ]);
   });
 });

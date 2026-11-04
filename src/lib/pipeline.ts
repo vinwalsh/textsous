@@ -24,6 +24,7 @@ import { applyCuisine } from "./stages/cuisine";
 import { voice } from "./stages/voice";
 import { nativeServingsOf } from "./scaling/native";
 import type { FormatWarning } from "./format";
+import { reviewNoteTexts } from "./review-notes";
 
 /** Kitchen capacity assumed when the caller provides none. */
 export const DEFAULT_EQUIPMENT_PROFILE: EquipmentProfile = { burners: 4, oven: true };
@@ -48,7 +49,10 @@ export interface PipelineResult {
   procedure: StageReport<ProcedureCheck>;
   review: StageReport<ReviewCheck>;
   usageTotal: TokenUsage;
-  /** Readable notes for the cook (e.g. source text cut to the input window). */
+  /**
+   * Readable notes for the cook: source text cut to the input window, timing
+   * repairs, and the advisory review notes recorded on the artifact.
+   */
   warnings: string[];
   /** Coded, non-blocking format warnings (prep coverage, amounts in descriptions). */
   formatWarnings: FormatWarning[];
@@ -72,8 +76,9 @@ function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
 
 /**
  * Full conversion pipeline: intake input to Cook Along artifact. Canonicalize
- * and procedure check failures are reported, not fatal; a failed review
- * blocks compile and rejects with the readable reasons.
+ * and procedure check failures are reported, not fatal; a blocking review
+ * failure stops compile and rejects with the readable reasons. Advisory
+ * review findings come back as warnings and on the artifact (reviewNotes).
  */
 export async function convertToArtifact(
   input: CanonicalizeInput,
@@ -120,7 +125,7 @@ export async function convertToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(addUsage(canon.usage, proc.usage), rev.usage),
-    warnings: [...canon.warnings, ...proc.repairs],
+    warnings: [...canon.warnings, ...proc.repairs, ...reviewNoteTexts(artifact)],
     formatWarnings: rev.warnings ?? [],
     timings: { canonicalizeMs, procedureMs, reviewMs },
   };
@@ -162,7 +167,7 @@ export async function convertRecipeToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(proc.usage, rev.usage),
-    warnings: proc.repairs,
+    warnings: [...proc.repairs, ...reviewNoteTexts(artifact)],
     formatWarnings: rev.warnings ?? [],
     timings: { canonicalizeMs: 0, procedureMs, reviewMs },
   };

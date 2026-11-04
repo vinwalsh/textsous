@@ -196,7 +196,10 @@ program
         const sched = result.schedule;
         const canonFailed = result.canonicalize.checks.filter((c) => !c.passed);
         const procFailed = result.procedure.checks.filter((c) => !c.passed);
-        const reviewFailed = result.review.checks.filter((c) => !c.passed);
+        // Advisory judgments (equipment, step order, tips) never block: they
+        // print as ADVISORY and leave the exit code alone.
+        const reviewFailed = result.review.checks.filter((c) => !c.passed && !c.advisory);
+        const reviewAdvisory = result.review.checks.filter((c) => !c.passed && c.advisory);
         console.log(`Title: ${artifact.recipe.title}`);
         console.log(
           `Tasks: ${artifact.timelineDefinition.tasks.length}, total time: ${sched.totalMinutes}m`,
@@ -208,11 +211,13 @@ program
           `procedure: ${result.procedure.checks.map((c) => `${c.name}=${c.passed ? "pass" : "FAIL"}`).join(" ")}`,
         );
         console.log(
-          `review: ${result.review.checks.length - reviewFailed.length}/${result.review.checks.length} pass`,
+          `review: ${result.review.checks.length - reviewFailed.length - reviewAdvisory.length}/${result.review.checks.length} pass` +
+            (reviewAdvisory.length > 0 ? `, ${reviewAdvisory.length} advisory` : ""),
         );
         for (const c of [...canonFailed, ...procFailed, ...reviewFailed]) {
           console.log(`  FAIL ${c.name}: ${c.detail}`);
         }
+        for (const c of reviewAdvisory) console.log(`  ADVISORY ${c.name}: ${c.detail}`);
         for (const w of result.formatWarnings) console.log(`  WARN ${w.code}: ${w.message}`);
         for (const note of result.warnings) console.log(`  NOTE ${note}`);
         console.log(

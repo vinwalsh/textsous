@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { EquipmentProfile } from "../schema/artifact";
+import {
+  ADVISORY_REVIEW_CHECKS,
+  type AdvisoryReviewCheck,
+  type ArtifactReviewNote,
+  type EquipmentProfile,
+} from "../schema/artifact";
 import type { CanonicalRecipe } from "../schema/canonical";
 import type { TimelineDefinition } from "../schema/timeline";
 import type { ScheduleResult } from "../scheduler/schedule";
@@ -11,6 +16,7 @@ import {
 } from "../model";
 import { runProcedureChecks } from "./procedure";
 import { runFormatWarnings, type FormatWarning } from "../format";
+import { buildReviewNote, readableReviewDetail } from "../review-notes";
 
 export const REVIEW_VERSION = 2;
 
@@ -55,6 +61,20 @@ export const ReviewJudgmentsSchema = z.strictObject({
 
 export const REVIEW_SCHEMA_NAME = "review_judgments_v1";
 
+const ADVISORY = new Set<string>(ADVISORY_REVIEW_CHECKS);
+
+/**
+ * equipment_capacity, source_relationships and tips_and_voice are advisory:
+ * a failed or missing judgment becomes a note for the cook instead of
+ * blocking compile. source_fidelity, quantities, dietary_conditions,
+ * method_and_safety and the 5 coded checks still block.
+ */
+export function isAdvisoryCheck(name: string): name is AdvisoryReviewCheck {
+  return ADVISORY.has(name);
+}
+
+const NOT_JUDGED_DETAIL = "the model did not judge this check";
+
 export interface ReviewInput {
   recipe: CanonicalRecipe;
   timeline: TimelineDefinition;
@@ -73,15 +93,27 @@ export interface ReviewCheck {
    * never blocks compile; `passed` is false so it is never read as a pass.
    */
   notRun?: boolean;
+  /**
+   * True for the advisory model judgments (equipment_capacity,
+   * source_relationships, tips_and_voice). A failed or missing advisory
+   * judgment never blocks compile; `passed` keeps the judgment (false when it
+   * failed or was not given) so it is never read as a pass.
+   */
+  advisory?: boolean;
 }
 
 export interface ReviewResult {
   checks: ReviewCheck[];
   passed: boolean;
-  /** One readable reason per failed check; non-empty blocks compile. */
+  /** One readable reason per blocking failure; non-empty blocks compile. */
   blockers: string[];
   /** Coded format warnings (prep coverage, amounts in descriptions). Never block. */
   warnings?: FormatWarning[];
+  /**
+   * Advisory judgments that failed or were not given, as readable notes.
+   * compile() records them on the artifact (reviewNotes) for the cook.
+   */
+  advisories?: ArtifactReviewNote[];
   usage: TokenUsage;
   fallbackUsed: boolean;
   attempts: number;
@@ -270,7 +302,9 @@ function buildUserPrompt(input: ReviewInput): string {
 
 /**
  * Full review: 5 coded checks plus 7 model judgments in one structured call.
- * Any failed check blocks compile; blockers carry the readable reasons.
+ * A failed coded check or a failed or missing fidelity/safety judgment blocks
+ * compile (blockers carry the readable reasons). The 3 advisory judgments
+ * never block: their failures come back as readable notes (advisories).
  */
 export async function review(
   input: ReviewInput,
@@ -291,21 +325,36 @@ export async function review(
   }
   const modeled: ReviewCheck[] = MODEL_JUDGMENT_NAMES.map((name) => {
     const judgment = byName.get(name);
+    const advisory = isAdvisoryCheck(name) ? { advisory: true } : {};
     if (!judgment) {
-      return { name, passed: false, detail: "the model did not judge this check", source: "model" as const };
+      return { name, passed: false, detail: NOT_JUDGED_DETAIL, source: "model" as const, ...advisory };
     }
-    return { name, passed: judgment.passed, detail: judgment.detail, source: "model" as const };
+    return { name, passed: judgment.passed, detail: judgment.detail, source: "model" as const, ...advisory };
   });
   const order = new Map(REVIEW_CHECK_ORDER.map((name, i) => [name, i] as const));
   const checks = [...coded, ...modeled].sort(
     (a, b) => (order.get(a.name) ?? 99) - (order.get(b.name) ?? 99),
   );
-  const blockers = checks.filter((c) => !c.passed).map((c) => `${c.name}: ${c.detail}`);
+  const blockers = checks
+    .filter((c) => !c.passed && !c.notRun && !c.advisory)
+    .map((c) => `${c.name}: ${c.detail}`);
+  const advisories = checks.flatMap((c) =>
+    c.advisory && !c.passed && isAdvisoryCheck(c.name)
+      ? [
+          buildReviewNote(
+            c.name,
+            byName.has(c.name) ? "failed" : "not_judged",
+            readableReviewDetail(c.detail, input.recipe, input.timeline),
+          ),
+        ]
+      : [],
+  );
   return {
     checks,
     passed: blockers.length === 0,
     blockers,
     warnings: runFormatWarnings(input.recipe, input.timeline, input.schedule),
+    advisories,
     usage: judged.usage,
     fallbackUsed: judged.fallbackUsed,
     attempts: judged.attempts,

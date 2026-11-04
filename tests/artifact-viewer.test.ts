@@ -145,6 +145,24 @@ describe("artifact viewer layout", () => {
     expect(convertNotices(undefined)).toEqual([]);
   });
 
+  it("shows the artifact's advisory review notes once, even when the convert warnings repeat them", () => {
+    const review =
+      "The automatic review flagged the order of the steps: the toast waits for the beans. Compare with the original recipe if something looks off.";
+    const artifact: CookAlongArtifact = {
+      ...makeArtifact(),
+      reviewNotes: [{ check: "source_relationships", status: "failed", detail: review }],
+    };
+    // A saved link or cache hit: no convert warnings, the note still shows.
+    const saved = renderToString(createElement(ArtifactViewer, { artifact, onStartOver: () => {} }));
+    expect(saved).toContain("Notes on this conversion");
+    expect(saved).toContain("the toast waits for the beans");
+    // A fresh conversion: the same sentence also came back as a warning.
+    const fresh = renderToString(
+      createElement(ArtifactViewer, { artifact, onStartOver: () => {}, notices: [review] }),
+    );
+    expect(fresh.split("the toast waits for the beans").length - 1).toBe(1);
+  });
+
   it("keeps the estimated-time wording on estimates", () => {
     const html = renderViewer();
     expect(html).toContain("estimated time");

@@ -38,6 +38,27 @@ export const ArtifactChangeSchema = z.strictObject({
   detail: z.string().min(1),
 });
 
+/**
+ * Review checks the model judges that inform the cook but never block
+ * compile: how equipment is shared, the order of the steps, and the tips and
+ * cues. The fidelity and safety judgments and every coded check still block.
+ */
+export const ADVISORY_REVIEW_CHECKS = [
+  "equipment_capacity",
+  "source_relationships",
+  "tips_and_voice",
+] as const;
+
+export type AdvisoryReviewCheck = (typeof ADVISORY_REVIEW_CHECKS)[number];
+
+// One advisory finding: the check failed ("failed") or the review gave no
+// judgment for it ("not_judged"). `detail` is a readable sentence for the cook.
+export const ArtifactReviewNoteSchema = z.strictObject({
+  check: z.enum(ADVISORY_REVIEW_CHECKS),
+  status: z.enum(["failed", "not_judged"]),
+  detail: z.string().min(1),
+});
+
 export const ArtifactRecipeSchema = z.strictObject({
   title: z.string().min(1),
   servings: z.number().positive(),
@@ -62,11 +83,15 @@ export const CookAlongArtifactSchema = z.strictObject({
   timelineDefinition: TimelineDefinitionSchema,
   equipmentProfile: EquipmentProfileSchema,
   changes: z.array(ArtifactChangeSchema),
+  // Advisory review findings shown to the cook as notes. Optional: absent
+  // when the review raised none and on artifacts compiled before it existed.
+  reviewNotes: z.array(ArtifactReviewNoteSchema).nullish(),
 });
 
 export type ArtifactCredit = z.infer<typeof ArtifactCreditSchema>;
 export type EquipmentProfile = z.infer<typeof EquipmentProfileSchema>;
 export type ArtifactChange = z.infer<typeof ArtifactChangeSchema>;
+export type ArtifactReviewNote = z.infer<typeof ArtifactReviewNoteSchema>;
 export type ArtifactRecipe = z.infer<typeof ArtifactRecipeSchema>;
 export type CookAlongArtifact = z.infer<typeof CookAlongArtifactSchema>;
 

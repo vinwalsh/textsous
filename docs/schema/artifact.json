@@ -650,6 +650,46 @@
         ],
         "additionalProperties": false
       }
+    },
+    "reviewNotes": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "check": {
+                "type": "string",
+                "enum": [
+                  "equipment_capacity",
+                  "source_relationships",
+                  "tips_and_voice"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "failed",
+                  "not_judged"
+                ]
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "check",
+              "status",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [

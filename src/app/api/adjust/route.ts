@@ -4,6 +4,7 @@ import { CookAlongArtifactSchema } from "../../../lib/schema/artifact";
 import { adjustArtifact } from "../../../lib/pipeline";
 import { checkRateLimit, reserveDailyUnit } from "../../../lib/limits";
 import { logEvent } from "../../../lib/log";
+import { reviewNoteTexts } from "../../../lib/review-notes";
 import { clientIp, fail, limited, readJsonBody, runLive, TOO_LARGE_MESSAGE } from "../helpers";
 
 // Variants make up to four model calls; the pipeline stops itself at ~280 s.
@@ -92,7 +93,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       artifact: result.artifact,
       scaleFlags: result.scaleFlags,
-      warnings: result.warnings,
+      // Code fixes from this adjustment, then the conversion's advisory
+      // review notes, which the artifact carries through every adjustment.
+      warnings: [...result.warnings, ...reviewNoteTexts(result.artifact)],
       usage: result.usage,
     });
   } catch (error) {

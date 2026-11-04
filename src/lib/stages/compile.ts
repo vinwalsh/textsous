@@ -102,6 +102,8 @@ export function listChanges(
 /**
  * Assemble the validated Cook Along artifact. Pure and synchronous: no model
  * calls. Refuses to compile when review failed, with the readable reasons.
+ * Advisory review findings (review.advisories) are recorded as reviewNotes,
+ * only when there are some, so every other artifact is unchanged.
  * methodNotice is always empty here; variant stages fill it when they change
  * the method.
  */
@@ -110,6 +112,7 @@ export function compile(input: CompileInput): CookAlongArtifact {
     throw new Error(`compile blocked: ${input.review.blockers.join("; ") || "review failed"}`);
   }
   const { recipe, timeline, equipmentProfile } = input;
+  const reviewNotes = input.review.advisories ?? [];
   const { method, label } = deriveMethod(recipe.steps);
   // Deterministic allergen floor: every compile path (convert, photo
   // confirm, assistant-authored recipes) gets the inferred tags.
@@ -145,5 +148,6 @@ export function compile(input: CompileInput): CookAlongArtifact {
     timelineDefinition: timeline,
     equipmentProfile,
     changes: listChanges(timeline, recipe.steps),
+    ...(reviewNotes.length > 0 ? { reviewNotes } : {}),
   });
 }

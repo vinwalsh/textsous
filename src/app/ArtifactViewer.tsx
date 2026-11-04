@@ -6,6 +6,7 @@ import type { Lane, TimelineTask } from "../lib/schema/timeline";
 import { buildImportUrl } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
 import { laneDisplayColors, taskLaneColor } from "../lib/lane-palette";
+import { mergeNotes, reviewNoteTexts } from "../lib/review-notes";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
@@ -209,7 +210,11 @@ export function phaseRuns<T extends { phase: TimelineTask["phase"] }>(
   return runs;
 }
 
-/** Conversion notes from the server (text cut, timings relabeled). */
+/**
+ * Conversion notes: the server's (text cut, timings relabeled) and the
+ * advisory review notes the artifact carries, so they show on cache hits,
+ * saved links and after adjustments too.
+ */
 export function ConversionNotes({ notes }: { notes: readonly string[] }) {
   if (notes.length === 0) return null;
   return (
@@ -362,7 +367,7 @@ export default function ArtifactViewer({
         onReset={handleReset}
       />
 
-      <ConversionNotes notes={notices} />
+      <ConversionNotes notes={mergeNotes(notices, reviewNoteTexts(current))} />
 
       <BeforeYouStart artifact={current} totalMinutes={totalMinutes} />
 
