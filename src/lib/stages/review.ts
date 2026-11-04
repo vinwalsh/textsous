@@ -66,6 +66,12 @@ export interface ReviewCheck {
   passed: boolean;
   detail: string;
   source: "code" | "model";
+  /**
+   * True when the check was not run (the 7 model judgments for a recipe an
+   * AI assistant authored through the skills API). A check that was not run
+   * never blocks compile; `passed` is false so it is never read as a pass.
+   */
+  notRun?: boolean;
 }
 
 export interface ReviewResult {
