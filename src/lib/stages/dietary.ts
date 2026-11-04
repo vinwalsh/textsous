@@ -7,7 +7,10 @@ import {
 import type { CookAlongArtifact } from "../schema/artifact";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -81,7 +84,13 @@ export interface PlannedDietary {
 export async function planDietary(
   recipe: DietableRecipe,
   target: string,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    /** Wins over efforts and the env/code default (effortFor("dietary")). */
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
+  } = {},
 ): Promise<PlannedDietary> {
   if (!(DIETARY_TARGETS as readonly string[]).includes(target)) {
     throw new Error(`unknown dietary target "${target}"`);
@@ -92,7 +101,12 @@ export async function planDietary(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(recipe, target as DietaryTarget) },
     ],
-    { provider: opts.provider, schemaName: DIETARY_SCHEMA_NAME, client: opts.client },
+    {
+      provider: opts.provider,
+      schemaName: DIETARY_SCHEMA_NAME,
+      client: opts.client,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("dietary", opts.efforts),
+    },
   );
   return {
     transform: result.data,
@@ -113,7 +127,13 @@ export interface AppliedDietary extends ApplyVariantResult {
 export async function applyDietary(
   artifact: CookAlongArtifact,
   target: string,
-  opts: { provider?: ProviderName; client?: StructuredChatClient; forbiddenNames?: string[] } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    forbiddenNames?: string[];
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
+  } = {},
 ): Promise<AppliedDietary> {
   const recipe = artifact.recipe;
   const planned = await planDietary(

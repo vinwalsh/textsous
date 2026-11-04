@@ -10,6 +10,8 @@ import { withAllergenFloor } from "../allergens";
 import { cleanTitle } from "../format";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
   type ReasoningEffort,
   type StructuredChatClient,
@@ -18,14 +20,11 @@ import {
 
 export const CANONICALIZE_VERSION = 2;
 
-/**
- * reasoning_effort for canonicalize (transcription). Undefined sends nothing,
- * so the provider default applies. Procedure never lowers its effort.
- */
-// Measured 2026-11-04 on the preview: "low" cut canonicalize from 59 s to
-// 22 s (salmon) and 71 s to 18 s (pasted text) but split "salt and pepper"
-// into two ingredients and dropped "to taste" notes, so the default stays.
-export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = undefined;
+// reasoning_effort comes from effortFor("canonicalize") (default "low",
+// REASONING_EFFORT_CANONICALIZE overrides it). Measured 2026-11-04 on the
+// preview: "low" cut canonicalize from 59 s to 22 s (salmon) and 71 s to
+// 18 s (pasted text); one run split "salt and pepper" into two ingredients
+// and dropped "to taste" notes. "high" is Meta's default.
 
 /**
  * Source text the model reads when there is no JSON-LD (pasted text, page
@@ -224,6 +223,11 @@ const SYSTEM_PROMPT = `You convert a recipe into the TextSous canonical recipe J
 - Use temporary ids ("ing-1", "step-1", ...); they are replaced by code.
 Reply with only JSON matching the schema, no prose.`;
 
+/** The source text canonicalize sends (the overview stage reads the same). */
+export function canonicalizeSourcePrompt(input: CanonicalizeInput): string {
+  return buildUserPrompt(input);
+}
+
 function buildUserPrompt(input: CanonicalizeInput): string {
   if (input.hasJsonLd && input.ingredientLines.length > 0) {
     return JSON.stringify({
@@ -253,7 +257,9 @@ export async function canonicalize(
   opts: {
     provider?: ProviderName;
     client?: StructuredChatClient;
+    /** Wins over efforts and the env/code default. */
     reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
   } = {},
 ): Promise<CanonicalizeResult> {
   const result = await callStructured(
@@ -266,7 +272,7 @@ export async function canonicalize(
       provider: opts.provider,
       client: opts.client,
       schemaName: CANONICAL_SCHEMA_NAME,
-      reasoningEffort: opts.reasoningEffort ?? CANONICALIZE_REASONING_EFFORT,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("canonicalize", opts.efforts),
     },
   );
 

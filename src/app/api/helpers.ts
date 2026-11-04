@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { logEvent } from "../../lib/log";
 import { limitBody, type DailyReservation, type LimitReason } from "../../lib/limits";
 import { PIPELINE_DEADLINE_MS, runWithModelBudget } from "../../lib/model/budget";
+import { CONVERT_EVENTS_MEDIA_TYPE, encodeEvent, type ConvertEvent } from "../../lib/convert-events";
 
 /** JSON request bodies above this get 413 (convert, adjust, artifact). */
 export const MAX_JSON_BYTES = 256 * 1024;
@@ -80,6 +81,20 @@ export function fail(
   body: Record<string, unknown>,
   error?: unknown,
 ): NextResponse {
+  logFailure(route, status, body, error);
+  return NextResponse.json(body, { status });
+}
+
+/**
+ * The structured `request_failed` line alone, for failures that reach the
+ * client another way (an `error` event at the end of a stream).
+ */
+export function logFailure(
+  route: string,
+  status: number,
+  body: Record<string, unknown>,
+  error?: unknown,
+): void {
   const { errorClass, code } = error === undefined
     ? { errorClass: "none", code: typeof body.reason === "string" ? body.reason : `http_${status}` }
     : errorCode(error, status);
@@ -91,7 +106,6 @@ export function fail(
     code,
     ...(message ? { detail: message } : {}),
   });
-  return NextResponse.json(body, { status });
 }
 
 /**
@@ -139,3 +153,77 @@ export async function runLive<T>(
   return value;
 }
 
+/** True when the client asked for progress events (convert-events.ts). */
+export function wantsEvents(req: Request): boolean {
+  return (req.headers.get("accept") ?? "").toLowerCase().includes(CONVERT_EVENTS_MEDIA_TYPE);
+}
+
+export const EVENT_STREAM_HEADERS: Readonly<Record<string, string>> = {
+  "content-type": `${CONVERT_EVENTS_MEDIA_TYPE}; charset=utf-8`,
+  "cache-control": "no-store",
+  "x-accel-buffering": "no",
+};
+
+/** A blank line this often keeps idle connections open; readers skip blank lines. */
+export const EVENT_STREAM_HEARTBEAT_MS = 15_000;
+
+/**
+ * Keep the function alive until the work settles, even after the response
+ * ends (a reader who closed the page). Outside a Next.js request (tests,
+ * scripts) there is nothing to extend.
+ */
+function keepAlive(work: Promise<unknown>): void {
+  try {
+    after(work);
+  } catch {
+    // Not in a request scope.
+  }
+}
+
+/**
+ * A 200 NDJSON response, returned at once, that `run` fills with events.
+ * The stream closes when `run` settles. If the client disconnects, writes
+ * are dropped and the work goes on to the end (a URL conversion is still
+ * cached). `run` reports its own failures as events; anything it throws is
+ * swallowed here.
+ */
+export function eventStream(
+  run: (send: (event: ConvertEvent) => void) => Promise<void>,
+  heartbeatMs: number = EVENT_STREAM_HEARTBEAT_MS,
+): Response {
+  const encoder = new TextEncoder();
+  let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+  let open = true;
+  const body = new ReadableStream<Uint8Array>({
+    start(c) {
+      controller = c;
+    },
+    cancel() {
+      open = false;
+    },
+  });
+  const write = (text: string): void => {
+    if (!open || !controller) return;
+    try {
+      controller.enqueue(encoder.encode(text));
+    } catch {
+      open = false;
+    }
+  };
+  const heartbeat = setInterval(() => write("\n"), heartbeatMs);
+  const work = Promise.resolve()
+    .then(() => run((event) => write(encodeEvent(event))))
+    .catch(() => {})
+    .finally(() => {
+      clearInterval(heartbeat);
+      if (!open || !controller) return;
+      open = false;
+      try {
+        controller.close();
+      } catch {
+        // Already closed.
+      }
+    });
+  keepAlive(work);
+  return new Response(body, { status: 200, headers: { ...EVENT_STREAM_HEADERS } });
+}

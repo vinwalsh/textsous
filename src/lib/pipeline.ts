@@ -1,7 +1,16 @@
 import type { CookAlongArtifact, EquipmentProfile } from "./schema/artifact";
 import type { CanonicalRecipe } from "./schema/canonical";
+import type { TimelineDefinition } from "./schema/timeline";
 import { DIETARY_TARGETS } from "./schema/variant";
-import type { ProviderName, StructuredChatClient, TokenUsage } from "./model";
+import type { RecipeJsonLd } from "./intake/url";
+import {
+  effortFor,
+  type EffortOverrides,
+  type ProviderName,
+  type ReasoningEffort,
+  type StructuredChatClient,
+  type TokenUsage,
+} from "./model";
 import { assertTimeFor, STAGE_MIN_MS } from "./model/budget";
 import {
   canonicalize,
@@ -11,6 +20,7 @@ import {
 import { procedure, type ProcedureCheck } from "./stages/procedure";
 import { review, type ReviewCheck } from "./stages/review";
 import { compile } from "./stages/compile";
+import { fillFacts, overview, type OverviewResult, type OverviewSource } from "./stages/overview";
 import { schedule, type ScheduleResult } from "./scheduler/schedule";
 import {
   applyScaling,
@@ -25,6 +35,13 @@ import { voice } from "./stages/voice";
 import { nativeServingsOf } from "./scaling/native";
 import type { FormatWarning } from "./format";
 import { reviewNoteTexts } from "./review-notes";
+import {
+  factsFromJsonLd,
+  factsFromRecipe,
+  mergeFacts,
+  type ConvertEvent,
+  type RecipeFacts,
+} from "./convert-events";
 
 /** Kitchen capacity assumed when the caller provides none. */
 export const DEFAULT_EQUIPMENT_PROFILE: EquipmentProfile = { burners: 4, oven: true };
@@ -32,6 +49,24 @@ export const DEFAULT_EQUIPMENT_PROFILE: EquipmentProfile = { burners: 4, oven: t
 export interface PipelineOptions {
   provider?: ProviderName;
   equipmentProfile?: EquipmentProfile;
+  /** Per-request reasoning efforts (the preview header); env and code defaults fill the rest. */
+  efforts?: EffortOverrides;
+  /**
+   * Progress for a streaming client (convert-events.ts): facts, overview,
+   * recipe and procedure as each is ready. Set, it also runs the overview
+   * stage alongside canonicalize (or procedure). A listener that throws
+   * never breaks the conversion. Unset, the pipeline runs as before.
+   */
+  onEvent?: (event: ConvertEvent) => void;
+  /** The page's schema.org Recipe (URL intake): facts before any model call. */
+  jsonLd?: RecipeJsonLd | null;
+  /** Fake transports per stage, for offline tests. */
+  clients?: {
+    overview?: StructuredChatClient;
+    canonicalize?: StructuredChatClient;
+    procedure?: StructuredChatClient;
+    review?: StructuredChatClient;
+  };
 }
 
 export interface StageReport<Check> {
@@ -41,6 +76,14 @@ export interface StageReport<Check> {
   rawResponse: string;
 }
 
+/** The overview call of a streamed conversion (never run without onEvent). */
+export interface OverviewReport {
+  /** "pending": still running when the cook along was compiled (usage not counted). */
+  status: "ok" | "failed" | "pending";
+  ms: number;
+  usage: TokenUsage;
+}
+
 export interface PipelineResult {
   artifact: CookAlongArtifact;
   recipe: CanonicalRecipe;
@@ -48,6 +91,7 @@ export interface PipelineResult {
   canonicalize: StageReport<CanonicalizeCheck>;
   procedure: StageReport<ProcedureCheck>;
   review: StageReport<ReviewCheck>;
+  /** All model tokens of this conversion, the overview's included once it finished. */
   usageTotal: TokenUsage;
   /**
    * Readable notes for the cook: source text cut to the input window, timing
@@ -58,6 +102,10 @@ export interface PipelineResult {
   formatWarnings: FormatWarning[];
   /** Wall-clock milliseconds per model stage (0 when a stage did not run). */
   timings: StageTimings;
+  /** reasoning_effort sent per model stage that ran (for the logs). */
+  efforts: Partial<Record<"overview" | "canonicalize" | "procedure" | "review", ReasoningEffort>>;
+  /** Set when the overview stage ran (streaming only). */
+  overview?: OverviewReport;
 }
 
 export interface StageTimings {
@@ -74,11 +122,131 @@ function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
   };
 }
 
+const ZERO_USAGE: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+
+/**
+ * Events for one conversion, in the contract's order where timing allows:
+ * facts (page facts, or the overview's), overview, recipe, procedure. The
+ * overview is sent whenever it arrives before compile; its facts only
+ * before the recipe event (the recipe's facts are better). Nothing is sent
+ * after close(), and a listener that throws is ignored.
+ */
+class ConversionProgress {
+  private facts: RecipeFacts | null = null;
+  private recipeSent = false;
+  private closed = false;
+
+  constructor(private readonly onEvent?: (event: ConvertEvent) => void) {}
+
+  get active(): boolean {
+    return this.onEvent !== undefined;
+  }
+
+  private emit(event: ConvertEvent): void {
+    if (!this.onEvent || this.closed) return;
+    try {
+      this.onEvent(event);
+    } catch {
+      // A listener (a closed stream) never breaks the conversion.
+    }
+  }
+
+  /** Progress is best effort: nothing here may fail a conversion. */
+  private safely(work: () => void): void {
+    if (!this.active || this.closed) return;
+    try {
+      work();
+    } catch {
+      // Skip this event; the conversion goes on.
+    }
+  }
+
+  sourceFacts(read: () => RecipeFacts): void {
+    this.safely(() => {
+      const facts = read();
+      this.facts = facts;
+      this.emit({ type: "facts", facts });
+    });
+  }
+
+  overview(result: OverviewResult): void {
+    this.safely(() => {
+      if (!this.recipeSent) {
+        const merged = fillFacts(this.facts, result.facts);
+        if (JSON.stringify(merged) !== JSON.stringify(this.facts)) {
+          this.facts = merged;
+          this.emit({ type: "facts", facts: merged });
+        }
+      }
+      this.emit({ type: "overview", overview: result.overview });
+    });
+  }
+
+  recipe(recipe: CanonicalRecipe): void {
+    this.safely(() => {
+      this.recipeSent = true;
+      this.facts = mergeFacts(this.facts, factsFromRecipe(recipe));
+      this.emit({ type: "recipe", recipe, facts: this.facts });
+    });
+  }
+
+  procedure(timeline: TimelineDefinition): void {
+    this.safely(() => this.emit({ type: "procedure", timeline }));
+  }
+
+  close(): void {
+    this.closed = true;
+  }
+}
+
+/**
+ * Start the overview call without waiting for it. Its result goes to the
+ * progress events; a failure is recorded and otherwise ignored. It runs
+ * inside the caller's model budget (deadline, spent flag).
+ */
+function startOverview(
+  source: OverviewSource,
+  opts: PipelineOptions,
+  effort: ReasoningEffort,
+  progress: ConversionProgress,
+): OverviewReport {
+  const report: OverviewReport = { status: "pending", ms: 0, usage: ZERO_USAGE };
+  const mark = Date.now();
+  void overview(source, {
+    provider: opts.provider,
+    client: opts.clients?.overview,
+    reasoningEffort: effort,
+  }).then(
+    (result) => {
+      report.status = "ok";
+      report.ms = Date.now() - mark;
+      report.usage = result.usage;
+      try {
+        progress.overview(result);
+      } catch {
+        // Progress is best effort; the conversion goes on.
+      }
+    },
+    () => {
+      report.status = "failed";
+      report.ms = Date.now() - mark;
+    },
+  );
+  return report;
+}
+
+/** The overview's tokens count once it finished; a still-running call is left out. */
+function withOverviewUsage(total: TokenUsage, report: OverviewReport | undefined): TokenUsage {
+  return report?.status === "ok" ? addUsage(total, report.usage) : total;
+}
+
 /**
  * Full conversion pipeline: intake input to Cook Along artifact. Canonicalize
  * and procedure check failures are reported, not fatal; a blocking review
  * failure stops compile and rejects with the readable reasons. Advisory
  * review findings come back as warnings and on the artifact (reviewNotes).
+ * With onEvent, progress events stream out as each part is ready and a fast
+ * overview call runs alongside canonicalize; nothing ever waits for it.
  */
 export async function convertToArtifact(
   input: CanonicalizeInput,
@@ -86,55 +254,94 @@ export async function convertToArtifact(
 ): Promise<PipelineResult> {
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
-  assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
-  let mark = Date.now();
-  const canon = await canonicalize(input, { provider });
-  const canonicalizeMs = Date.now() - mark;
-  assertTimeFor("procedure", STAGE_MIN_MS.procedure);
-  mark = Date.now();
-  const proc = await procedure(canon.recipe, { provider });
-  const procedureMs = Date.now() - mark;
-  const sched = schedule(proc.timeline);
-  assertTimeFor("review", STAGE_MIN_MS.review);
-  mark = Date.now();
-  const rev = await review(
-    {
+  const progress = new ConversionProgress(opts.onEvent);
+  const efforts: PipelineResult["efforts"] = {
+    canonicalize: effortFor("canonicalize", opts.efforts),
+    procedure: effortFor("procedure", opts.efforts),
+    review: effortFor("review", opts.efforts),
+  };
+  let overviewReport: OverviewReport | undefined;
+  try {
+    const jsonLd = opts.jsonLd;
+    if (jsonLd) {
+      progress.sourceFacts(() =>
+        factsFromJsonLd(jsonLd, { url: input.source.url ?? null, site: input.source.site ?? null }),
+      );
+    }
+    if (progress.active) {
+      efforts.overview = effortFor("overview", opts.efforts);
+      overviewReport = startOverview({ input }, opts, efforts.overview, progress);
+    }
+    assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
+    let mark = Date.now();
+    const canon = await canonicalize(input, {
+      provider,
+      client: opts.clients?.canonicalize,
+      reasoningEffort: efforts.canonicalize,
+    });
+    const canonicalizeMs = Date.now() - mark;
+    progress.recipe(canon.recipe);
+    assertTimeFor("procedure", STAGE_MIN_MS.procedure);
+    mark = Date.now();
+    const proc = await procedure(canon.recipe, {
+      provider,
+      client: opts.clients?.procedure,
+      reasoningEffort: efforts.procedure,
+    });
+    const procedureMs = Date.now() - mark;
+    progress.procedure(proc.timeline);
+    const sched = schedule(proc.timeline);
+    assertTimeFor("review", STAGE_MIN_MS.review);
+    mark = Date.now();
+    const rev = await review(
+      {
+        recipe: canon.recipe,
+        timeline: proc.timeline,
+        schedule: sched,
+        equipmentProfile,
+      },
+      { provider, client: opts.clients?.review, reasoningEffort: efforts.review },
+    );
+    const reviewMs = Date.now() - mark;
+    const artifact = compile({
       recipe: canon.recipe,
       timeline: proc.timeline,
-      schedule: sched,
+      review: rev,
       equipmentProfile,
-    },
-    { provider },
-  );
-  const reviewMs = Date.now() - mark;
-  const artifact = compile({
-    recipe: canon.recipe,
-    timeline: proc.timeline,
-    review: rev,
-    equipmentProfile,
-  });
-  return {
-    artifact,
-    recipe: canon.recipe,
-    schedule: sched,
-    canonicalize: {
-      checks: canon.checks,
-      usage: canon.usage,
-      rawResponse: canon.rawResponse,
-    },
-    procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
-    review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
-    usageTotal: addUsage(addUsage(canon.usage, proc.usage), rev.usage),
-    warnings: [...canon.warnings, ...proc.repairs, ...reviewNoteTexts(artifact)],
-    formatWarnings: rev.warnings ?? [],
-    timings: { canonicalizeMs, procedureMs, reviewMs },
-  };
+    });
+    progress.close();
+    return {
+      artifact,
+      recipe: canon.recipe,
+      schedule: sched,
+      canonicalize: {
+        checks: canon.checks,
+        usage: canon.usage,
+        rawResponse: canon.rawResponse,
+      },
+      procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
+      review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
+      usageTotal: withOverviewUsage(
+        addUsage(addUsage(canon.usage, proc.usage), rev.usage),
+        overviewReport,
+      ),
+      warnings: [...canon.warnings, ...proc.repairs, ...reviewNoteTexts(artifact)],
+      formatWarnings: rev.warnings ?? [],
+      timings: { canonicalizeMs, procedureMs, reviewMs },
+      efforts,
+      ...(overviewReport ? { overview: { ...overviewReport } } : {}),
+    };
+  } finally {
+    progress.close();
+  }
 }
 
 /**
  * Conversion from an already-canonical recipe (photo confirm screen): skips
  * canonicalize and runs procedure, schedule, review and compile. The
- * canonicalize report is empty because that stage did not run.
+ * canonicalize report is empty because that stage did not run. With
+ * onEvent, the recipe's facts and the recipe go out at once and the
+ * overview runs alongside procedure.
  */
 export async function convertRecipeToArtifact(
   recipe: CanonicalRecipe,
@@ -142,35 +349,59 @@ export async function convertRecipeToArtifact(
 ): Promise<PipelineResult> {
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
-  assertTimeFor("procedure", STAGE_MIN_MS.procedure);
-  let mark = Date.now();
-  const proc = await procedure(recipe, { provider });
-  const procedureMs = Date.now() - mark;
-  const sched = schedule(proc.timeline);
-  assertTimeFor("review", STAGE_MIN_MS.review);
-  mark = Date.now();
-  const rev = await review(
-    { recipe, timeline: proc.timeline, schedule: sched, equipmentProfile },
-    { provider },
-  );
-  const reviewMs = Date.now() - mark;
-  const artifact = compile({ recipe, timeline: proc.timeline, review: rev, equipmentProfile });
-  return {
-    artifact,
-    recipe,
-    schedule: sched,
-    canonicalize: {
-      checks: [],
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      rawResponse: "",
-    },
-    procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
-    review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
-    usageTotal: addUsage(proc.usage, rev.usage),
-    warnings: [...proc.repairs, ...reviewNoteTexts(artifact)],
-    formatWarnings: rev.warnings ?? [],
-    timings: { canonicalizeMs: 0, procedureMs, reviewMs },
+  const progress = new ConversionProgress(opts.onEvent);
+  const efforts: PipelineResult["efforts"] = {
+    procedure: effortFor("procedure", opts.efforts),
+    review: effortFor("review", opts.efforts),
   };
+  let overviewReport: OverviewReport | undefined;
+  try {
+    if (progress.active) {
+      progress.sourceFacts(() => factsFromRecipe(recipe));
+      progress.recipe(recipe);
+      efforts.overview = effortFor("overview", opts.efforts);
+      overviewReport = startOverview({ recipe }, opts, efforts.overview, progress);
+    }
+    assertTimeFor("procedure", STAGE_MIN_MS.procedure);
+    let mark = Date.now();
+    const proc = await procedure(recipe, {
+      provider,
+      client: opts.clients?.procedure,
+      reasoningEffort: efforts.procedure,
+    });
+    const procedureMs = Date.now() - mark;
+    progress.procedure(proc.timeline);
+    const sched = schedule(proc.timeline);
+    assertTimeFor("review", STAGE_MIN_MS.review);
+    mark = Date.now();
+    const rev = await review(
+      { recipe, timeline: proc.timeline, schedule: sched, equipmentProfile },
+      { provider, client: opts.clients?.review, reasoningEffort: efforts.review },
+    );
+    const reviewMs = Date.now() - mark;
+    const artifact = compile({ recipe, timeline: proc.timeline, review: rev, equipmentProfile });
+    progress.close();
+    return {
+      artifact,
+      recipe,
+      schedule: sched,
+      canonicalize: {
+        checks: [],
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        rawResponse: "",
+      },
+      procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
+      review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
+      usageTotal: withOverviewUsage(addUsage(proc.usage, rev.usage), overviewReport),
+      warnings: [...proc.repairs, ...reviewNoteTexts(artifact)],
+      formatWarnings: rev.warnings ?? [],
+      timings: { canonicalizeMs: 0, procedureMs, reviewMs },
+      efforts,
+      ...(overviewReport ? { overview: { ...overviewReport } } : {}),
+    };
+  } finally {
+    progress.close();
+  }
 }
 
 export interface Adjustments {
@@ -198,6 +429,8 @@ export interface AdjustedArtifact {
 
 export interface AdjustOptions {
   provider?: ProviderName;
+  /** Per-request reasoning efforts (the preview header); env and code defaults fill the rest. */
+  efforts?: EffortOverrides;
   /** Fake transports per stage, for offline tests. */
   clients?: {
     scaling?: StructuredChatClient;
@@ -206,8 +439,6 @@ export interface AdjustOptions {
     voice?: StructuredChatClient;
   };
 }
-
-const ZERO_USAGE: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
 /**
  * Apply adjustments to a compiled artifact in fixed order: servings, then
@@ -261,7 +492,7 @@ export async function adjustArtifact(
         })),
         steps: recipe.steps.map((s) => ({ id: s.id, text: s.text })),
       },
-      { provider: opts.provider, client: opts.clients?.scaling },
+      { provider: opts.provider, client: opts.clients?.scaling, efforts: opts.efforts },
     );
     usage.scaling = assigned.usage;
     const applied = applyScaling(current, servings, assigned.rules);
@@ -273,6 +504,7 @@ export async function adjustArtifact(
     const applied = await applyDietary(current, dietary, {
       provider: opts.provider,
       client: opts.clients?.dietary,
+      efforts: opts.efforts,
       forbiddenNames: removedNames,
     });
     usage.dietary = applied.usage;
@@ -285,6 +517,7 @@ export async function adjustArtifact(
     const applied = await applyCuisine(current, cuisine, {
       provider: opts.provider,
       client: opts.clients?.cuisine,
+      efforts: opts.efforts,
       forbiddenNames: removedNames,
       priorVariant: dietary ?? null,
     });
@@ -298,6 +531,7 @@ export async function adjustArtifact(
     const voiced = await voice(current.timelineDefinition, {
       provider: opts.provider,
       client: opts.clients?.voice,
+      efforts: opts.efforts,
     });
     usage.voice = voiced.usage;
     current = { ...current, timelineDefinition: voiced.timeline };

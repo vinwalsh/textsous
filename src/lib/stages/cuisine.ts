@@ -6,7 +6,10 @@ import {
 import type { CookAlongArtifact } from "../schema/artifact";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -74,6 +77,9 @@ export async function planCuisine(
     client?: StructuredChatClient;
     priorVariant?: string | null;
     forbiddenNames?: string[];
+    /** Wins over efforts and the env/code default (effortFor("cuisine")). */
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
   } = {},
 ): Promise<PlannedCuisine> {
   if (!target.trim()) throw new Error("cuisine target must not be empty");
@@ -91,7 +97,12 @@ export async function planCuisine(
         ),
       },
     ],
-    { provider: opts.provider, schemaName: CUISINE_SCHEMA_NAME, client: opts.client },
+    {
+      provider: opts.provider,
+      schemaName: CUISINE_SCHEMA_NAME,
+      client: opts.client,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("cuisine", opts.efforts),
+    },
   );
   return {
     transform: result.data,
@@ -122,6 +133,8 @@ export async function applyCuisine(
     client?: StructuredChatClient;
     forbiddenNames?: string[];
     priorVariant?: string | null;
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
   } = {},
 ): Promise<AppliedCuisine> {
   const recipe = artifact.recipe;

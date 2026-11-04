@@ -202,6 +202,14 @@ curl -fsS https://open.textsous.com/api/health   # status, model, limits, which 
   images-only-in-user-messages is compiler-checked.
 - `/api/convert` accepts `{recipe}` for the photo-confirm flow; it skips
   canonicalize (empty stage report) so book credit survives.
+- M8: `/api/convert` streams NDJSON progress events (facts, overview,
+  recipe, procedure, then done or error) to clients that send
+  `Accept: application/x-ndjson`; other clients, including the warm
+  script, get the same JSON as before. Every model stage
+  sends an explicit reasoning_effort (`src/lib/model/efforts.ts`; mostly
+  `low`, overview and scaling `minimal`), tunable per stage with
+  `REASONING_EFFORT_<STAGE>` in Vercel and, on previews only, per request
+  with the `x-textsous-efforts` header. Efforts do not touch the cache key.
 - All route logs go through a redacting logger (URLs + data URLs stripped
   by construction, not by discipline).
 - Friendly errors carry an optional `paste-text` action for URL-attributable

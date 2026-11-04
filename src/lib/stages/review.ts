@@ -10,7 +10,10 @@ import type { TimelineDefinition } from "../schema/timeline";
 import { ovenOnTaskIds, readyAfter, type ScheduleResult } from "../scheduler/schedule";
 import {
   callStructured,
+  effortFor,
+  type EffortOverrides,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
@@ -309,7 +312,13 @@ function buildUserPrompt(input: ReviewInput): string {
  */
 export async function review(
   input: ReviewInput,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    /** Wins over efforts and the env/code default (effortFor("review")). */
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
+  } = {},
 ): Promise<ReviewResult> {
   const coded = runCodedReviewChecks(input);
   const judged = await callStructured(
@@ -318,7 +327,12 @@ export async function review(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(input) },
     ],
-    { provider: opts.provider, schemaName: REVIEW_SCHEMA_NAME, client: opts.client },
+    {
+      provider: opts.provider,
+      schemaName: REVIEW_SCHEMA_NAME,
+      client: opts.client,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("review", opts.efforts),
+    },
   );
   const byName = new Map<string, { passed: boolean; detail: string }>();
   for (const judgment of judged.data.checks) {

@@ -6,6 +6,7 @@ import { checkRateLimit, MAX_ADJUST_ARTIFACT_CHARS, reserveDailyUnit } from "../
 import { MAX_CUISINE_CHARS } from "../../../lib/schema/variant";
 import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../../../lib/scaling/servings";
 import { logEvent } from "../../../lib/log";
+import { requestEffortOverrides } from "../../../lib/model";
 import { reviewNoteTexts } from "../../../lib/review-notes";
 import {
   clientIp,
@@ -109,7 +110,8 @@ export async function POST(req: Request) {
           cuisine: parsed.data.cuisine,
           voice: parsed.data.voice,
         },
-        { provider: "meta" },
+        // reasoning_effort overrides from x-textsous-efforts, on preview deployments only.
+        { provider: "meta", efforts: requestEffortOverrides(req.headers) },
       ),
     );
     logAdjust({

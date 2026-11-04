@@ -160,6 +160,36 @@ here with the date. Check the code before trusting any doc line about it.
   is a soft guard, not access control. Every link inside `/embed` opens in a
   new tab. embed.js sets no cookies and sends nothing until a reader taps
   the button.
+- Progressive conversion (M8, `src/lib/convert-events.ts` is the contract).
+  POST /api/convert with `Accept: application/x-ndjson` answers 200 with
+  one JSON event per line: facts -> overview -> recipe -> procedure -> done,
+  or one `error` event `{status, error}` with the status and message the
+  JSON answer would have had. Every check before live work (cross-site 403,
+  body 400s, page fetch errors, size caps, both 429s) keeps its JSON answer;
+  a cache hit streams one `done`. Facts go out before any model call when
+  the page has a schema.org Recipe, otherwise with the overview; the
+  overview is sent whenever it arrives before compile. A blank line every
+  15 s keeps the connection open (readers skip it). A reader who leaves
+  does not stop the work (after() keeps the function alive) and URL
+  results are still cached. Without the header, JSON answers are unchanged
+  and no overview call runs.
+- Overview stage (`src/lib/stages/overview.ts`, version 1): one fast call
+  (title, posted servings, ingredient count, stated total time, definite
+  EU-14 allergens, a calm summary, up to six components) alongside
+  canonicalize, or procedure on the {recipe} path. Streaming only; never
+  cached, never in the artifact; nothing waits for it and its failure never
+  fails a conversion. Its tokens count once it finished.
+- Reasoning effort per stage (`src/lib/model/efforts.ts`). Code defaults:
+  overview and scaling `minimal`; canonicalize, procedure, review, dietary,
+  cuisine, voice and transcribe `low`. `REASONING_EFFORT_<STAGE>` (e.g.
+  `REASONING_EFFORT_PROCEDURE=minimal`) overrides one stage; values other
+  than minimal, low, medium, high and xhigh are ignored. `high` is Meta's
+  default (the pre-M8 behavior). The `x-textsous-efforts` request header
+  ("procedure=minimal,review=low") is honored on convert and adjust only
+  when `VERCEL_ENV=preview`. Efforts are not part of the cache key and
+  never bump a stage version. A provider that refuses an effort gets the
+  call again without it. The convert log line records the efforts sent,
+  per-stage timings and the overview outcome, for tuning from Vercel logs.
 - The voice stage changes wording only; numeric tokens stay unchanged, in order.
 - Stages are pure, versioned functions (JSON in, JSON out).
 - Tests: vitest fixture tests per stage. Tests never call a live model; they
@@ -292,12 +322,14 @@ atomic_attention, mise_en_place, source_relationships, tips_and_voice.
 ## Layout
 Node 22, Next.js 16 App Router, TypeScript, ESM.
 - src/lib/ (pure TS, no Next imports): schema/, model/ (client, route
-  budgets), intake/, stages/, scheduler/, scaling/, skills/ (the skills API:
+  budgets, per-stage efforts), intake/, stages/ (canonicalize, overview,
+  procedure, review, compile, variants), scheduler/, scaling/, skills/ (the skills API:
   guide, input schema, normalize, validate, cook-along, source, http),
   format.ts (post-model format helpers and warnings), allergens.ts (EU-14
   floor), pipeline.ts, cache.ts, limits.ts, artifact-store.ts, handoff.ts,
   embed.ts, lane-palette.ts, review-notes.ts, variant-apply.ts,
-  variant-text.ts, gantt.ts, eval-label.ts, log.ts.
+  variant-text.ts, gantt.ts, eval-label.ts, log.ts, convert-events.ts (the
+  NDJSON progress contract, client-safe).
 - src/app/ (Next.js routes and UI): / (converter and viewer), /demo,
   /assistants, /embed (chrome-less, the only route other sites may frame),
   /embed-demo, api/convert, api/adjust, api/photo, api/artifact, api/health,

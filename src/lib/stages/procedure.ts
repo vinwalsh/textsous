@@ -4,7 +4,15 @@ import {
   TimelineDefinitionSchema,
   type TimelineDefinition,
 } from "../schema/timeline";
-import { callStructured, type ProviderName, type StructuredChatClient, type TokenUsage } from "../model";
+import {
+  callStructured,
+  effortFor,
+  type EffortOverrides,
+  type ProviderName,
+  type ReasoningEffort,
+  type StructuredChatClient,
+  type TokenUsage,
+} from "../model";
 import { polishTimeline, sourceTimingPool } from "../format";
 
 // Bumped on every prompt round deployed: preview and production share one
@@ -230,7 +238,13 @@ function buildUserPrompt(recipe: CanonicalRecipe): string {
  */
 export async function procedure(
   recipe: CanonicalRecipe,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    /** Wins over efforts and the env/code default (effortFor("procedure")). */
+    reasoningEffort?: ReasoningEffort;
+    efforts?: EffortOverrides;
+  } = {},
 ): Promise<ProcedureResult> {
   const result = await callStructured(
     TimelineDefinitionSchema,
@@ -243,6 +257,7 @@ export async function procedure(
       client: opts.client,
       schemaName: TIMELINE_SCHEMA_NAME,
       maxTokens: PROCEDURE_MAX_TOKENS,
+      reasoningEffort: opts.reasoningEffort ?? effortFor("procedure", opts.efforts),
     },
   );
   // Deterministic clean-up after the model: card titles, timing labels,

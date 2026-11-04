@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { StructuredChatClient } from "../src/lib/model/structured";
 import {
   canonicalize,
-  CANONICALIZE_REASONING_EFFORT,
   CANONICALIZE_VERSION,
   type RecordingFile,
 } from "../src/lib/stages/canonicalize";
@@ -53,7 +52,7 @@ describe("stage versions", () => {
 });
 
 describe("canonicalize output format", () => {
-  it("cleans the title after the model and sends reasoning_effort only when set", async () => {
+  it("cleans the title after the model and sends the stage's reasoning_effort (an explicit one wins)", async () => {
     const recording = JSON.parse(
       readFileSync("eval/recordings/herby-white-bean-toast.json", "utf8"),
     ) as RecordingFile;
@@ -62,14 +61,15 @@ describe("canonicalize output format", () => {
     const calls: Call[] = [];
     const result = await canonicalize(recording.input, { client: fake(JSON.stringify(response), calls) });
     expect(result.recipe.title).toBe("Herby White Bean Toast");
-    expect(calls[0].reasoning_effort).toBe(CANONICALIZE_REASONING_EFFORT);
+    expect(calls[0].reasoning_effort).toBe("low");
 
     const lowCalls: Call[] = [];
     await canonicalize(recording.input, {
       client: fake(JSON.stringify(response), lowCalls),
-      reasoningEffort: "low",
+      reasoningEffort: "high",
+      efforts: { canonicalize: "minimal" },
     });
-    expect(lowCalls[0].reasoning_effort).toBe("low");
+    expect(lowCalls[0].reasoning_effort).toBe("high");
   });
 });
 
@@ -85,7 +85,7 @@ describe("procedure output format", () => {
     const result = await procedure(recording.recipe, { client: fake(JSON.stringify(response), calls) });
     const user = JSON.parse(String(calls[0].messages[1].content));
     expect(user.ingredients[0].note).toBe("drained and rinsed");
-    expect(calls[0].reasoning_effort).toBeUndefined();
+    expect(calls[0].reasoning_effort).toBe("low");
     expect(result.timeline.tasks[0].cardTitle.context).toBe("");
     expect(result.timeline.tasks[0].why).toBe("Mashing half keeps texture.");
     expect(result.checks.filter((c) => !c.passed)).toEqual([]);
