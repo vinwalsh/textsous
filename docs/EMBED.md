@@ -5,7 +5,8 @@ it and gets a Cook Along for that recipe: mise en place first, a timeline
 with one lane per component, and a timer on every step. It opens in an
 overlay on top of your page, so the reader never leaves your site.
 
-See it working on the demo post: https://open.textsous.com/embed-demo
+See it working on the demo post: https://open.textsous.com/embed-demo, and
+on four pretend recipe blogs: https://open.textsous.com/demo-sites
 
 A second button, "Adjust with SOUS", lets the reader choose first: change
 the servings, make it dairy-free or vegan, make it more Italian, or open
