@@ -44,5 +44,8 @@ describe("daily cap call to action (C2)", () => {
     expect(html).toContain("Today&#x27;s free conversions are used up");
     expect(html).toContain(`href="/assistants?url=${encodeURIComponent(RECIPE).replace(/&/g, "&amp;")}"`);
     expect(html).toContain("Continue in your AI assistant");
+    // Opens a new tab, so it also works inside the third-party embed iframe.
+    expect(html).toMatch(/<a [^>]*target="_blank"[^>]*>Continue in your AI assistant/);
+    expect(html).toMatch(/<a [^>]*rel="noopener"[^>]*>Continue in your AI assistant/);
   });
 });
