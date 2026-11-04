@@ -63,6 +63,14 @@ export function firstPastedFile(items: readonly PastedItem[]): File | null {
   return null;
 }
 
+/**
+ * Whether the error box offers "Paste the recipe text instead": not on the
+ * Pasted text tab, where it would only clear the error and its Details. Pure.
+ */
+export function offersPasteText(tab: Tab): boolean {
+  return tab !== "text";
+}
+
 export default function ConverterForm({
   initialUrl,
   initialSrc,
@@ -355,7 +363,9 @@ export default function ConverterForm({
                 />
               </label>
             )}
-            {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
+            {error ? (
+              <ErrorBox error={error} onAction={offersPasteText(tab) ? switchToPaste : undefined} />
+            ) : null}
             <div className="btn-row">
               <button
                 type="submit"
