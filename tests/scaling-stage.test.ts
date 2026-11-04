@@ -6,6 +6,7 @@ import {
   assignScaleRules,
   MAX_SERVINGS,
   MIN_SERVINGS,
+  SCALING_VERSION,
   type ScaleRuleAssignment,
 } from "../src/lib/stages/scaling";
 
@@ -147,6 +148,37 @@ describe("assignScaleRules", () => {
     expect(seen[0].messages.map((m) => m.content as string).join("\n")).toContain("ing-1");
     expect(result.rules).toHaveLength(2);
     expect(result.usage.totalTokens).toBe(2);
+  });
+
+  it("asks for linear rules across a batter or dough, leaveners included", async () => {
+    const prompts: string[] = [];
+    const client: StructuredChatClient = {
+      chat: {
+        completions: {
+          create: async (params) => {
+            prompts.push(params.messages.map((m) => String(m.content)).join("\n"));
+            return {
+              choices: [
+                { message: { content: JSON.stringify({ rules: [{ ingredientId: "bp", rule: "linear", reason: "batter" }] }) } },
+              ],
+              usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+            };
+          },
+        },
+      },
+    };
+    await assignScaleRules(
+      {
+        title: "Muffins",
+        servings: 12,
+        ingredients: [{ id: "bp", name: "baking powder", quantity: "2", unit: "tsp" }],
+        steps: [{ id: "step-1", text: "Whisk." }],
+      },
+      { client },
+    );
+    expect(prompts[0]).toContain("every ingredient in a batter or dough is linear, leaveners and salt included");
+    expect(prompts[0]).not.toMatch(/sublinear:[^\n]*leaveners/);
+    expect(SCALING_VERSION).toBe(3);
   });
 
   it("rejects an invalid rule through validation", async () => {
