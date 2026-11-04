@@ -351,7 +351,10 @@ export default function AdjustPanel({
           <p>
             <strong>Will apply when ready:</strong> {adjustSummary(base, queued)}
           </p>
-          <p className="meta">To change them, choose again and tap “Apply when ready”.</p>
+          <p className="meta">
+            To change them, choose again and tap “Apply when ready”. Until they apply, the parts they
+            change are marked “Before your changes”.
+          </p>
         </div>
       ) : null}
       {summary ? (

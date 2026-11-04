@@ -22,6 +22,7 @@ import ArtifactViewer from "../ArtifactViewer";
 import { initialConversionState, type ConversionState } from "../conversion";
 import ErrorBox from "../ErrorBox";
 import ProgressiveView from "../ProgressiveView";
+import type { PendingChoices } from "../section-states";
 import {
   apiFetch,
   convertNotices,
@@ -52,6 +53,8 @@ export interface EmbedProgress {
   conversion: ConversionState;
   queued: AdjustChoices | null;
   onQueue: (choices: AdjustChoices | null) => void;
+  /** The address's adjustment while the recipe's servings are unknown: its sections say "Before your changes". */
+  requested?: PendingChoices | null;
 }
 
 const HANDOFF_TIMEOUT_MS = 8000;
@@ -210,6 +213,7 @@ export function EmbedStatus({
             state={progress?.conversion ?? STARTED}
             queued={progress?.queued ?? null}
             onQueue={progress?.onQueue ?? (() => {})}
+            requested={progress?.requested ?? null}
           />
         </>
       );
@@ -446,7 +450,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
           <EmbedStatus
             state={state}
             onClose={onClose}
-            progress={{ conversion: conversion.state, queued: queuedNow, onQueue }}
+            progress={{ conversion: conversion.state, queued: queuedNow, onQueue, requested: ownQueue ? null : requested }}
           />
         )}
       </main>

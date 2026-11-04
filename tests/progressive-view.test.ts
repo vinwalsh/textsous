@@ -52,6 +52,14 @@ function stateAfter(...actions: ConversionAction[]): ConversionState {
   );
 }
 
+/** One placeholder section's markup, by its section key. */
+function slot(html: string, key: string): string {
+  const at = html.indexOf(`data-section="${key}"`);
+  if (at < 0) return "";
+  const start = html.lastIndexOf("<section", at);
+  return html.slice(start, html.indexOf("</section>", at) + "</section>".length);
+}
+
 function render(state: ConversionState, queued: AdjustChoices | null = null): string {
   return renderToString(createElement(ProgressiveView, { state, queued, onQueue: () => {} })).replace(
     /<!-- -->/g,
@@ -69,26 +77,40 @@ const withRecipe = stateAfter(
 const withProcedure = reduceConversion(withRecipe, { type: "procedure", timeline: TIMELINE });
 
 describe("progressive view, part by part", () => {
-  it("shows only the cooking line before anything arrives", () => {
+  it("before anything arrives: the cooking line, the facts being written, every other section coming up", () => {
     const html = render(stateAfter());
     expect(html).toContain('class="cooking-line"');
     expect(html).toMatch(/role="status" aria-live="polite">Reading the recipe…</);
-    expect(html).not.toContain("About this recipe");
-    expect(html).not.toContain("Adjust this recipe");
+    expect(slot(html, "facts")).toMatch(/aria-busy="true"/);
+    expect(slot(html, "facts")).toContain('<span class="ts-spinner" aria-hidden="true"></span>Working on it');
+    expect(slot(html, "facts")).toContain("Finding the title, servings and allergens…");
+    expect(html.match(/>Coming up</g)).toHaveLength(7);
+    expect(slot(html, "timeline")).not.toContain("aria-busy");
+    expect(slot(html, "timeline")).not.toContain("ts-spinner");
+    // No real sections yet: no facts card, no adjust form.
+    expect(html).not.toContain('aria-label="About this recipe"');
+    expect(html).not.toContain("Apply when ready");
   });
 
   it("shows the facts card with the posted yield, counts, times, credit and allergens", () => {
     const html = render(withFacts);
     expect(html).toContain("Summarizing…");
-    expect(html).toContain('<h2 class="recipe-title">Blueberry Muffins</h2>');
+    expect(html).toContain(
+      '<h2 class="recipe-title">Blueberry Muffins<span class="section-ready"><span aria-hidden="true">✓</span> Ready</span></h2>',
+    );
     expect(html).toContain("Posted: 12 muffins · 9 ingredients · Prep 15 min · Cook 25 min · Total 40 min");
     expect(html).toContain("<strong>Example Kitchen</strong> by Sam");
     expect(html).toContain(`href="${URL}" target="_blank" rel="noreferrer">View original`);
     expect(html).toMatch(/<strong>Contains:<\/strong><ul class="chips"><li class="chip chip-allergen">gluten<\/li><li class="chip chip-allergen">egg<\/li><li class="chip chip-allergen">milk<\/li><\/ul>/);
     expect(html).toMatch(/<strong>May contain:<\/strong><ul class="chips"><li class="chip chip-allergen chip-trace">nuts<\/li>/);
     expect(html).toContain("Check labels.");
-    expect(html).not.toContain("What you&#x27;ll do");
-    expect(html).not.toContain("Adjust this recipe");
+    // The summary, ingredients and Before you start are being written now.
+    expect(slot(html, "overview")).toContain("Summarizing what you&#x27;ll cook…");
+    expect(slot(html, "ingredients")).toContain("Reading the ingredients…");
+    expect(slot(html, "before")).toContain("Listing the equipment…");
+    for (const key of ["overview", "ingredients", "before"]) expect(slot(html, key)).toContain('aria-busy="true"');
+    expect(slot(html, "adjust")).toContain("Coming up");
+    expect(html).not.toContain("Apply when ready");
   });
 
   it("never calls a recipe allergen-free: no tags means unknown", () => {
@@ -121,10 +143,14 @@ describe("progressive view, part by part", () => {
     expect(html).toContain("rolled oats");
     expect(html).toContain('aria-label="Before you start"');
     expect(html).toContain("<li>saucepan</li>");
-    // No timeline yet: no time-to-serve line, no prep or steps.
+    // No timeline yet: no time-to-serve line (Before you start is still being
+    // written), and the prep and steps are being laid out.
     expect(html).not.toContain("min hands-on");
-    expect(html).not.toContain("Prep (Mise en Place style)");
-    expect(html).not.toContain(">Steps<");
+    expect(html).toMatch(/Before you start<\/h3><p class="meta section-note"><span class="ts-spinner" aria-hidden="true"><\/span> Working out the time to serve…<\/p>/);
+    expect(slot(html, "prep")).toContain("Laying out the prep…");
+    expect(slot(html, "steps")).toContain("Laying out the steps…");
+    expect(slot(html, "timeline")).toContain("Coming up");
+    expect(html).not.toContain("<h3>Steps</h3>");
     // The posted yield from the page stays over the recipe's bare number.
     expect(html).toContain("Posted: 12 muffins");
   });
@@ -144,9 +170,13 @@ describe("progressive view, part by part", () => {
     expect(html).toContain("<h3>Prep (Mise en Place style)</h3>");
     expect(html).toContain("<h3>Steps</h3>");
     expect(html).toMatch(/min hands-on · One cook/);
-    expect(html).toContain('class="meta progressive-checking"');
+    expect(html).toContain('class="meta section-note progressive-checking"');
+    expect(html.match(/<span class="ts-spinner" aria-hidden="true"><\/span> Checking against the original…/g)).toHaveLength(2);
+    expect(html).toContain('<div class="progressive-in progressive-checked" aria-busy="true">');
     expect(html).not.toContain('class="timer"');
-    expect(html).not.toContain(">Timeline<");
+    // The timeline graphic is being built: a placeholder, not the graphic.
+    expect(slot(html, "timeline")).toContain("Fitting every step on one timeline…");
+    expect(slot(html, "timeline")).toContain('aria-busy="true"');
     expect(html).not.toContain('class="card timeline"');
     // No tips or why lines in this procedure: no "With tips" choice yet.
     expect(html).not.toContain("With tips");
@@ -180,7 +210,7 @@ describe("progressive view, part by part", () => {
 
   it("knows a confirmed photo recipe at once: facts, adjustments and ingredients", () => {
     const html = render(reduceConversion(initialConversionState, { type: "start", body: { recipe: RECIPE } }));
-    expect(html).toContain(`<h2 class="recipe-title">${RECIPE.title}</h2>`);
+    expect(html).toContain(`<h2 class="recipe-title">${RECIPE.title}<span class="section-ready">`);
     expect(html).toContain("Posted: serves 2");
     expect(html).toContain("Adjust this recipe");
     expect(html).toContain("rolled oats");

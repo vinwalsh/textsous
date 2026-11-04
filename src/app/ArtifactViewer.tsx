@@ -81,11 +81,16 @@ export function handsOnMinutes(tasks: Array<{ attention: string; minutes: number
   return tasks.filter((t) => t.attention === "hands-on").reduce((sum, t) => sum + t.minutes, 0);
 }
 
-/** A quick read of the recipe: what you'll do, and each component with how it is made. */
-export function OverviewCard({ overview }: { overview: RecipeOverview }) {
+/**
+ * A quick read of the recipe: what you'll do, and each component with how it
+ * is made. `mark` shows beside the heading (the progressive view's "Ready").
+ */
+export function OverviewCard({ overview, mark }: { overview: RecipeOverview; mark?: ReactNode }) {
   return (
     <section className="card overview" aria-label="What you'll do">
-      <h3>What you&apos;ll do</h3>
+      <h3>
+        What you&apos;ll do{mark}
+      </h3>
       <p>{overview.summary}</p>
       {overview.components.length > 0 ? (
         <>
@@ -104,10 +109,20 @@ export function OverviewCard({ overview }: { overview: RecipeOverview }) {
   );
 }
 
-export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredient[] }) {
+/** `mark` shows beside the heading, `status` under it (Ready, Before your changes). */
+export function IngredientsCard({
+  ingredients,
+  mark,
+  status,
+}: {
+  ingredients: readonly Ingredient[];
+  mark?: ReactNode;
+  status?: ReactNode;
+}) {
   return (
     <section className="card">
-      <h3>Ingredients</h3>
+      <h3>Ingredients{mark}</h3>
+      {status}
       <ul className="ingredients">
         {ingredients.map((ing) => (
           <li key={ing.id}>
@@ -132,21 +147,27 @@ export function IngredientsCard({ ingredients }: { ingredients: readonly Ingredi
 /**
  * Time to serve, hands-on minutes, the components and the equipment. Before
  * the steps are laid out (timeline null) it shows the equipment only.
+ * `mark` shows beside the heading, `status` under it.
  */
 export function BeforeYouStart({
   equipment,
   timeline,
   totalMinutes,
+  mark,
+  status,
 }: {
   equipment: readonly string[];
   timeline: TimelineDefinition | null;
   totalMinutes: number | null;
+  mark?: ReactNode;
+  status?: ReactNode;
 }) {
   const components = timeline ? timeline.lanes.filter((lane) => lane.kind === "component") : [];
   const colors = laneDisplayColors(timeline?.lanes ?? []);
   return (
     <section className="card before-start" aria-label="Before you start">
-      <h3>Before you start</h3>
+      <h3>Before you start{mark}</h3>
+      {status}
       {timeline ? (
         <p className="before-start-summary">
           {totalMinutes !== null ? `About ${totalMinutes} min to serve · ` : ""}
@@ -270,18 +291,20 @@ export function hasTaskNotes(tasks: ReadonlyArray<{ tip?: string | null; why?: s
 
 /**
  * "Prep (Mise en Place style)": every prep task before the first cook step.
- * With `onToggle` each card has a checkbox.
+ * With `onToggle` each card has a checkbox. `status` shows under the heading.
  */
 export function PrepSection({
   timeline,
   tipsMode,
   done,
   onToggle,
+  status,
 }: {
   timeline: TimelineDefinition;
   tipsMode: TipsMode;
   done?: ReadonlySet<string>;
   onToggle?: (id: string) => void;
+  status?: ReactNode;
 }) {
   const prepTasks = timeline.tasks.filter((t) => t.phase === "prep");
   // Lanes are colored by position, not by the color the artifact stored.
@@ -289,6 +312,7 @@ export function PrepSection({
   return (
     <>
       <h3>Prep (Mise en Place style)</h3>
+      {status}
       {prepTasks.length > 0 ? (
         <>
           <PhaseBand phase="prep" count={prepTasks.length} noun="task" />

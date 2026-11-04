@@ -1101,6 +1101,166 @@ details summary {
   margin: -4px 0 12px;
 }
 
+/* Section states while the cook along is written (section-states.ts): every
+   section has its place from the start. One that has not filled in yet is a
+   compact card: its heading, its phase and one muted line. */
+.section-slot {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.section-slot-coming {
+  background: transparent;
+  border-style: dashed;
+}
+
+.section-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.section-slot-title {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.section-slot-note {
+  margin: 4px 0 0;
+}
+
+.section-slot .pre-adjust {
+  margin-bottom: 0;
+}
+
+/* Coming up (no spinner), Working on it and Checking (a spinner). */
+.section-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: var(--ts-pill);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.section-phase-coming {
+  background: var(--ts-secondary);
+  color: var(--ts-ink);
+}
+
+.section-phase-working,
+.section-phase-checking {
+  background: var(--ts-accent-soft);
+  color: var(--ts-action);
+}
+
+/* The section spinner: small and round, beside a heading or a note, so it
+   reads apart from the cooking line on top. */
+.ts-spinner {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ts-border);
+  border-top-color: var(--ts-accent);
+  border-radius: 50%;
+  animation: ts-spin 0.8s linear infinite;
+}
+
+/* The adjustment spinner looks different: two dark arcs in the notice
+   colors, turning slower. */
+.ts-spinner-adjust {
+  width: 14px;
+  height: 14px;
+  border-color: var(--ts-warn-line);
+  border-top-color: var(--ts-warn-ink);
+  border-bottom-color: var(--ts-warn-ink);
+  animation-duration: 1.6s;
+}
+
+@keyframes ts-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A spinner and one muted line under a heading ("Checking against the
+   original…"). */
+.section-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+/* "✓ Ready" beside a heading that just filled in; it fades after a moment. */
+.section-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  padding: 1px 8px;
+  border-radius: var(--ts-pill);
+  background: var(--ts-secondary);
+  color: var(--ts-ink);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: 0;
+  vertical-align: middle;
+  animation: ts-ready-fade 3s ease-in forwards;
+}
+
+@keyframes ts-ready-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* "Before your changes" on the sections a queued adjustment will change,
+   and while it applies, the adjustment spinner and what it does. */
+.pre-adjust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 6px 0 10px;
+}
+
+.pre-adjust-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border: 1px dashed var(--ts-warn-ink);
+  border-radius: var(--ts-pill);
+  background: var(--ts-warn-bg);
+  color: var(--ts-warn-ink);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.adjusting-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ts-warn-ink);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cooking-line-icon,
   .cooking-line-runner,
@@ -1115,6 +1275,12 @@ details summary {
   .cooking-line-runner {
     width: 100%;
     opacity: 0.35;
+  }
+
+  /* Spinners stand still (a ring with one dark arc); Ready stays put. */
+  .ts-spinner,
+  .section-ready {
+    animation: none;
   }
 }
 
