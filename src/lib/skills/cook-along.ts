@@ -1,6 +1,8 @@
 import { DEFAULT_EQUIPMENT_PROFILE } from "../pipeline";
 import type { CookAlongArtifact, EquipmentProfile } from "../schema/artifact";
 import { schedule, type ScheduleResult } from "../scheduler/schedule";
+import { runFormatWarnings } from "../format";
+import type { TimelineDefinition } from "../schema/timeline";
 import { compile } from "../stages/compile";
 import { runProcedureChecks } from "../stages/procedure";
 import {
@@ -69,11 +71,21 @@ export function assistantAuthoredReview(input: ReviewInput): ReviewResult {
     checks,
     passed: blockers.length === 0,
     blockers,
+    warnings: runFormatWarnings(input.recipe, input.timeline, input.schedule),
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     fallbackUsed: false,
     attempts: 0,
     rawResponse: "",
   };
+}
+
+/** The converter's non-blocking format warnings, pointed at the task to improve. */
+function formatAdvice(review: ReviewResult, timeline: TimelineDefinition): SkillsWarning[] {
+  const index = new Map(timeline.tasks.map((task, i) => [task.id, i] as const));
+  return (review.warnings ?? []).map((w) => {
+    const i = w.taskId === undefined ? undefined : index.get(w.taskId);
+    return { code: w.code, message: w.message, ...(i === undefined ? {} : { path: `timeline.tasks[${i}]` }) };
+  });
 }
 
 /** Summary minutes come from the code schedule, never from the assistant. */
@@ -228,5 +240,6 @@ export async function prepareCookAlong(raw: unknown, opts: PrepareOptions = {}):
   // compile() also applies the deterministic allergen floor once the core
   // stream's src/lib/allergens.ts lands inside it: no second inferrer here.
   const artifact = compile({ recipe, timeline, review, equipmentProfile });
+  warnings.push(...formatAdvice(review, timeline));
   return { ok: true, artifact, schedule: sched, review, summary: summarize(artifact, sched), warnings };
 }

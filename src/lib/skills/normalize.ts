@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { firstSentence } from "../format";
 import { fingerprintSource } from "../intake/fingerprint";
 import { EU14_ALLERGENS, type CanonicalRecipe } from "../schema/canonical";
 import type { Lane, TimelineDefinition, TimelineTask } from "../schema/timeline";
@@ -23,6 +24,9 @@ export interface NormalizedCookAlong {
   timeline: TimelineDefinition;
   warnings: SkillsWarning[];
 }
+
+/** Time the oven takes to heat after the preheat task (10 minutes). */
+export const OVEN_HEAT_SECONDS = 600;
 
 const COMPONENT_COLORS = ["#E8B44A", "#C96A2B", "#7FB069", "#6A9FD4", "#B07CC6", "#D4776A", "#5FB3A8"];
 const KITCHEN_COLOR = "#9AA0A6";
@@ -280,6 +284,7 @@ export function normalize(body: CookAlongRequest, source: ResolvedSource): Norma
       sourceStepIds: task.sourceStepIds.map((id) => id.trim()),
       checkpoints: (task.checkpoints ?? []).map((c) => c.trim()).filter(Boolean),
       tip: clean(task.tip),
+      why: firstSentence(clean(task.why)),
       equipmentEvent: task.equipmentEvent ?? null,
       scheduling: {
         waits: [],
@@ -288,6 +293,15 @@ export function normalize(body: CookAlongRequest, source: ResolvedSource): Norma
       },
     };
   });
+
+  // The oven heats while the cook preps: as in the converter's procedure rule,
+  // the first non-prep task after the preheat waits OVEN_HEAT_SECONDS. Prep
+  // chained after the preheat only for order never waits.
+  const preheatIds = new Set(tasks.filter((task) => task.equipmentEvent === "oven-on").map((task) => task.id));
+  const firstOvenTask = tasks.find(
+    (task) => task.phase !== "prep" && task.dependencies.some((id) => preheatIds.has(id)),
+  );
+  if (firstOvenTask) firstOvenTask.scheduling.waits = [OVEN_HEAT_SECONDS];
 
   const lastFinish = [...tasks].reverse().find((task) => task.phase === "finish");
   const serveTaskId = clean(t.serveTaskId) ?? lastFinish?.id ?? tasks[tasks.length - 1]?.id ?? "";

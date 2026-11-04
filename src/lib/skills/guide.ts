@@ -89,6 +89,12 @@ measuring and setup that can happen before the heat goes on. Every prep task
 finishes before the first cook task starts, and a prep task may depend only on
 other prep tasks.
 
+**Oven first.** When the recipe uses the oven, the first prep task preheats
+it: hands-on, 1 minute, kitchen lane, \`equipmentEvent\` "oven-on", the
+temperature in the description ("Heat the oven to 400°F."). The first task
+that puts food in the oven depends on it; TextSous adds the 10-minute heat-up
+there, so do not add a waiting task. The last oven task carries "oven-off".
+
 **One prep task per prep action named in the ingredient notes.** "1 onion,
 diced" gets a "Dice onion" prep task; "2 garlic cloves, minced" gets a "Mince
 garlic" prep task. Cite that ingredient in the prep task's \`ingredientIds\`
@@ -104,6 +110,12 @@ the oats and add 1 pinch fine sea salt." \`label\` and \`cardTitle\` (\`action\`
 per batch"), make one grouped task: keep the round count and the per-round
 time in the description, set \`minutes\` to the total (3 x 4 = 12), and add a
 checkpoint per round.
+
+**Prepared inputs.** When an ingredient is a prepared food the recipe
+assumes (cooked pasta, cooked rice, mashed potatoes, a stock made earlier),
+add one cook task in that component's lane to have it ready by serving time,
+\`timingBasis\` "estimate", citing that ingredient and the step that uses it.
+Describe it in one sentence; never invent a sub-recipe or amounts.
 
 **Hands-on setup is split from unattended cooking.** "Add the stock, bring
 to a boil, then simmer 20 minutes" becomes a hands-on task ("Add stock and
@@ -132,7 +144,10 @@ and \`minutes\` inside it. Timers default on only for source timings.
 
 **Cues.** \`completionCue\` is an observable sign the task is done (color,
 texture, smell, sound, temperature). A hands-on task over 15 minutes needs
-\`checkpoints\` (observable sub-cues) or should be split. \`tip\` is optional.
+\`checkpoints\` (observable sub-cues) or should be split. \`tip\` is optional:
+at most one short tip, only from the source's own advice. \`why\` is optional:
+one sentence on why the task matters or is done this way (no health or
+nutrition claims).
 \`equipmentEvent\` is "oven-on" on the preheat task and "oven-off" once the oven
 is no longer needed.
 

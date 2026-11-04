@@ -481,3 +481,119 @@ describe("auth, size and rate limits", () => {
     expect(other.status).toBe(422);
   });
 });
+
+describe("oven heat-up, why and format advice", () => {
+  const ovenBody = () => ({
+    source: {
+      kind: "text",
+      text: "Roasted Carrots\n1 pound carrots, sliced\n1 tablespoon olive oil\nHeat the oven to 425°F.\nToss the carrots with the oil.\nRoast for 20 minutes.",
+    },
+    recipe: {
+      title: "Roasted Carrots",
+      servings: 2,
+      ingredients: [
+        { name: "carrots", quantity: "1", unit: "pound", note: "sliced" },
+        { name: "olive oil", quantity: "1", unit: "tablespoon" },
+      ],
+      steps: [
+        { text: "Heat the oven to 425°F." },
+        { text: "Toss the carrots with the oil." },
+        { text: "Roast for 20 minutes." },
+      ],
+    },
+    timeline: {
+      lanes: [
+        { id: "lane-veg", label: "Carrots" },
+        { id: "lane-kitchen", label: "Kitchen" },
+      ],
+      tasks: [
+        {
+          phase: "prep",
+          label: "Preheat oven",
+          description: "Heat the oven to 425°F.",
+          completionCue: "The oven is on.",
+          minutes: 1,
+          timingBasis: "estimate",
+          attention: "hands-on",
+          laneIds: ["lane-kitchen"],
+          sourceStepIds: ["step-1"],
+          equipmentEvent: "oven-on",
+        },
+        {
+          phase: "prep",
+          label: "Slice carrots",
+          description: "Slice 1 pound carrots into coins.",
+          completionCue: "Even coins.",
+          minutes: 4,
+          timingBasis: "estimate",
+          attention: "hands-on",
+          laneIds: ["lane-veg"],
+          dependencies: ["task-preheat-oven"],
+          sourceStepIds: ["step-2"],
+          ingredientIds: ["ing-1"],
+        },
+        {
+          phase: "cook",
+          label: "Toss carrots",
+          description: "Toss the carrots with the oil.",
+          completionCue: "Glossy all over.",
+          minutes: 1,
+          timingBasis: "estimate",
+          attention: "hands-on",
+          laneIds: ["lane-veg"],
+          dependencies: ["task-slice-carrots"],
+          sourceStepIds: ["step-2"],
+          ingredientIds: ["ing-1", "ing-2"],
+        },
+        {
+          phase: "cook",
+          label: "Roast carrots",
+          description: "Roast the carrots for 20 minutes.",
+          completionCue: "Browned at the edges.",
+          minutes: 20,
+          timingBasis: "source",
+          sourceQuote: "for 20 minutes",
+          attention: "unattended",
+          laneIds: ["lane-veg"],
+          dependencies: ["task-preheat-oven", "task-toss-carrots"],
+          sourceStepIds: ["step-3"],
+          why: "High heat browns the edges. It also concentrates the sweetness.",
+          equipmentEvent: "oven-off",
+        },
+        {
+          phase: "finish",
+          label: "Serve carrots",
+          description: "Serve the carrots.",
+          completionCue: "On the plate.",
+          minutes: 1,
+          timingBasis: "estimate",
+          attention: "hands-on",
+          laneIds: ["lane-kitchen"],
+          dependencies: ["task-roast-carrots"],
+          sourceStepIds: ["step-3"],
+        },
+      ],
+    },
+  });
+
+  it("waits 10 minutes for the oven on the first oven task only, never on prep", async () => {
+    const result = await prepareCookAlong(ovenBody());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const waits = Object.fromEntries(result.artifact.timelineDefinition.tasks.map((t) => [t.id, t.scheduling.waits]));
+    expect(waits["task-slice-carrots"]).toEqual([]);
+    expect(waits["task-roast-carrots"]).toEqual([600]);
+    const placed = new Map(result.schedule.tasks.map((t) => [t.id, t] as const));
+    expect(placed.get("task-roast-carrots")!.startMinutes).toBeGreaterThanOrEqual(placed.get("task-preheat-oven")!.endMinutes + 10);
+  });
+
+  it("keeps one sentence of why and returns format advice pointed at the task", async () => {
+    const result = await prepareCookAlong(ovenBody());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const roast = result.artifact.timelineDefinition.tasks.find((t) => t.id === "task-roast-carrots");
+    expect(roast?.why).toBe("High heat browns the edges.");
+    expect(result.warnings.map((w) => w.code)).not.toContain("unknown_field");
+    expect(result.warnings).toContainEqual(expect.objectContaining({ code: "amount_missing", path: "timeline.tasks[2]" }));
+  });
+});

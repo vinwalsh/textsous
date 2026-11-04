@@ -116,7 +116,10 @@ export const SkillsTaskSchema = z.object({
     .array(z.string())
     .nullish()
     .describe("Observable sub-cues. Required for hands-on tasks over 15 minutes."),
-  tip: optionalText("Optional short tip."),
+  tip: optionalText("Optional: at most one short tip, only from the source's own advice."),
+  why: optionalText(
+    "Optional: one sentence on why this task matters or is done this way. No health or nutrition claims.",
+  ),
   equipmentEvent: z
     .enum(["oven-on", "oven-off"])
     .nullish()
