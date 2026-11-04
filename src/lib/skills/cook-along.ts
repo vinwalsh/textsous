@@ -1,3 +1,4 @@
+import { rollUpTraces } from "../allergens";
 import { DEFAULT_EQUIPMENT_PROFILE } from "../pipeline";
 import type { CookAlongArtifact, EquipmentProfile } from "../schema/artifact";
 import { schedule, type ScheduleResult } from "../scheduler/schedule";
@@ -25,7 +26,10 @@ export interface CookAlongSummary {
   totalMinutes: number;
   handsOnMinutes: number;
   taskCount: number;
+  /** Definite allergens (EU-14), after the allergen floor. */
   allergens: string[];
+  /** "May contain" allergens not already in allergens, as the viewer shows them. */
+  traces: string[];
 }
 
 export type PrepareResult =
@@ -104,6 +108,7 @@ export function summarize(artifact: CookAlongArtifact, sched: ScheduleResult): C
     handsOnMinutes: handsOn,
     taskCount: artifact.timelineDefinition.tasks.length,
     allergens: artifact.recipe.allergens,
+    traces: rollUpTraces(artifact.recipe.ingredients),
   };
 }
 

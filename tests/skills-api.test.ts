@@ -7,7 +7,7 @@ import { POST as cookAlongPOST } from "../src/app/api/skills/cook-along/route";
 import { POST as sourcePOST } from "../src/app/api/skills/source/route";
 import { GET as artifactGET } from "../src/app/api/artifact/[id]/route";
 import { CookAlongArtifactSchema } from "../src/lib/schema/artifact";
-import { COOK_ALONG_EXAMPLE, CookAlongRequestSchema, prepareCookAlong } from "../src/lib/skills";
+import { COOK_ALONG_EXAMPLE, CookAlongRequestSchema, prepareCookAlong, SKILLS_INSTRUCTIONS } from "../src/lib/skills";
 import { resetSkillsRateLimits } from "../src/lib/skills/http";
 import { normalize } from "../src/lib/skills/normalize";
 import type { ProcedureRecordingFile } from "../src/lib/stages/procedure";
@@ -126,6 +126,7 @@ describe("the format example", () => {
       handsOnMinutes: 15,
       taskCount: 7,
       allergens: ["gluten", "milk"],
+      traces: [],
     });
     expect(body.warnings).toEqual([]);
 
@@ -479,6 +480,21 @@ describe("auth, size and rate limits", () => {
     for (let i = 0; i < 660; i += 1) await sourcePOST(post("/api/skills/source", { nope: true }, headers));
     const other = await sourcePOST(post("/api/skills/source", { nope: true }, { "x-textsous-account": "acct-hash-quiet" }));
     expect(other.status).toBe(422);
+  });
+});
+
+describe("allergens in the summary", () => {
+  it("reports traces the allergen floor adds, as the viewer does", async () => {
+    // The guide allows empty allergen lists ("When unsure, leave the list
+    // empty"): the floor then marks rolled oats as a gluten trace.
+    const body = structuredClone(COOK_ALONG_EXAMPLE);
+    for (const ingredient of body.recipe.ingredients) ingredient.allergens = [];
+    const result = await prepareCookAlong(body);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.summary.allergens).toEqual(["milk"]);
+    expect(result.summary.traces).toEqual(["gluten"]);
+    expect(SKILLS_INSTRUCTIONS).toContain("May contain");
   });
 });
 

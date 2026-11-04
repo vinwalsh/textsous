@@ -133,7 +133,7 @@ What the server does, in order:
   "artifactUrl": "https://open.textsous.com/api/artifact/0b6c5d0e-1c4f-4a43-9c55-0d0c3c1f1a7e?sig=<64 hex>",
   "viewUrl": "https://open.textsous.com/?src=<encodeURIComponent(artifactUrl)>",
   "expiresAt": "2026-11-05T21:00:00.000Z",
-  "summary": { "title": "...", "servings": 2, "totalMinutes": 15, "handsOnMinutes": 15, "taskCount": 7, "allergens": ["gluten", "milk"] },
+  "summary": { "title": "...", "servings": 2, "totalMinutes": 15, "handsOnMinutes": 15, "taskCount": 7, "allergens": ["gluten", "milk"], "traces": [] },
   "warnings": [{ "code": "amount_missing", "path": "recipe.ingredients[2]", "message": "..." }]
 }
 ```
@@ -141,7 +141,10 @@ What the server does, in order:
 `artifactUrl` always has the shape textsous.com's importer accepts:
 `<origin>/api/artifact/<lowercase uuid>?sig=<64 lowercase hex>`, nothing
 else in the query. `totalMinutes` and `handsOnMinutes` come from the code
-schedule, never from the assistant.
+schedule, never from the assistant. `allergens` lists what the recipe
+definitely contains and `traces` what it may contain (both EU-14 slugs, after
+the deterministic allergen floor, the same lists the viewer shows as
+"Contains" and "May contain").
 
 422:
 

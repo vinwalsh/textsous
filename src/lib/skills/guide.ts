@@ -189,5 +189,6 @@ A successful save returns \`viewUrl\` (open this to cook along; the link works
 for 24 hours, the Cookbook copy stays) and a \`summary\` with the total and
 hands-on minutes from the TextSous schedule. Tell the person the title,
 servings, total and hands-on time, and the allergens as "Contains: milk,
-gluten. Check labels." Never say a recipe is "safe for" anyone.
+gluten. Check labels.", adding "May contain: celery." when \`summary.traces\`
+lists any. Never say a recipe is "safe for" anyone.
 `;
