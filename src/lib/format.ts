@@ -235,11 +235,15 @@ export interface PolishResult {
  * - `why` is one sentence, `tip` stays one tip (empty strings become null);
  * - a "source" timing whose quote is not verbatim in the source becomes an
  *   estimate (never the other way round); estimates carry no quote;
+ * - an estimate whose description repeats the source's own time phrase for
+ *   it (cited step, matching minutes) is labeled "source" with that quote;
+ * - capitalized free-text quantities are lowered mid-sentence;
  * - timers default on only for exact source timings.
  * Ids, dependencies, lanes and minutes are never touched.
  */
 export function polishTimeline(recipe: CanonicalRecipe, timeline: TimelineDefinition): PolishResult {
   const pool = sourceTimingPool(recipe);
+  const stepText = new Map(recipe.steps.map((step) => [step.id, step.text] as const));
   const repairs: string[] = [];
   const tasks = timeline.tasks.map((task): TimelineTask => {
     const next: TimelineTask = { ...task, cardTitle: cleanCardTitle(task.cardTitle) };
@@ -259,10 +263,69 @@ export function polishTimeline(recipe: CanonicalRecipe, timeline: TimelineDefini
     } else if (task.sourceQuote) {
       next.sourceQuote = null;
     }
+    if (next.timingBasis === "estimate") {
+      const found = sourceTimingInDescription(next, stepText);
+      if (found) {
+        next.timingBasis = "source";
+        next.sourceQuote = found.quote;
+        if (found.range && !next.range) next.range = found.range;
+      }
+    }
+    next.description = lowerMidSentenceQuantities(next.description, recipe);
     next.timerEnabledByDefault = next.timingBasis === "source";
     return next;
   });
   return { timeline: { ...timeline, tasks }, repairs };
+}
+
+const NUM = "(\\d+(?:[.,]\\d+)?)";
+const TIME_PHRASE_RE = new RegExp(
+  `\\b(?:(?:about|for|around|approximately|another)\\s+)?${NUM}(?:\\s*(?:-|–|to)\\s*${NUM})?\\s*(?:more\\s+)?(?:minutes?|mins?)\\b`,
+  "gi",
+);
+const PER_ROUND_AFTER_RE = /^\s*(?:per|each|a|on each)\s+(?:side|batch|round)/i;
+
+/**
+ * A task labeled "estimate" whose description repeats exactly one time
+ * phrase that appears word for word in one of its cited steps, and whose
+ * minutes match it, is timed by the source: label it so, with that quote.
+ * Per-side and per-batch times are never promoted (batches are estimates).
+ */
+export function sourceTimingInDescription(
+  task: Pick<TimelineTask, "description" | "minutes" | "sourceStepIds">,
+  stepText: Map<string, string>,
+): { quote: string; range?: { low: number; high: number } } | null {
+  const matches = [...task.description.matchAll(TIME_PHRASE_RE)];
+  if (matches.length !== 1) return null;
+  const m = matches[0];
+  const after = task.description.slice((m.index ?? 0) + m[0].length);
+  if (PER_ROUND_AFTER_RE.test(after)) return null;
+  const quote = m[0];
+  const cited = task.sourceStepIds.map((id) => stepText.get(id) ?? "");
+  const inStep = cited.find((text) => text.includes(quote));
+  if (inStep === undefined) return null;
+  const afterInStep = inStep.slice(inStep.indexOf(quote) + quote.length);
+  if (PER_ROUND_AFTER_RE.test(afterInStep)) return null;
+  const low = Number(m[1].replace(",", "."));
+  const high = m[2] !== undefined ? Number(m[2].replace(",", ".")) : undefined;
+  if (high === undefined) return task.minutes === low ? { quote } : null;
+  if (task.minutes < low || task.minutes > high) return null;
+  return { quote, range: { low: Math.ceil(low), high: Math.floor(high) } };
+}
+
+/**
+ * Quantities printed with a capital ("Half a", "Handful", "Many grinds")
+ * read wrong mid-sentence: lower the first letter there.
+ */
+export function lowerMidSentenceQuantities(text: string, recipe: CanonicalRecipe): string {
+  let out = text;
+  for (const ing of recipe.ingredients) {
+    const q = ing.quantity.trim();
+    if (!/^[A-Z][a-z]/.test(q)) continue;
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(`([a-z,;:]\\s+)${escaped}\\b`, "g"), (_m, pre: string) => `${pre}${q[0].toLowerCase()}${q.slice(1)}`);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------

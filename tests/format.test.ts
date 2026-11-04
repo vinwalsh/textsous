@@ -5,8 +5,10 @@ import {
   cleanTitle,
   firstSentence,
   normalizeFractions,
+  lowerMidSentenceQuantities,
   polishTimeline,
   prepNoteOf,
+  sourceTimingInDescription,
   runFormatWarnings,
   stripAmountsTimesTemps,
 } from "../src/lib/format";
@@ -318,5 +320,53 @@ describe("runFormatWarnings", () => {
       expect(warnings.some((w) => w.code === "amount_missing")).toBe(true);
       for (const w of warnings) expect(w.message).not.toMatch(/\b(task|ing|step)-\d/);
     }
+  });
+});
+
+describe("sourceTimingInDescription", () => {
+  const steps = new Map([
+    ["s1", "Cook until soft, about 5 minutes. Add the garlic for 1 more minute."],
+    ["s2", "Brown the beef, 1 to 2 minutes per side."],
+    ["s3", "Bake 3-5 minutes until done."],
+  ]);
+  it("labels a repeated source time phrase as the source timing", () => {
+    expect(
+      sourceTimingInDescription({ description: "Cook the onion until soft, about 5 minutes.", minutes: 5, sourceStepIds: ["s1"] }, steps),
+    ).toEqual({ quote: "about 5 minutes" });
+    expect(
+      sourceTimingInDescription({ description: "Bake 3-5 minutes until done.", minutes: 4, sourceStepIds: ["s3"] }, steps),
+    ).toEqual({ quote: "3-5 minutes", range: { low: 3, high: 5 } });
+  });
+  it("never promotes per-side times, mismatched minutes or uncited steps", () => {
+    expect(
+      sourceTimingInDescription({ description: "Sear in 3 batches, 1 to 2 minutes per side.", minutes: 9, sourceStepIds: ["s2"] }, steps),
+    ).toBeNull();
+    expect(
+      sourceTimingInDescription({ description: "Cook until soft, about 5 minutes.", minutes: 6, sourceStepIds: ["s1"] }, steps),
+    ).toBeNull();
+    expect(
+      sourceTimingInDescription({ description: "Bake 3-5 minutes.", minutes: 4, sourceStepIds: ["s1"] }, steps),
+    ).toBeNull();
+    expect(
+      sourceTimingInDescription({ description: "Cook 5 minutes, then 1 more minute.", minutes: 5, sourceStepIds: ["s1"] }, steps),
+    ).toBeNull();
+  });
+  it("is applied by polishTimeline", () => {
+    const tl = goodTimeline();
+    tl.tasks[3] = { ...tl.tasks[3], timingBasis: "estimate", sourceQuote: null, description: "Add 2 cloves garlic and the remaining 1/2 teaspoon salt and cook for 1 minute." };
+    const out = polishTimeline(recipe(), tl).timeline.tasks[3];
+    expect(out.timingBasis).toBe("source");
+    expect(out.sourceQuote).toBe("for 1 minute");
+    expect(out.timerEnabledByDefault).toBe(true);
+  });
+});
+
+describe("lowerMidSentenceQuantities", () => {
+  it("lowers capitalized free-text quantities mid-sentence only", () => {
+    const r = recipe();
+    r.ingredients[0] = { ...r.ingredients[0], quantity: "Half a" };
+    expect(lowerMidSentenceQuantities("Thinly slice Half a red onion. Half a lime too.", r)).toBe(
+      "Thinly slice half a red onion. Half a lime too.",
+    );
   });
 });
