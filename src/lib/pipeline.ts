@@ -23,6 +23,7 @@ import { applyDietary } from "./stages/dietary";
 import { applyCuisine } from "./stages/cuisine";
 import { voice } from "./stages/voice";
 import { nativeServingsOf } from "./scaling/native";
+import type { FormatWarning } from "./format";
 
 /** Kitchen capacity assumed when the caller provides none. */
 export const DEFAULT_EQUIPMENT_PROFILE: EquipmentProfile = { burners: 4, oven: true };
@@ -49,6 +50,16 @@ export interface PipelineResult {
   usageTotal: TokenUsage;
   /** Readable notes for the cook (e.g. source text cut to the input window). */
   warnings: string[];
+  /** Coded, non-blocking format warnings (prep coverage, amounts in descriptions). */
+  formatWarnings: FormatWarning[];
+  /** Wall-clock milliseconds per model stage (0 when a stage did not run). */
+  timings: StageTimings;
+}
+
+export interface StageTimings {
+  canonicalizeMs: number;
+  procedureMs: number;
+  reviewMs: number;
 }
 
 function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
@@ -71,11 +82,16 @@ export async function convertToArtifact(
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
   assertTimeFor("canonicalize", STAGE_MIN_MS.canonicalize);
+  let mark = Date.now();
   const canon = await canonicalize(input, { provider });
+  const canonicalizeMs = Date.now() - mark;
   assertTimeFor("procedure", STAGE_MIN_MS.procedure);
+  mark = Date.now();
   const proc = await procedure(canon.recipe, { provider });
+  const procedureMs = Date.now() - mark;
   const sched = schedule(proc.timeline);
   assertTimeFor("review", STAGE_MIN_MS.review);
+  mark = Date.now();
   const rev = await review(
     {
       recipe: canon.recipe,
@@ -85,6 +101,7 @@ export async function convertToArtifact(
     },
     { provider },
   );
+  const reviewMs = Date.now() - mark;
   const artifact = compile({
     recipe: canon.recipe,
     timeline: proc.timeline,
@@ -103,7 +120,9 @@ export async function convertToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(addUsage(canon.usage, proc.usage), rev.usage),
-    warnings: canon.warnings,
+    warnings: [...canon.warnings, ...proc.repairs],
+    formatWarnings: rev.warnings ?? [],
+    timings: { canonicalizeMs, procedureMs, reviewMs },
   };
 }
 
@@ -119,13 +138,17 @@ export async function convertRecipeToArtifact(
   const provider = opts.provider;
   const equipmentProfile = opts.equipmentProfile ?? DEFAULT_EQUIPMENT_PROFILE;
   assertTimeFor("procedure", STAGE_MIN_MS.procedure);
+  let mark = Date.now();
   const proc = await procedure(recipe, { provider });
+  const procedureMs = Date.now() - mark;
   const sched = schedule(proc.timeline);
   assertTimeFor("review", STAGE_MIN_MS.review);
+  mark = Date.now();
   const rev = await review(
     { recipe, timeline: proc.timeline, schedule: sched, equipmentProfile },
     { provider },
   );
+  const reviewMs = Date.now() - mark;
   const artifact = compile({ recipe, timeline: proc.timeline, review: rev, equipmentProfile });
   return {
     artifact,
@@ -139,7 +162,9 @@ export async function convertRecipeToArtifact(
     procedure: { checks: proc.checks, usage: proc.usage, rawResponse: proc.rawResponse },
     review: { checks: rev.checks, usage: rev.usage, rawResponse: rev.rawResponse },
     usageTotal: addUsage(proc.usage, rev.usage),
-    warnings: [],
+    warnings: proc.repairs,
+    formatWarnings: rev.warnings ?? [],
+    timings: { canonicalizeMs: 0, procedureMs, reviewMs },
   };
 }
 

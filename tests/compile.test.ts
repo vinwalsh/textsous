@@ -152,16 +152,22 @@ describe("compile", () => {
         sourceStepIds: ["step-1"],
       }),
     ]);
-    const artifact = compile(makeInput(makeRecipe(), timeline));
+    const recipe = makeRecipe();
+    recipe.steps = [
+      { id: "step-1", kind: "active", text: "Simmer the soup." },
+      { id: "step-2", kind: "active", text: "Serve." },
+    ];
+    const artifact = compile(makeInput(recipe, timeline));
     expect(artifact.changes).toContainEqual({
       kind: "merged-steps",
-      detail: "a merges step-1, step-2",
+      detail: "a combines steps 1 and 2 of the recipe.",
     });
     expect(artifact.changes).toContainEqual({
       kind: "estimate",
-      detail: "a timing is estimated",
+      detail: "Timing for a is an estimate; the recipe does not give one.",
     });
-    expect(artifact.changes.some((c) => c.detail.startsWith("b "))).toBe(false);
+    expect(artifact.changes.some((c) => c.detail.includes(" b "))).toBe(false);
+    expect(artifact.changes.some((c) => /step-\d|task-/.test(c.detail))).toBe(false);
   });
 
   it("refuses to compile when review failed, with the readable reasons", () => {

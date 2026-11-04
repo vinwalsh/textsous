@@ -213,6 +213,12 @@ program
         for (const c of [...canonFailed, ...procFailed, ...reviewFailed]) {
           console.log(`  FAIL ${c.name}: ${c.detail}`);
         }
+        for (const w of result.formatWarnings) console.log(`  WARN ${w.code}: ${w.message}`);
+        for (const note of result.warnings) console.log(`  NOTE ${note}`);
+        console.log(
+          `Stage time: canonicalize=${result.timings.canonicalizeMs}ms ` +
+            `procedure=${result.timings.procedureMs}ms review=${result.timings.reviewMs}ms`,
+        );
         console.log(
           `Tokens per call: canonicalize=${result.canonicalize.usage.totalTokens} ` +
             `procedure=${result.procedure.usage.totalTokens} review=${result.review.usage.totalTokens} ` +

@@ -10,8 +10,9 @@ import {
   type TokenUsage,
 } from "../model";
 import { runProcedureChecks } from "./procedure";
+import { runFormatWarnings, type FormatWarning } from "../format";
 
-export const REVIEW_VERSION = 1;
+export const REVIEW_VERSION = 2;
 
 /** All 12 review checks in canonical order. */
 export const REVIEW_CHECK_ORDER = [
@@ -73,6 +74,8 @@ export interface ReviewResult {
   passed: boolean;
   /** One readable reason per failed check; non-empty blocks compile. */
   blockers: string[];
+  /** Coded format warnings (prep coverage, amounts in descriptions). Never block. */
+  warnings?: FormatWarning[];
   usage: TokenUsage;
   fallbackUsed: boolean;
   attempts: number;
@@ -232,13 +235,13 @@ export function runCodedReviewChecks(input: ReviewInput): ReviewCheck[] {
 }
 
 const SYSTEM_PROMPT = `You review a cooking timeline against its canonical recipe. Judge each of these checks pass or fail with one sentence each:
-- source_fidelity: every task traces to its cited canonical steps; no invented ingredients, quantities, timings or equipment.
-- quantities: amounts are carried exactly as printed; servings math is untouched (scaling is a later stage).
+- source_fidelity: every task traces to its cited canonical steps; no invented ingredients, quantities, timings or equipment. Expected and allowed: prep tasks for preparations named in ingredient lines or notes (dicing, mincing, slicing...); one estimated task to have a prepared input ready (cooked pasta, mashed potatoes, cooked rice) when the recipe assumes it; estimated timings labeled "estimate".
+- quantities: amounts are carried exactly as printed; a divided ingredient may show only the portion a task uses; servings math is untouched (scaling is a later stage).
 - dietary_conditions: no dietary variant is applied yet; pass when every timeline ingredient comes from the recipe with its allergen tags intact, fail on any new ingredient or allergen concern.
 - method_and_safety: cooking methods match the source; no unsafe times or temperatures invented; no nutrition or health claims anywhere.
 - equipment_capacity: concurrent demands on burners, the oven and pans fit the given kitchen profile; fail on over-subscription.
 - source_relationships: lanes group genuinely related work and dependencies reflect the real cooking order; fail on false sequencing.
-- tips_and_voice: completion cues are observable and tips useful where present (voice styling comes later; judge substance, not style).
+- tips_and_voice: completion cues are observable; tips and "why" notes, where present, are faithful and useful (voice styling comes later; judge substance, not style).
 Reply with only JSON matching the schema, no prose.`;
 
 function buildUserPrompt(input: ReviewInput): string {
@@ -296,6 +299,7 @@ export async function review(
     checks,
     passed: blockers.length === 0,
     blockers,
+    warnings: runFormatWarnings(input.recipe, input.timeline, input.schedule),
     usage: judged.usage,
     fallbackUsed: judged.fallbackUsed,
     attempts: judged.attempts,

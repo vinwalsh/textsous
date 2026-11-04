@@ -197,6 +197,8 @@ export async function POST(request: Request) {
           review: result.review.usage,
           total: result.usageTotal,
         },
+        timings: result.timings,
+        formatWarnings: result.formatWarnings,
       });
     }
 
@@ -232,6 +234,8 @@ export async function POST(request: Request) {
           review: result.review.usage,
           total: result.usageTotal,
         },
+        timings: result.timings,
+        formatWarnings: result.formatWarnings,
       });
     }
 
@@ -275,6 +279,8 @@ export async function POST(request: Request) {
         review: result.review.usage,
         total: result.usageTotal,
       },
+      timings: result.timings,
+      formatWarnings: result.formatWarnings,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Conversion failed.";

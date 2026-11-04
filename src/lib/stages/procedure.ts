@@ -4,9 +4,12 @@ import {
   TimelineDefinitionSchema,
   type TimelineDefinition,
 } from "../schema/timeline";
-import { callStructured, type ProviderName, type TokenUsage } from "../model";
+import { callStructured, type ProviderName, type StructuredChatClient, type TokenUsage } from "../model";
+import { polishTimeline, sourceTimingPool } from "../format";
 
-export const PROCEDURE_VERSION = 1;
+// Bumped on every prompt round deployed: preview and production share one
+// conversion cache, keyed by stage versions.
+export const PROCEDURE_VERSION = 2;
 export const PROCEDURE_MAX_TOKENS = 24000;
 
 export type ProcedureCheckName =
@@ -30,6 +33,8 @@ export interface ProcedureResult {
   attempts: number;
   /** Verbatim successful model completion (for --record). */
   rawResponse: string;
+  /** Readable notes on what code repaired after the model (timing labels). */
+  repairs: string[];
 }
 
 /** Format of eval/recordings/procedure-*.json, written by `procedure --record`. */
@@ -43,14 +48,6 @@ export interface ProcedureRecordingFile {
   recipe: CanonicalRecipe;
   /** Verbatim successful model completion. */
   response: string;
-}
-
-function sourcePool(recipe: CanonicalRecipe): string {
-  return [
-    recipe.title,
-    ...recipe.ingredients.flatMap((ing) => [ing.name, ing.quantity, ing.unit]),
-    ...recipe.steps.map((s) => s.text),
-  ].join("\n");
 }
 
 /**
@@ -80,7 +77,7 @@ export function runProcedureChecks(
         : `unknown step ids: ${badStepRefs.join("; ")}`,
   });
 
-  const pool = sourcePool(recipe);
+  const pool = sourceTimingPool(recipe);
   const quoteViolations: string[] = [];
   for (const task of timeline.tasks) {
     const quote = task.sourceQuote ?? "";
@@ -157,21 +154,55 @@ export function runProcedureChecks(
   return checks;
 }
 
-const SYSTEM_PROMPT = `You convert a canonical recipe into a TextSous component-lane cooking timeline. Rules:
-- Lanes: one lane per component present in THIS recipe (sauce, protein, base, side, garnish - only those that exist), kind "component". Plus exactly one kitchen lane (id "lane-kitchen", kind "kitchen") LAST, for shared and equipment work.
-- Phases prep/cook/finish. Prep is mise en place only; every prep task must finish before the first cook task starts (express with dependencies).
-- Split atomic hands-on work from unattended intervals: never one long hands-on task containing waiting. A sear plus a simmer is two tasks with a dependency, not one.
-- One cook: chain hands-on tasks with dependencies so a single person does them in order. Unattended tasks overlap other work; depend on them only where truly required.
-- Shared tasks execute once (one preheat task, not one per dish).
-- attention is "hands-on" when the cook actively works, "unattended" when the oven, pot or timer does the work.
-- timingBasis is "source" ONLY when the duration is stated exactly in the source steps: then copy ONE exact quote (a few words, verbatim) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is 1-180; range {low, high} when the source gives a span.
-- timerEnabledByDefault is true ONLY for exact source durations, else false.
-- Every task cites at least one canonical step id in sourceStepIds, and only steps it actually comes from. laneIds holds at least one lane.
-- dependencies lists task ids that must finish first. scheduling.waits holds seconds, multiples of 60 only (else empty); scheduling.resourceIds and scheduling.ingredientIds cite resource and canonical ingredient ids.
-- Declare pans, burners and the oven as resources, and link tasks to them with resourceHolds. equipmentEvent is "oven-on" at the preheat task, "oven-off" when the oven is no longer needed, else null.
-- cardTitle {action, subject, context} is short; label is short; description is 1-2 sentences; completionCue is observable (color, texture, thermometer); longer hands-on tasks get checkpoints (observable sub-cues); tip is optional.
-- serveTaskId is the final plating or serving task.
-- Fidelity: never invent ingredients, quantities, timings or equipment. Never schedule: no start or end times - dependencies and holds only, code schedules.
+const SYSTEM_PROMPT = `You turn a canonical recipe into a TextSous cook-along timeline: the cards a home cook follows at the stove, one card per task. Follow every rule.
+
+LANES
+- One lane per component that exists in THIS recipe (for example sauce, protein, base, side, garnish), kind "component", each with a distinct muted hex color. Then exactly one kitchen lane (id "lane-kitchen", kind "kitchen") LAST, for shared and equipment work.
+
+1. MISE EN PLACE FIRST (phase "prep")
+- Make a prep task for every preparation named in an ingredient's name or note, or in a prep step: trim, slice, dice, mince, chop, grate, zest, juice, peel, drain and rinse, measure out a dry mix, bring to room temperature. No preparation is skipped.
+- Group prep naturally by component and tool, the way a cook works a cutting board: "Dice the onion and slice the mushrooms", "Mince the garlic and thyme". A prep task usually covers 1-3 ingredients.
+- Seasoning raw protein ahead of cooking may be a prep task.
+- Each prep task cites, in sourceStepIds, the source step that first uses those ingredients, and lists them in scheduling.ingredientIds.
+- Prep tasks depend only on other prep tasks. All prep finishes before the first cook task (the scheduler enforces this).
+
+2. AMOUNTS WHERE THE COOK READS
+- Every description names each ingredient it uses with its exact amount, unit and name the first time that ingredient appears in the task, copied from the ingredient list: "Season the beef all over with 1 1/2 teaspoons kosher salt." "Dice 1 medium yellow onion."
+- Divided ingredients show only the portion this task uses, as the source splits them: "the remaining 1/2 teaspoon salt", "1 tablespoon of the olive oil".
+- Ingredients with no amount ("salt to taste") are named plainly.
+- A finished mixture or an earlier result is named directly, without amounts: "the prepared sauce", "the seared beef".
+- cardTitle {action, subject, context} and label are short and NEVER carry amounts, times or temperatures: {action: "Sear", subject: "the beef", context: "in batches"}. context may be "".
+
+3. BATCHES
+- When the source cooks in batches or rounds, make ONE hands-on task for all rounds. The description keeps the round count (say "about 3 batches" when the source does not give one), the per-round or per-side time exactly as written, and how to load, turn and unload each round.
+- minutes = rounds x per-round time (both sides when the time is per side). That total is an estimate: timingBasis "estimate", sourceQuote null, with a range {low, high} when the round count or the per-round time is a span.
+
+4. SETUP vs WAITING
+- Heating a pan or the oven, loading a pan, adding ingredients and stirring things in are short hands-on tasks.
+- Simmering, baking, roasting, resting, marinating, chilling, rising and boiling water are separate "unattended" tasks with an observable completionCue and checkpoints, so the cook can do other work meanwhile. Only frequent stirring ("stirring constantly") keeps a cooking interval hands-on.
+- Preheating the oven is its own short task with equipmentEvent "oven-on"; the last oven task carries "oven-off".
+- When the source turns the heat off or removes the pan from the heat, say so explicitly in the description.
+
+5. PREPARED INPUTS
+- When an ingredient is a prepared food the recipe assumes (cooked pasta, cooked rice, mashed potatoes, toasted bread, a stock made earlier), add ONE task in that component's lane to have it ready by serving time: cook-phase, timingBasis "estimate", sourceStepIds = the step that uses it, scheduling.ingredientIds = that ingredient. Describe it in one sentence ("Cook the pasta of your choice so it is ready to serve.") without inventing a sub-recipe, extra ingredients or amounts the source does not give.
+
+6. FIDELITY AND TIMING
+- Never invent ingredients, quantities, temperatures or equipment.
+- timingBasis "source" ONLY when this task's whole duration is stated exactly in the source: copy ONE short verbatim quote (a few words, exact characters) into sourceQuote. Otherwise "estimate" with sourceQuote null. minutes is a whole number 1-180; range {low, high} when the source gives a span (minutes is then within it).
+- timerEnabledByDefault is true only for "source" timings.
+- Every task cites at least one canonical step id in sourceStepIds, only steps it actually comes from.
+
+7. TIPS AND WHY
+- tip: at most one short, faithful tip that comes from the source's own advice, else null.
+- why: at most one sentence of pure rationale for the task (why it matters), faithful to the source and general cooking knowledge, else null. No health or nutrition claims.
+- completionCue is observable (color, texture, sound, thermometer). Hands-on tasks over 10 minutes and every unattended task get checkpoints (observable sub-cues).
+
+8. STRUCTURE
+- Phases prep, cook, finish. serveTaskId is the final plating or serving task (phase "finish").
+- One cook: chain hands-on tasks with dependencies in the real cooking order. Unattended tasks overlap other work; depend on them only where truly required. Shared tasks happen once (one preheat).
+- dependencies lists task ids that must finish first. scheduling.waits holds seconds in multiples of 60 only (else empty). scheduling.resourceIds and scheduling.ingredientIds cite resource ids and canonical ingredient ids; every ingredient appears in at least one task.
+- Declare pans, burners and the oven as resources and link tasks to them with resourceHolds.
+- Never schedule: no start or end times. Code schedules.
 Reply with only JSON matching the schema, no prose.`;
 
 function buildUserPrompt(recipe: CanonicalRecipe): string {
@@ -183,6 +214,7 @@ function buildUserPrompt(recipe: CanonicalRecipe): string {
       name: ing.name,
       quantity: ing.quantity,
       unit: ing.unit,
+      note: ing.note ?? null,
     })),
     steps: recipe.steps.map((s) => ({ id: s.id, kind: s.kind, text: s.text })),
     equipment: recipe.equipment,
@@ -196,7 +228,7 @@ function buildUserPrompt(recipe: CanonicalRecipe): string {
  */
 export async function procedure(
   recipe: CanonicalRecipe,
-  opts: { provider?: ProviderName } = {},
+  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
 ): Promise<ProcedureResult> {
   const result = await callStructured(
     TimelineDefinitionSchema,
@@ -206,16 +238,21 @@ export async function procedure(
     ],
     {
       provider: opts.provider,
+      client: opts.client,
       schemaName: TIMELINE_SCHEMA_NAME,
       maxTokens: PROCEDURE_MAX_TOKENS,
     },
   );
+  // Deterministic clean-up after the model: card titles, timing labels,
+  // timers, one-sentence why. The checks judge the polished timeline.
+  const polished = polishTimeline(recipe, result.data);
   return {
-    timeline: result.data,
-    checks: runProcedureChecks(recipe, result.data),
+    timeline: polished.timeline,
+    checks: runProcedureChecks(recipe, polished.timeline),
     usage: result.usage,
     fallbackUsed: result.fallbackUsed,
     attempts: result.attempts,
     rawResponse: result.rawContent,
+    repairs: polished.repairs,
   };
 }

@@ -65,6 +65,7 @@ export interface StructuredChatClient {
         temperature: number;
         response_format: ResponseFormat;
         max_completion_tokens?: number;
+        reasoning_effort?: ReasoningEffort;
       }, options?: { timeout?: number }): Promise<{
         choices: Array<{ message: { content: string | null }; finish_reason?: string | null }>;
         usage?: {
@@ -87,7 +88,12 @@ export interface CallStructuredOptions {
   client?: StructuredChatClient;
   /** Cap on completion tokens (max_completion_tokens). Unset by default. */
   maxTokens?: number;
+  /** reasoning_effort for the call; unset sends nothing (provider default, high on Meta). */
+  reasoningEffort?: ReasoningEffort;
 }
+
+/** Values the Meta Model API accepts for reasoning_effort. */
+export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
 
 type ResponseFormat =
   | { type: "json_schema"; json_schema: { name: string; schema: Record<string, unknown> } }
@@ -153,13 +159,15 @@ export async function callStructured<T>(
   // route's 300 s limit.
   const client: StructuredChatClient =
     opts.client ??
-    new OpenAI({
+    (new OpenAI({
       baseURL: config.baseUrl,
       apiKey: config.apiKey,
       fetch: globalThis.fetch,
       timeout: MODEL_CALL_TIMEOUT_MS,
       maxRetries: 1,
-    });
+      // The SDK's reasoning_effort type predates "minimal" and "xhigh",
+      // which the Meta Model API accepts.
+    }) as unknown as StructuredChatClient);
   const jsonSchema = toResponseJsonSchema(zodSchema as z.ZodTypeAny);
 
   let format: ResponseFormat = {
@@ -186,6 +194,7 @@ export async function callStructured<T>(
           temperature,
           response_format: format,
           ...(opts.maxTokens !== undefined ? { max_completion_tokens: opts.maxTokens } : {}),
+          ...(opts.reasoningEffort !== undefined ? { reasoning_effort: opts.reasoningEffort } : {}),
         },
         { timeout: Math.min(MODEL_CALL_TIMEOUT_MS, Math.floor(left)) },
       );

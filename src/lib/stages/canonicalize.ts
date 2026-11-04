@@ -7,14 +7,22 @@ import {
 } from "../schema/canonical";
 import { fingerprintSource } from "../intake/fingerprint";
 import { withAllergenFloor } from "../allergens";
+import { cleanTitle } from "../format";
 import {
   callStructured,
   type ProviderName,
+  type ReasoningEffort,
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
 
-export const CANONICALIZE_VERSION = 1;
+export const CANONICALIZE_VERSION = 2;
+
+/**
+ * reasoning_effort for canonicalize (transcription). Undefined sends nothing,
+ * so the provider default applies. Procedure never lowers its effort.
+ */
+export const CANONICALIZE_REASONING_EFFORT: ReasoningEffort | undefined = undefined;
 
 /**
  * Source text the model reads when there is no JSON-LD (pasted text, page
@@ -202,6 +210,8 @@ export function runCanonicalChecks(
 const SYSTEM_PROMPT = `You convert a recipe into the TextSous canonical recipe JSON. Rules:
 - Transcribe faithfully: never invent ingredients, quantities, timings, equipment, or steps.
 - Keep quantities exactly as printed, as free text (e.g. "1 1/2"). Leave quantity empty only when the source gives no amount.
+- Ingredient name is the food itself ("yellow onion"); every preparation and qualifier from the line goes in note, word for word ("diced", "fat trimmed and sliced into 1/4-inch-thick strips", "divided", "at room temperature", "for serving").
+- Title is the dish's name only: drop a trailing "Recipe", site names, emoji and marketing tags ("Easy!", "Best Ever").
 - Split steps into prep (mise en place only: washing, chopping, measuring) and active (ordered cooking steps).
 - Tag each ingredient with EU-14 allergen codes you are certain apply from the name alone (${EU14_ALLERGENS.join(", ")}). When uncertain, leave allergens empty: missing means unknown.
 - Set scaleRule to "to-taste" for season-to-taste items, otherwise leave it null.
@@ -237,7 +247,11 @@ function buildUserPrompt(input: CanonicalizeInput): string {
  */
 export async function canonicalize(
   input: CanonicalizeInput,
-  opts: { provider?: ProviderName; client?: StructuredChatClient } = {},
+  opts: {
+    provider?: ProviderName;
+    client?: StructuredChatClient;
+    reasoningEffort?: ReasoningEffort;
+  } = {},
 ): Promise<CanonicalizeResult> {
   const result = await callStructured(
     CanonicalRecipeSchema,
@@ -245,7 +259,12 @@ export async function canonicalize(
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildUserPrompt(input) },
     ],
-    { provider: opts.provider, client: opts.client, schemaName: CANONICAL_SCHEMA_NAME },
+    {
+      provider: opts.provider,
+      client: opts.client,
+      schemaName: CANONICAL_SCHEMA_NAME,
+      reasoningEffort: opts.reasoningEffort ?? CANONICALIZE_REASONING_EFFORT,
+    },
   );
 
   const fingerprint = fingerprintSource([
@@ -260,6 +279,9 @@ export async function canonicalize(
 
   const recipe: CanonicalRecipe = {
     ...result.data,
+    // Deterministic title cleanup after the model (site names, "Recipe",
+    // emoji, marketing tags).
+    title: cleanTitle(result.data.title, input.source.site),
     id: recipeId,
     source: {
       kind: input.source.kind,

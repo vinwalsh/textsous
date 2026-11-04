@@ -9,8 +9,9 @@ import {
 import type { TimelineDefinition } from "../schema/timeline";
 import type { ReviewResult } from "./review";
 import { applyAllergenFloor } from "../allergens";
+import { cleanTitle } from "../format";
 
-export const COMPILE_VERSION = 1;
+export const COMPILE_VERSION = 2;
 
 export interface CompileInput {
   recipe: CanonicalRecipe;
@@ -59,17 +60,40 @@ export function rollUpAllergens<T extends string>(recipe: {
   return [...rolled].sort();
 }
 
-function listChanges(timeline: TimelineDefinition): ArtifactChange[] {
+function joinNumbers(numbers: number[]): string {
+  if (numbers.length <= 1) return numbers.join("");
+  return `${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}`;
+}
+
+/**
+ * Readable change notes, never internal ids: tasks by their label, steps by
+ * their number in the recipe.
+ */
+export function listChanges(
+  timeline: TimelineDefinition,
+  steps: Array<{ id: string }> = [],
+): ArtifactChange[] {
+  const stepNumber = new Map(steps.map((s, i) => [s.id, i + 1] as const));
   const changes: ArtifactChange[] = [];
   for (const task of timeline.tasks) {
     if (task.sourceStepIds.length > 1) {
+      const numbers = task.sourceStepIds
+        .map((id) => stepNumber.get(id))
+        .filter((n): n is number => n !== undefined)
+        .sort((a, b) => a - b);
       changes.push({
         kind: "merged-steps",
-        detail: `${task.id} merges ${task.sourceStepIds.join(", ")}`,
+        detail:
+          numbers.length > 1
+            ? `${task.label} combines steps ${joinNumbers(numbers)} of the recipe.`
+            : `${task.label} combines more than one step of the recipe.`,
       });
     }
     if (task.timingBasis === "estimate") {
-      changes.push({ kind: "estimate", detail: `${task.id} timing is estimated` });
+      changes.push({
+        kind: "estimate",
+        detail: `Timing for ${task.label} is an estimate; the recipe does not give one.`,
+      });
     }
   }
   return changes;
@@ -98,7 +122,7 @@ export function compile(input: CompileInput): CookAlongArtifact {
     formatVersion: 1,
     id,
     recipe: {
-      title: recipe.title,
+      title: cleanTitle(recipe.title, recipe.source.site),
       servings: recipe.nativeServings,
       nativeServings: recipe.nativeServings,
       ingredients,
@@ -120,6 +144,6 @@ export function compile(input: CompileInput): CookAlongArtifact {
     },
     timelineDefinition: timeline,
     equipmentProfile,
-    changes: listChanges(timeline),
+    changes: listChanges(timeline, recipe.steps),
   });
 }
