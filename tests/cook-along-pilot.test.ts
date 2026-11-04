@@ -11,6 +11,7 @@ import { LANE_PALETTE, KITCHEN_LANE_COLOR } from "../src/lib/lane-palette";
 import { schedule } from "../src/lib/scheduler/schedule";
 import {
   adaptArtifactForCookingPilot,
+  adjacentLaneOrder,
   artifactFingerprint,
   cookingPilotInput,
 } from "../src/lib/cooking-pilot/from-artifact";
@@ -252,6 +253,36 @@ describe("adaptArtifactForCookingPilot mapping rules", () => {
     );
     const rows = html.match(/estimate in minutes"/g) ?? [];
     expect(rows).toHaveLength(tasks.filter((t) => t.timingBasis === "estimate").length);
+  });
+
+  it("moves component lanes so a shared step's lanes sit side by side, kitchen last", () => {
+    expect(adjacentLaneOrder(["a", "b", "c"], "k", [["a", "c"]])).toEqual(["a", "c", "b"]);
+    expect(adjacentLaneOrder(["a", "b", "c"], "k", [["a", "b"], ["b", "c"]])).toEqual(["a", "b", "c"]);
+    expect(adjacentLaneOrder(["a", "b", "c"], "k", [["a", "k"]])).toEqual(["b", "c", "a"]);
+    // No order keeps all three pairs adjacent: the caller spans the lanes between.
+    expect(adjacentLaneOrder(["a", "b", "c"], "k", [["a", "b"], ["b", "c"], ["a", "c"]])).toBeNull();
+
+    const artifact = clone(base);
+    const timeline = artifact.timelineDefinition;
+    const components = timeline.lanes.filter((lane) => lane.kind === "component");
+    const extra = { id: "garnish-lane", label: "Garnish", color: "#888888", kind: "component" as const };
+    const kitchenAt = timeline.lanes.findIndex((lane) => lane.kind === "kitchen");
+    timeline.lanes.splice(kitchenAt, 0, extra);
+    const [first] = components;
+    const lone = timeline.tasks.find((t) => t.laneIds.length === 1 && t.laneIds[0] === first.id && t.id !== timeline.serveTaskId);
+    const shared = timeline.tasks.find((t) => t !== lone && t.laneIds.length === 1 && t.laneIds[0] === first.id && t.id !== timeline.serveTaskId);
+    expect(lone && shared && components.length >= 2).toBeTruthy();
+    if (!lone || !shared) return;
+    lone.laneIds = [extra.id];
+    // first ... second ... extra: a step shared by the first lane and the new one.
+    shared.laneIds = [first.id, extra.id];
+    const input = adaptArtifactForCookingPilot(artifact);
+    const lanes = input.timelineDefinition.lanes.map((lane) => lane.id);
+    const adapted = input.timelineDefinition.tasks.find((t) => t.id === shared.id);
+    expect(adapted?.laneIds).toHaveLength(2);
+    expect(Math.abs(lanes.indexOf(first.id) - lanes.indexOf(extra.id))).toBe(1);
+    expect(input.timelineDefinition.lanes.at(-1)?.kind).toBe("kitchen");
+    expect(() => buildCookingPlan(input.timelineDefinition)).not.toThrow();
   });
 
   it("returns null when the artifact cannot be shown, so the page falls back", () => {

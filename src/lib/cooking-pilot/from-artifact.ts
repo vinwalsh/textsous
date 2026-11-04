@@ -97,6 +97,43 @@ function cues(task: TimelineTask): string {
   return task.checkpoints.map((label) => label.trim()).filter(Boolean).map(sentence).join(" ");
 }
 
+/** The most component lanes whose orders are searched (7! = 5040 orders). */
+const MAX_ORDERED_LANES = 7;
+
+/**
+ * Component lanes in an order that keeps every shared step's lanes side by
+ * side, with the kitchen lane last: the timeline's own order when it does,
+ * else the first that does, in order of the original positions (so lanes
+ * move as little as they can). Null when none does (or there are too many
+ * lanes to search): a shared step then spans the lanes between.
+ */
+export function adjacentLaneOrder(components: readonly string[], kitchenId: string, groups: readonly (readonly string[])[]): string[] | null {
+  const shared = groups.map((ids) => unique(ids)).filter((ids) => ids.length > 1);
+  const fits = (order: readonly string[]) => {
+    const at = new Map([...order, kitchenId].map((id, index) => [id, index] as const));
+    return shared.every((ids) => {
+      const positions = ids.map((id) => at.get(id) ?? -1);
+      return !positions.includes(-1) && Math.max(...positions) - Math.min(...positions) === ids.length - 1;
+    });
+  };
+  if (fits(components)) return [...components];
+  if (components.length > MAX_ORDERED_LANES) return null;
+  const order: string[] = [];
+  const left = [...components];
+  const search = (): boolean => {
+    if (left.length === 0) return fits(order);
+    for (let index = 0; index < left.length; index++) {
+      const [id] = left.splice(index, 1);
+      order.push(id);
+      if (search()) return true;
+      order.pop();
+      left.splice(index, 0, id);
+    }
+    return false;
+  };
+  return search() ? order : null;
+}
+
 /**
  * Adapt an artifact. Throws when it cannot be expressed (for example a
  * recipe with no lanes the view can draw); callers fall back to the open
@@ -140,9 +177,21 @@ export function adaptArtifactForCookingPilot(artifact: CookAlongArtifact): Cooki
     kitchen,
   ];
   if (lanes.length < 2) throw new Error("The Cook Along view needs a component lane and the kitchen lane");
+  // Colors follow the timeline's own order, so a lane keeps its color if it moves.
   const colors = laneDisplayColors(lanes);
 
-  // Shared cards span adjacent lanes in lane order.
+  // Shared cards span adjacent lanes: move component lanes so each shared
+  // step's lanes sit side by side when some order allows it.
+  const known = new Set(lanes.map((lane) => lane.id));
+  const order = adjacentLaneOrder(
+    lanes.slice(0, -1).map((lane) => lane.id),
+    kitchen.id,
+    [...laneOf.values()].map((ids) => ids.filter((id) => known.has(id))),
+  );
+  if (order) {
+    const byLaneId = new Map(lanes.map((lane) => [lane.id, lane] as const));
+    lanes = [...order.map((id) => byLaneId.get(id)).filter((lane) => lane !== undefined), kitchen];
+  }
   const laneIndex = new Map(lanes.map((lane, index) => [lane.id, index] as const));
   for (const [taskId, ids] of laneOf) {
     const ordered = [...ids].filter((id) => laneIndex.has(id)).sort((a, b) => (laneIndex.get(a) ?? 0) - (laneIndex.get(b) ?? 0));
