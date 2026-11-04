@@ -13,6 +13,8 @@ describe("classifyError", () => {
     ["Connection error.", "model-error"],
     ["401 Incorrect API key provided.", "model-error"],
     ["429 Rate limit reached.", "model-error"],
+    ["This recipe took too long to convert (a step timed out). Try again in a minute.", "timeout"],
+    ["This recipe took too long to convert (stopped before the review step).", "timeout"],
     ["Something completely different.", "unknown-error"],
   ];
   for (const [message, expected] of cases) {

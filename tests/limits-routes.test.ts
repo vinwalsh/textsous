@@ -267,13 +267,13 @@ describe("model call timeouts, deadline and length", () => {
     process.env.MODEL_API_KEY = "test-key";
   });
 
-  it("passes a per-call timeout of at most 200 s", async () => {
+  it("passes a per-call timeout of at most 300 s", async () => {
     const seen: Array<{ messages: unknown[]; options?: { timeout?: number } }> = [];
     await callStructured(schema, [{ role: "user", content: "hi" }], {
       schemaName: "echo",
       client: client([{ content: '{"echo":"ok"}' }], seen),
     });
-    expect(seen[0].options?.timeout).toBe(200_000);
+    expect(seen[0].options?.timeout).toBe(300_000);
     const { result } = runWithModelBudget(
       () =>
         callStructured(schema, [{ role: "user", content: "hi" }], {

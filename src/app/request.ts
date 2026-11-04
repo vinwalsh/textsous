@@ -69,10 +69,19 @@ export function friendlyError(
     recipeUrl?: string;
   } = {},
 ): FriendlyError {
-  if (opts.timeout || status === 504) {
+  if (opts.timeout) {
     return {
       title: "That took too long",
       detail: "The request timed out. Check your connection and try again.",
+    };
+  }
+  if (status === 503 || status === 504) {
+    // The server's own time limit (a slow model step or the function limit),
+    // not the reader's connection and not the recipe site.
+    return {
+      title: "That took too long",
+      detail:
+        "This recipe took longer than one conversion is allowed. Try again in a minute, or paste just the ingredients and steps.",
     };
   }
   if (status === null) {
@@ -165,7 +174,8 @@ export function friendlyError(
     };
   }
   if (status === 502) {
-    if (/timed out|fetch failed|resolve host|status \d+|redirect/i.test(message)) {
+    // Only the recipe page fetch: "Fetch timed out ...", "Fetch failed ...".
+    if (/fetch timed out|fetch failed|resolve host|status \d+|redirect/i.test(message)) {
       return {
         title: "Couldn't reach that page",
         detail:

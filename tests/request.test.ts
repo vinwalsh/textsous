@@ -27,7 +27,14 @@ describe("friendlyError", () => {
       status: 504,
       message: "",
       title: "That took too long",
-      detailPart: /timed out/,
+      detailPart: /took longer than one conversion is allowed/,
+    },
+    {
+      name: "server time limit",
+      status: 503,
+      message: "This recipe took too long to convert (a step timed out).",
+      title: "That took too long",
+      detailPart: /paste just the ingredients and steps/,
     },
     {
       name: "offline",
@@ -132,6 +139,21 @@ describe("friendlyError", () => {
       title: "Couldn't reach that page",
       detailPart: /didn't answer/,
       action: "paste-text",
+    },
+    {
+      name: "page fetch timeout",
+      status: 502,
+      message: "Fetch timed out after 10000ms.",
+      title: "Couldn't reach that page",
+      detailPart: /didn't answer/,
+      action: "paste-text",
+    },
+    {
+      name: "a model timeout is never read as the recipe site",
+      status: 502,
+      message: "Request timed out.",
+      title: "The recipe service stumbled",
+      detailPart: /upstream/,
     },
     {
       name: "upstream validation",

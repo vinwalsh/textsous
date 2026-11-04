@@ -16,8 +16,12 @@ const storage = new AsyncLocalStorage<ModelBudget>();
 
 /** Overall pipeline deadline, under the 300 s function limit. */
 export const PIPELINE_DEADLINE_MS = 280_000;
-/** Per model call HTTP timeout (the call also never outlives the deadline). */
-export const MODEL_CALL_TIMEOUT_MS = 200_000;
+/**
+ * Per model call HTTP timeout. Each call also stops at the route deadline
+ * (callOptions takes the smaller), so this only has to fit the longest
+ * single call: a procedure call can run past 3 minutes on a big recipe.
+ */
+export const MODEL_CALL_TIMEOUT_MS = 300_000;
 /** A model call never starts with less than this left. */
 export const MIN_CALL_MS = 15_000;
 
@@ -29,6 +33,22 @@ export class DeadlineError extends Error {
         "Try again in a minute, or paste just the recipe text.",
     );
     this.name = "DeadlineError";
+  }
+}
+
+/**
+ * A model call hit its HTTP timeout. Same friendly copy as the deadline
+ * ("took too long to convert"), so routes answer 503 instead of reading
+ * the SDK's "Request timed out." as a recipe page that did not answer.
+ */
+export class ModelTimeoutError extends Error {
+  code = "timeout" as const;
+  constructor() {
+    super(
+      "This recipe took too long to convert (a step timed out). " +
+        "Try again in a minute, or paste just the ingredients and steps.",
+    );
+    this.name = "ModelTimeoutError";
   }
 }
 

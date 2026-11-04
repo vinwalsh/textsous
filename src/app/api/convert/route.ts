@@ -57,12 +57,14 @@ function logConvert(fields: {
 }
 
 function errorStatus(message: string): number {
+  // First: "took too long to convert" (deadline, model timeout) also
+  // contains "too long", which below means pasted text over the limit.
+  if (/took too long to convert/i.test(message)) return 503;
   if (/exactly one of|invalid url|invalid recipe|only https|only public https|private-network|credentials|default port/i.test(message)) {
     return 400;
   }
   if (/no text provided|too long/i.test(message)) return 400;
   if (/single-recipe pages only|compile blocked/i.test(message)) return 422;
-  if (/took too long to convert/i.test(message)) return 503;
   if (/missing model api key|contributor-tier/i.test(message)) return 500;
   if (/validation|valid json|empty content|cut off at the length limit/i.test(message)) return 502;
   if (/timed out|fetch failed|byte cap|content type|resolve host|redirect|status \d+/i.test(message)) {

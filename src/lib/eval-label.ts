@@ -3,6 +3,9 @@
  * the file keeps only the label (and never third-party text).
  */
 export function classifyError(message: string): string {
+  // Model call timeouts and the pipeline deadline, before the page-fetch
+  // patterns ("Fetch timed out ..." is a page that did not answer).
+  if (/took too long to convert/i.test(message)) return "timeout";
   if (
     /timed out|fetch failed|byte cap|content type|resolve host|redirect|status \d+|only https|private-network|credentials|invalid url/i.test(
       message,

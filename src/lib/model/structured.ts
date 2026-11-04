@@ -2,7 +2,14 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { toResponseJsonSchema } from "../schema/json";
 import { assertUsableInProduction, resolveProvider, type ProviderName } from "./profiles";
-import { DeadlineError, MIN_CALL_MS, MODEL_CALL_TIMEOUT_MS, markSpent, timeLeftMs } from "./budget";
+import {
+  DeadlineError,
+  MIN_CALL_MS,
+  MODEL_CALL_TIMEOUT_MS,
+  ModelTimeoutError,
+  markSpent,
+  timeLeftMs,
+} from "./budget";
 
 export interface ChatTextContentPart {
   type: "text";
@@ -114,6 +121,13 @@ function mayHaveSpent(error: unknown): boolean {
   return /Timeout|AbortError/i.test(name);
 }
 
+/** The SDK's own per-call timeout (APIConnectionTimeoutError, "Request timed out."). */
+function isCallTimeout(error: unknown): boolean {
+  const err = error as { name?: string; message?: string; constructor?: { name?: string } };
+  const name = `${err?.name ?? ""} ${err?.constructor?.name ?? ""}`;
+  return /Timeout/i.test(name) || /^request timed out/i.test(err?.message ?? "");
+}
+
 const CONCISE_RETRY =
   "Your previous reply was cut off at the length limit, so it was discarded. " +
   "Reply again with the complete JSON object, more concisely: short descriptions, " +
@@ -165,8 +179,7 @@ export async function callStructured<T>(
   const temperature = opts.temperature ?? 0;
 
   // Explicit global fetch: honors proxy env (NODE_USE_ENV_PROXY) everywhere.
-  // One SDK retry at most: a stage that times out twice would outlive the
-  // route's 300 s limit.
+  // One SDK retry at most, and only without a route deadline (callOptions).
   const client: StructuredChatClient =
     opts.client ??
     (new OpenAI({
@@ -226,6 +239,7 @@ export async function callStructured<T>(
         format = { type: "json_object" };
         continue;
       }
+      if (isCallTimeout(error)) throw new ModelTimeoutError();
       throw error;
     }
 
