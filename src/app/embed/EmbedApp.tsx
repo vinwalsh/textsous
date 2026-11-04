@@ -17,7 +17,7 @@ import {
 import ArtifactViewer from "../ArtifactViewer";
 import ErrorBox from "../ErrorBox";
 import ProgressNote from "../ProgressNote";
-import { apiFetch, friendlyError, type FriendlyError } from "../request";
+import { apiFetch, friendlyError, type ApiResult, type FriendlyError } from "../request";
 import styles from "./embed.module.css";
 
 export type EmbedState =
@@ -39,6 +39,33 @@ export function initialEmbedState(request: EmbedRequest): EmbedState {
 /** The open site's own page for a recipe, opened in a new tab from errors. */
 function openSiteHref(url: string | null): string {
   return url ? `/?url=${encodeURIComponent(url)}` : "/";
+}
+
+/**
+ * Options for friendlyError on a failed /api/convert: the 429 `reason` (C2) and the recipe URL,
+ * so the daily-cap message links to /assistants?url=<recipe> (C7). Built as a separate object so
+ * it type-checks whether or not request.ts already declares `reason` and `recipeUrl`.
+ */
+export function convertErrorOptions(
+  res: Pick<ApiResult, "timeout" | "data">,
+  url: string,
+): { timeout: boolean; reason?: string; recipeUrl: string } {
+  const data = res.data as { reason?: unknown } | null;
+  const reason = data && typeof data.reason === "string" ? data.reason : undefined;
+  return reason ? { timeout: res.timeout, reason, recipeUrl: url } : { timeout: res.timeout, recipeUrl: url };
+}
+
+/** Friendly copy for a failed /api/convert inside the overlay. */
+export function convertFailure(res: Pick<ApiResult, "status" | "timeout" | "data">, url: string): FriendlyError {
+  const data = res.data as { error?: unknown } | null;
+  const message = data && typeof data.error === "string" ? data.error : "";
+  return friendlyError(res.status, message, convertErrorOptions(res, url));
+}
+
+/** The error offers its own way forward (the daily cap's "Continue in your AI assistant"). */
+function offersAssistants(error: FriendlyError): boolean {
+  const action: string | undefined = error.action;
+  return action === "assistants";
 }
 
 /** Everything except the finished recipe. Exported for render tests. */
@@ -112,9 +139,12 @@ export function EmbedStatus({
         <section className={styles.status}>
           <ErrorBox error={state.error} />
           <div className="btn-row">
-            <a className={`btn ${styles.linkButton}`} href={openSiteHref(state.url)} target="_blank" rel="noopener">
-              Try on TextSous Open
-            </a>
+            {/* The open site is capped too: don't offer it next to the daily-cap way forward. */}
+            {offersAssistants(state.error) ? null : (
+              <a className={`btn ${styles.linkButton}`} href={openSiteHref(state.url)} target="_blank" rel="noopener">
+                Try on TextSous Open
+              </a>
+            )}
             {closeButton}
           </div>
         </section>
@@ -187,11 +217,7 @@ export default function EmbedApp({ request }: { request: EmbedRequest }) {
     });
     const data = res.data as { artifact?: unknown; error?: string } | null;
     if (!res.ok || !data || !data.artifact) {
-      setState({
-        kind: "error",
-        error: friendlyError(res.status, data?.error ?? "", { timeout: res.timeout }),
-        url,
-      });
+      setState({ kind: "error", error: convertFailure(res, url), url });
       return;
     }
     const valid = CookAlongArtifactSchema.safeParse(data.artifact);
