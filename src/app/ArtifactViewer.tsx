@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { ArtifactChange, CookAlongArtifact } from "../lib/schema/artifact";
+import type { Lane, TimelineTask } from "../lib/schema/timeline";
 import { buildImportUrl } from "../lib/handoff";
 import { applyArtifactAllergenFloor, rollUpTraces } from "../lib/allergens";
-import { laneDisplayColors } from "../lib/lane-palette";
+import { laneDisplayColors, taskLaneColor } from "../lib/lane-palette";
 import { schedule } from "../lib/scheduler/schedule";
 import ErrorBox from "./ErrorBox";
 import { apiFetch, friendlyError, type FriendlyError } from "./request";
@@ -158,12 +159,62 @@ function formatAmount(quantity: string, unit: string): string {
   return `${quantity} ${unit}`.trim();
 }
 
+const PHASE_NAMES: Record<TimelineTask["phase"], string> = {
+  prep: "Prep",
+  cook: "Cook",
+  finish: "Finish",
+};
+
+/** Phase band: the phase's name above its cards, with a count. */
+function PhaseBand({ phase, count, noun }: { phase: TimelineTask["phase"]; count: number; noun: string }) {
+  return (
+    <div className="phase-band">
+      <span className="label">{PHASE_NAMES[phase]}</span>
+      <span className="meta">
+        {count} {count === 1 ? noun : `${noun}s`}
+      </span>
+    </div>
+  );
+}
+
+/** The lanes a task belongs to, by name: component lanes first, the kitchen only when alone. */
+export function taskLaneNames(task: Pick<TimelineTask, "laneIds">, lanes: readonly Lane[]): string {
+  const byId = new Map(lanes.map((lane) => [lane.id, lane] as const));
+  const named = task.laneIds.map((id) => byId.get(id)).filter((lane): lane is Lane => lane !== undefined);
+  const components = named.filter((lane) => lane.kind === "component");
+  return (components.length > 0 ? components : named).map((lane) => lane.label).join(" + ");
+}
+
+/** Small lane line at the top of a task card: the lane's dot and name. */
+function TaskLane({ color, name }: { color: string; name: string }) {
+  if (!name) return null;
+  return (
+    <p className="task-lane">
+      <span className="lane-dot" style={{ backgroundColor: color }} aria-hidden="true" />
+      {name}
+    </p>
+  );
+}
+
+/** Steps in order, with a phase band wherever the phase changes. Pure. */
+export function phaseRuns<T extends { phase: TimelineTask["phase"] }>(
+  tasks: readonly T[],
+): Array<{ phase: TimelineTask["phase"]; items: Array<{ task: T; number: number }> }> {
+  const runs: Array<{ phase: TimelineTask["phase"]; items: Array<{ task: T; number: number }> }> = [];
+  tasks.forEach((task, i) => {
+    const last = runs[runs.length - 1];
+    if (!last || last.phase !== task.phase) runs.push({ phase: task.phase, items: [] });
+    runs[runs.length - 1].items.push({ task, number: i + 1 });
+  });
+  return runs;
+}
+
 /** Conversion notes from the server (text cut, timings relabeled). */
 export function ConversionNotes({ notes }: { notes: readonly string[] }) {
   if (notes.length === 0) return null;
   return (
     <div className="notice" role="note" aria-label="Notes on this conversion">
-      <strong>Notes on this conversion:</strong>
+      <p className="label">Notes on this conversion</p>
       <ul className="changes">
         {notes.map((note, i) => (
           <li key={i}>{note}</li>
@@ -218,6 +269,9 @@ export default function ArtifactViewer({
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
   const cookTasks = timeline.tasks.filter((t) => t.phase !== "prep");
+  const stepRuns = phaseRuns(cookTasks);
+  // Lanes are colored by position, not by the color the artifact stored.
+  const colors = laneDisplayColors(timeline.lanes);
 
   function togglePrep(id: string) {
     setPrepDone((prev) => {
@@ -268,12 +322,15 @@ export default function ArtifactViewer({
 
   return (
     <article aria-label="Cook Along recipe">
-      <h2>{recipe.title}</h2>
-      <p className="meta">
-        Serves {recipe.servings} · {recipe.ingredients.length} ingredients
-        {totalMinutes !== null ? ` · About ${totalMinutes} minutes` : ""}
-        {recipe.methodLabel ? ` · Method: ${recipe.methodLabel}` : ""}
-      </p>
+      <div className="recipe-head">
+        <p className="label">Your cook along</p>
+        <h2 className="recipe-title">{recipe.title}</h2>
+        <p className="meta">
+          Serves {recipe.servings} · {recipe.ingredients.length} ingredients
+          {totalMinutes !== null ? ` · About ${totalMinutes} minutes` : ""}
+          {recipe.methodLabel ? ` · Method: ${recipe.methodLabel}` : ""}
+        </p>
+      </div>
 
       <Credit artifact={current} />
 
@@ -309,45 +366,55 @@ export default function ArtifactViewer({
 
       <BeforeYouStart artifact={current} totalMinutes={totalMinutes} />
 
-      <h3>Ingredients</h3>
-      <ul className="ingredients">
-        {recipe.ingredients.map((ing) => (
-          <li key={ing.id}>
-            <strong>{formatAmount(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
-            {ing.buyQuantity ? <span className="meta"> · buy {ing.buyQuantity}</span> : null}
-            {ing.note ? <span> — {ing.note}</span> : null}
-            {ing.allergens.length > 0 ? (
-              <span className="meta"> · contains {ing.allergens.join(", ")}</span>
-            ) : null}
-            {ing.allergenTraces.length > 0 ? (
-              <span className="meta"> · traces of {ing.allergenTraces.join(", ")}</span>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <section className="card">
+        <h3>Ingredients</h3>
+        <ul className="ingredients">
+          {recipe.ingredients.map((ing) => (
+            <li key={ing.id}>
+              <strong>{formatAmount(ing.cookQuantity ?? ing.quantity, ing.unit)}</strong> {ing.name}
+              {ing.buyQuantity ? <span className="meta"> · buy {ing.buyQuantity}</span> : null}
+              {ing.note ? <span> — {ing.note}</span> : null}
+              {ing.allergens.length > 0 ? (
+                <span className="meta"> · contains {ing.allergens.join(", ")}</span>
+              ) : null}
+              {ing.allergenTraces.length > 0 ? (
+                <span className="meta"> · traces of {ing.allergenTraces.join(", ")}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
       <TipsToggle mode={tipsMode} onChange={chooseTipsMode} />
 
       <h3>Mise en Place</h3>
       {prepTasks.length > 0 ? (
-        <ul className="prep-list">
-          {prepTasks.map((task) => (
-            <li key={task.id}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={prepDone.has(task.id)}
-                  onChange={() => togglePrep(task.id)}
-                />
-                <span className={prepDone.has(task.id) ? "prep-done" : ""}>
-                  <strong>{task.label}</strong> <span className="meta">· {task.minutes} min</span>
-                  <br />
-                  {task.description}
-                  <TaskNotes task={task} mode={tipsMode} />
-                </span>
-              </label>
-            </li>
-          ))}
-        </ul>
+        <>
+          <PhaseBand phase="prep" count={prepTasks.length} noun="task" />
+          <ul className="prep-list">
+            {prepTasks.map((task) => (
+              <li
+                key={task.id}
+                className={task.attention === "unattended" ? "task-card unattended" : "task-card"}
+                style={{ borderLeftColor: taskLaneColor(colors, task.laneIds) }}
+              >
+                <TaskLane color={taskLaneColor(colors, task.laneIds)} name={taskLaneNames(task, timeline.lanes)} />
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={prepDone.has(task.id)}
+                    onChange={() => togglePrep(task.id)}
+                  />
+                  <span className={prepDone.has(task.id) ? "prep-done" : ""}>
+                    <strong>{task.label}</strong> <span className="meta">· {task.minutes} min</span>
+                    <br />
+                    {task.description}
+                    <TaskNotes task={task} mode={tipsMode} />
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : (
         <p className="meta">No prep tasks — everything happens at the stove.</p>
       )}
@@ -356,34 +423,47 @@ export default function ArtifactViewer({
       <TimelineView timeline={timeline} />
 
       <h3>Steps</h3>
-      {cookTasks.map((task, i) => (
-        <div key={task.id} className="step">
-          <h4>
-            {i + 1}. {task.cardTitle.action} — {task.cardTitle.subject}
-            {task.cardTitle.context ? ` (${task.cardTitle.context})` : ""}
-          </h4>
-          <p>{task.description}</p>
-          <p className="cue">Done when: {task.completionCue}</p>
-          <p className="meta">
-            {task.minutes} min
-            {task.range ? ` (${task.range.low}–${task.range.high})` : ""} · {task.attention} ·{" "}
-            {task.phase} · {task.timingBasis === "source" ? "timed by the recipe" : "estimated time"}
-            {task.equipmentEvent === "oven-on"
-              ? " · turn the oven on"
-              : task.equipmentEvent === "oven-off"
-                ? " · turn the oven off"
-                : ""}
-          </p>
-          {task.checkpoints.length > 0 ? (
-            <ul className="changes">
-              {task.checkpoints.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
-            </ul>
-          ) : null}
-          <TaskNotes task={task} mode={tipsMode} />
-          <Timer minutes={task.minutes} label={task.label} />
-        </div>
+      {stepRuns.map((run, r) => (
+        <Fragment key={`${run.phase}-${r}`}>
+          <PhaseBand phase={run.phase} count={run.items.length} noun="step" />
+          {run.items.map(({ task, number }) => {
+            const color = taskLaneColor(colors, task.laneIds);
+            return (
+              <div
+                key={task.id}
+                className={task.attention === "unattended" ? "task-card step unattended" : "task-card step"}
+                style={{ borderLeftColor: color }}
+              >
+                <TaskLane color={color} name={taskLaneNames(task, timeline.lanes)} />
+                <h4>
+                  {number}. {task.cardTitle.action} — {task.cardTitle.subject}
+                  {task.cardTitle.context ? ` (${task.cardTitle.context})` : ""}
+                </h4>
+                <p>{task.description}</p>
+                <p className="cue">Done when: {task.completionCue}</p>
+                <p className="meta">
+                  {task.minutes} min
+                  {task.range ? ` (${task.range.low}–${task.range.high})` : ""} · {task.attention} ·{" "}
+                  {task.phase} · {task.timingBasis === "source" ? "timed by the recipe" : "estimated time"}
+                  {task.equipmentEvent === "oven-on"
+                    ? " · turn the oven on"
+                    : task.equipmentEvent === "oven-off"
+                      ? " · turn the oven off"
+                      : ""}
+                </p>
+                {task.checkpoints.length > 0 ? (
+                  <ul className="changes">
+                    {task.checkpoints.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <TaskNotes task={task} mode={tipsMode} />
+                <Timer minutes={task.minutes} label={task.label} />
+              </div>
+            );
+          })}
+        </Fragment>
       ))}
 
       {current.changes.length > 0 ? (
@@ -400,7 +480,7 @@ export default function ArtifactViewer({
       ) : null}
 
       {saveError ? <ErrorBox error={saveError} /> : null}
-      <div className="btn-row">
+      <div className="btn-row save-row">
         <button type="button" className="btn btn-primary" onClick={saveToTextSous} disabled={saveBusy}>
           {saveBusy ? "Saving…" : "Save to TextSous"}
         </button>

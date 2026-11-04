@@ -3,7 +3,13 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CookAlongArtifact } from "../src/lib/schema/artifact";
 import type { TimelineTask } from "../src/lib/schema/timeline";
-import ArtifactViewer, { handsOnMinutes, readTipsMode, TIPS_MODE_KEY } from "../src/app/ArtifactViewer";
+import ArtifactViewer, {
+  handsOnMinutes,
+  phaseRuns,
+  readTipsMode,
+  taskLaneNames,
+  TIPS_MODE_KEY,
+} from "../src/app/ArtifactViewer";
 
 function task(id: string, over: Partial<TimelineTask>): TimelineTask {
   return {
@@ -161,5 +167,51 @@ describe("Essentials / With tips", () => {
     expect(readTipsMode()).toBe("tips");
     delete g.window;
     expect(readTipsMode()).toBe("tips");
+  });
+});
+
+describe("Cook Along cards", () => {
+  it("draws step and prep cards with a left border in their lane color", () => {
+    const html = render();
+    // Every task is on lane-sauce, the first component lane: palette slot 0.
+    expect(html).toMatch(/<div class="task-card step" style="border-left-color:#B58D3D">/);
+    expect(html).toMatch(/<li class="task-card" style="border-left-color:#B58D3D">/);
+    expect(html).toMatch(/class="task-lane"><span class="lane-dot" style="background-color:#B58D3D"[^>]*><\/span>Stew<\/p>/);
+  });
+
+  it("marks unattended cards", () => {
+    const html = render();
+    expect(html.match(/class="task-card step unattended"/g)).toHaveLength(1);
+    expect(html).toMatch(/class="task-card step unattended"[^>]*>[^]*t-simmer description/);
+  });
+
+  it("names each phase in a band above its cards", () => {
+    const html = render();
+    const band = (name: string, count: string) =>
+      `<div class="phase-band"><span class="label">${name}</span><span class="meta">${count}</span></div>`;
+    expect(html).toContain(band("Prep", "1 task"));
+    expect(html).toContain(band("Cook", "2 steps"));
+    expect(html).toContain(band("Finish", "1 step"));
+    expect(html.indexOf(band("Cook", "2 steps"))).toBeLessThan(html.indexOf("1. Cook — t-brown"));
+    expect(html.indexOf("2. Cook — t-simmer")).toBeLessThan(html.indexOf(band("Finish", "1 step")));
+    expect(html).toContain("3. Cook — t-serve");
+  });
+
+  it("starts a new band whenever the phase changes, keeping step numbers", () => {
+    const runs = phaseRuns([{ phase: "cook" }, { phase: "finish" }, { phase: "cook" }] as const);
+    expect(runs.map((r) => [r.phase, r.items.map((i) => i.number)])).toEqual([
+      ["cook", [1]],
+      ["finish", [2]],
+      ["cook", [3]],
+    ]);
+    expect(phaseRuns([])).toEqual([]);
+  });
+
+  it("labels a card with its component lanes, the kitchen only when alone", () => {
+    const lanes = artifact().timelineDefinition.lanes;
+    expect(taskLaneNames({ laneIds: ["lane-sauce", "lane-kitchen"] }, lanes)).toBe("Stew");
+    expect(taskLaneNames({ laneIds: ["lane-sauce", "lane-base", "lane-kitchen"] }, lanes)).toBe("Stew + Rice");
+    expect(taskLaneNames({ laneIds: ["lane-kitchen"] }, lanes)).toBe("Kitchen");
+    expect(taskLaneNames({ laneIds: ["lane-gone"] }, lanes)).toBe("");
   });
 });

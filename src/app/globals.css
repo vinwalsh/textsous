@@ -14,18 +14,20 @@
   --ts-radius: 10px;
   --ts-pill: 30px;
 
-  /* Older names, mapped onto the tokens until every rule uses --ts-*. */
-  --ink: var(--ts-ink);
-  --muted: var(--ts-muted);
-  --line: var(--ts-border);
-  --well: var(--ts-secondary);
-  --accent: var(--ts-action);
-  --warn-bg: #fef6e7;
-  --warn-line: #e3c878;
-  --warn-ink: #7a5200;
-  --alert-bg: #fdeeee;
-  --alert-line: #efb4b4;
-  --alert-ink: #9c1f1f;
+  /* Cook Along cards (C8). Lane colors come from src/lib/lane-palette.ts. */
+  --ts-task: #F3F2E5;
+  --ts-task-border: #DEDFCF;
+  --ts-task-unattended: #E9EEE2;
+  --ts-phase: #FBF7ED;
+  --ts-lane-kitchen: #AAA398;
+
+  /* Notices (allergens, conversion notes) and errors. */
+  --ts-warn-bg: #FBF3E2;
+  --ts-warn-line: #E8D2A0;
+  --ts-warn-ink: #6B4A0B;
+  --ts-alert-bg: #FCEDEA;
+  --ts-alert-line: #EDC0B6;
+  --ts-alert-ink: #8E2A1A;
 
   color-scheme: light;
 }
@@ -249,115 +251,15 @@ a:hover {
   margin: 0 0 6px;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
 
-.tab {
-  flex: 1;
-  padding: 0.65rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-.tab[aria-selected="true"] {
-  border-color: var(--accent);
-  border-width: 2px;
-  padding: calc(0.65rem - 1px) calc(0.5rem - 1px);
-  font-weight: 600;
-}
-
-.field {
-  display: block;
-  margin-bottom: 0.9rem;
-}
-
-.field > span {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.3rem;
-}
-
-input[type="url"],
-input[type="text"],
-input[type="number"],
-textarea,
-select {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.65rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  font: inherit;
-}
-
-input[type="file"] {
-  font: inherit;
-  max-width: 100%;
-}
-
-textarea {
-  min-height: 10rem;
-}
-
-.btn {
-  display: inline-block;
-  min-height: 44px;
-  padding: 0.6rem 1.1rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.btn[disabled] {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.btn-row {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  margin-top: 0.8rem;
-}
-
-.alert {
-  background: var(--alert-bg);
-  border: 1px solid var(--alert-line);
-  color: var(--alert-ink);
-  border-radius: 8px;
-  padding: 0.7rem 0.9rem;
-  margin: 1rem 0;
-}
-
-.notice {
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-line);
-  color: var(--warn-ink);
-  border-radius: 8px;
-  padding: 0.7rem 0.9rem;
-  margin: 1rem 0;
-}
+/* ---------- Cards, notices, labels ---------- */
 
 .card {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.9rem 1rem;
-  margin: 1rem 0;
+  background: var(--ts-card);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  padding: 16px;
+  margin: 16px 0;
 }
 
 .card > :first-child {
@@ -368,79 +270,524 @@ textarea {
   margin-bottom: 0;
 }
 
+.card-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.alert {
+  background: var(--ts-alert-bg);
+  border: 1px solid var(--ts-alert-line);
+  color: var(--ts-alert-ink);
+  border-radius: var(--ts-radius);
+  padding: 12px 14px;
+  margin: 16px 0;
+}
+
+.alert .btn-row {
+  margin-top: 12px;
+}
+
+.notice {
+  background: var(--ts-warn-bg);
+  border: 1px solid var(--ts-warn-line);
+  color: var(--ts-warn-ink);
+  border-radius: var(--ts-radius);
+  padding: 12px 14px;
+  margin: 16px 0;
+}
+
+.notice .label {
+  color: var(--ts-warn-ink);
+}
+
 .chips {
   display: flex;
-  gap: 0.4rem;
+  gap: 6px;
   flex-wrap: wrap;
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0;
+  margin: 8px 0;
 }
 
 .chip {
-  background: var(--well);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.15rem 0.7rem;
-  font-size: 0.85rem;
+  background: var(--ts-secondary);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-pill);
+  padding: 2px 10px;
+  font-size: 13px;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--ts-border);
+  border-radius: 8px;
+  background: var(--ts-card);
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover:not([disabled]) {
+  background: var(--ts-secondary);
+  color: var(--ts-ink);
+}
+
+.btn-primary {
+  background: var(--ts-action);
+  border-color: var(--ts-action);
+  color: #fff;
+}
+
+.btn-primary:hover:not([disabled]) {
+  background: var(--ts-action-hover);
+  border-color: var(--ts-action-hover);
+  color: #fff;
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field > span:first-child {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+input[type="url"],
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--ts-border);
+  border-radius: 8px;
+  background: var(--ts-card);
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+input[type="url"]:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--ts-accent);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9A918B;
+}
+
+input[type="file"] {
+  font: inherit;
+  font-size: 15px;
+  max-width: 100%;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--ts-action);
+}
+
+textarea {
+  min-height: 10rem;
+  line-height: 1.5;
+}
+
+/* Recipe URL / Pasted text / Photo: a full-width segmented control. */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  background: var(--ts-secondary);
+  border-radius: var(--ts-pill);
+}
+
+.tab {
+  min-height: 40px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: var(--ts-pill);
+  background: transparent;
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ts-action);
+}
+
+.tab[aria-selected="true"] {
+  background: var(--ts-card);
+  color: var(--ts-action);
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(34, 32, 28, 0.12);
+}
+
+.converter-more {
+  margin: 0 0 8px;
+  color: var(--ts-muted);
+  font-size: 15px;
+}
+
+.adjust-grid {
+  display: grid;
+  gap: 0 16px;
+}
+
+.adjust-summary {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--ts-phase);
+  border: 1px solid var(--ts-task-border);
+  border-radius: 8px;
+}
+
+.adjust-summary > :first-child {
+  margin-top: 0;
+}
+
+.adjust-summary > :last-child {
+  margin-bottom: 0;
+}
+
+.stepper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.stepper .btn {
+  min-width: 44px;
+  padding: 8px 12px;
+  font-size: 18px;
+}
+
+.stepper input {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.check-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.check-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+/* ---------- Converter extras ---------- */
+
+.photo-preview {
+  max-width: 100%;
+  border-radius: var(--ts-radius);
+  border: 1px solid var(--ts-border);
+}
+
+.transcript {
+  white-space: pre-wrap;
+  background: var(--ts-card);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius);
+  padding: 12px 16px;
+  max-height: 22rem;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* ---------- Cook Along viewer ---------- */
+
+.recipe-head {
+  margin: 8px 0 4px;
+}
+
+.recipe-title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  line-height: 1.2;
 }
 
 .ingredients {
-  padding-left: 1.2rem;
-  margin: 0.5rem 0;
+  padding-left: 20px;
+  margin: 0;
 }
 
 .ingredients li {
-  margin-bottom: 0.3rem;
+  margin-bottom: 6px;
+}
+
+.ingredients li::marker {
+  color: var(--ts-muted);
+}
+
+.before-start h3 {
+  margin: 0 0 4px;
+}
+
+.before-start h4 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+.before-start-summary {
+  font-weight: 600;
+  margin: 0;
+}
+
+.component-list,
+.equipment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.component-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.equipment-list li::after {
+  content: "·";
+  margin-left: 14px;
+  color: var(--ts-muted);
+}
+
+.equipment-list li:last-child::after {
+  content: "";
+  margin: 0;
+}
+
+/* Essentials / With tips: a small segmented control. */
+.mode-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 20px 0 4px;
+  background: var(--ts-secondary);
+  border-radius: var(--ts-pill);
+}
+
+.mode-option {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: var(--ts-pill);
+  background: transparent;
+  color: var(--ts-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.mode-option:hover {
+  color: var(--ts-action);
+}
+
+.mode-option.mode-active {
+  background: var(--ts-card);
+  color: var(--ts-action);
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(34, 32, 28, 0.12);
+}
+
+.why,
+.tip {
+  color: var(--ts-muted);
+  font-size: 14px;
+}
+
+/* Phase band: names the phase above its task cards. */
+.phase-band {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 10px;
+  padding: 8px 12px;
+  background: var(--ts-phase);
+  border: 1px solid var(--ts-task-border);
+  border-radius: 8px;
+}
+
+.phase-band .label {
+  margin: 0;
+  color: var(--ts-ink);
+}
+
+.phase-band .meta {
+  font-size: 13px;
+}
+
+/* Cook Along task cards: 3 px left border in the lane color (set inline). */
+.task-card {
+  background: var(--ts-task);
+  border: 1px solid var(--ts-task-border);
+  border-left: 3px solid var(--ts-lane-kitchen);
+  border-radius: var(--ts-radius);
+  padding: 12px 14px;
+  margin: 0 0 10px;
+}
+
+.task-card.unattended {
+  background: var(--ts-task-unattended);
+}
+
+.task-lane {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ts-muted);
+}
+
+.task-card h4 {
+  margin: 0 0 6px;
+}
+
+.task-card p {
+  margin: 6px 0;
+}
+
+.cue {
+  font-weight: 600;
 }
 
 .prep-list {
   list-style: none;
   padding: 0;
-  margin: 0.5rem 0;
-}
-
-.prep-list li {
-  margin-bottom: 0.5rem;
+  margin: 0;
 }
 
 .prep-list label {
   display: flex;
-  gap: 0.6rem;
+  gap: 12px;
   align-items: flex-start;
   cursor: pointer;
 }
 
 .prep-list input[type="checkbox"] {
-  width: 1.3rem;
-  height: 1.3rem;
-  margin-top: 0.15rem;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
   flex-shrink: 0;
 }
 
 .prep-done {
   text-decoration: line-through;
-  color: var(--muted);
+  color: var(--ts-muted);
+}
+
+.changes {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.changes li {
+  margin-bottom: 6px;
+}
+
+.change-kind {
+  font-weight: 600;
+}
+
+details {
+  margin: 20px 0 0;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ts-ink);
+}
+
+/* Timeline: lane rows with task bars placed by the schedule. */
+.timeline {
+  padding-bottom: 10px;
 }
 
 .lanes {
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  padding: 4px 0 8px;
 }
 
+/* The whole plan fits the card at 390 px; .lanes still scrolls as a fallback. */
 .lane-row {
   display: grid;
-  grid-template-columns: 7rem 1fr;
-  gap: 0.6rem;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
-  margin-bottom: 0.45rem;
-  min-width: 26rem;
+  margin-bottom: 6px;
 }
 
 .lane-label {
-  font-size: 0.85rem;
+  font-size: 13px;
+  font-weight: 550;
   display: flex;
-  gap: 0.4rem;
+  gap: 6px;
   align-items: center;
   min-width: 0;
 }
@@ -452,62 +799,51 @@ textarea {
 }
 
 .lane-dot {
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 999px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--ts-pill);
   flex-shrink: 0;
 }
 
 .lane-track {
   position: relative;
-  height: 2.1rem;
-  background: var(--well);
-  border-radius: 6px;
+  height: 34px;
+  background: var(--ts-phase);
+  border: 1px solid var(--ts-task-border);
+  border-radius: 8px;
 }
 
 .lane-bar {
   position: absolute;
-  top: 0.2rem;
-  bottom: 0.2rem;
-  background: #d8d3c8;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  line-height: 1.7rem;
-  padding: 0 0.45rem;
+  top: 3px;
+  bottom: 3px;
+  background: var(--ts-task);
+  border: 1px solid var(--ts-task-border);
+  border-left: 3px solid var(--ts-lane-kitchen);
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 24px;
+  padding: 0 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ink);
+  color: var(--ts-ink);
 }
 
 .lane-bar.unattended {
-  background: repeating-linear-gradient(-45deg, #e7e3da, #e7e3da 6px, #dcd7cb 6px, #dcd7cb 12px);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ts-task-unattended) 0 6px,
+    #DCE4D2 6px 12px
+  );
 }
 
 .axis {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--muted);
-  min-width: 26rem;
-}
-
-.step {
-  border-top: 1px solid var(--line);
-  padding: 0.9rem 0;
-}
-
-.step h4 {
-  margin: 0 0 0.3rem;
-  font-size: 1rem;
-}
-
-.step p {
-  margin: 0.3rem 0;
-}
-
-.cue {
-  font-weight: 600;
+  padding-left: calc(6rem + 8px);
+  font-size: 12px;
+  color: var(--ts-muted);
 }
 
 /* Phone first: the digits get their own row and the four buttons share the
@@ -515,106 +851,79 @@ textarea {
 .timer {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.4rem;
+  gap: 6px;
   align-items: center;
-  margin-top: 0.6rem;
-  background: var(--well);
+  margin-top: 10px;
+  background: var(--ts-card);
+  border: 1px solid var(--ts-task-border);
   border-radius: 8px;
-  padding: 0.55rem 0.6rem;
+  padding: 8px 10px;
   max-width: 100%;
-  box-sizing: border-box;
 }
 
 .timer-digits {
   grid-column: 1 / -1;
   font-variant-numeric: tabular-nums;
-  font-size: 1.4rem;
+  font-size: 22px;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .timer .btn {
   min-height: 40px;
   min-width: 0;
-  padding: 0.4rem 0.25rem;
+  padding: 6px 4px;
   white-space: nowrap;
-  font-size: 0.95rem;
+  font-size: 14px;
 }
 
-.photo-preview {
-  max-width: 100%;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-}
-
-.transcript {
-  white-space: pre-wrap;
-  background: var(--well);
-  border-radius: 8px;
-  padding: 0.8rem 1rem;
-  max-height: 22rem;
-  overflow-y: auto;
-  font-size: 0.9rem;
-}
-
-.changes {
-  padding-left: 1.2rem;
-  margin: 0.5rem 0;
-}
-
-.changes li {
-  margin-bottom: 0.35rem;
-}
-
-.change-kind {
-  font-weight: 600;
-}
-
-.adjust-grid {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.stepper {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.stepper input {
-  width: 4.5rem;
-  text-align: center;
-}
-
-.check-row {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.check-row input[type="checkbox"] {
-  width: 1.3rem;
-  height: 1.3rem;
-}
-
-details summary {
-  cursor: pointer;
-  font-weight: 600;
+.save-row {
+  margin-top: 24px;
 }
 
 @media (min-width: 40rem) {
   h1 {
-    font-size: 1.75rem;
+    font-size: 32px;
+  }
+
+  .site-header {
+    padding-top: 28px;
+  }
+
+  .recipe-title {
+    font-size: 30px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .adjust-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adjust-grid > .adjust-wide {
+    grid-column: 1 / -1;
+  }
+
+  .tabs {
+    max-width: 480px;
   }
 
   .lane-row {
-    grid-template-columns: 9rem 1fr;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .axis {
+    padding-left: calc(9rem + 10px);
   }
 
   .timer {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem;
-    padding: 0.55rem 0.8rem;
+    gap: 8px;
+    padding: 8px 12px;
   }
 
   .timer-digits {
@@ -622,75 +931,7 @@ details summary {
   }
 
   .timer .btn {
-    padding: 0.4rem 0.8rem;
-    font-size: inherit;
+    padding: 6px 14px;
+    font-size: 14px;
   }
-}
-
-/* Before you start + Essentials / With tips (output-format pass; the brand
-   pass restyles later). */
-.before-start h4 {
-  margin: 0.75rem 0 0.25rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ts-muted);
-}
-
-.before-start-summary {
-  font-weight: 600;
-}
-
-.component-list,
-.equipment-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.9rem;
-}
-
-.component-list li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.equipment-list li::after {
-  content: "·";
-  margin-left: 0.9rem;
-  color: var(--ts-muted);
-}
-
-.equipment-list li:last-child::after {
-  content: "";
-  margin: 0;
-}
-
-.mode-toggle {
-  display: inline-flex;
-  border: 1px solid var(--ts-border);
-  border-radius: var(--ts-pill);
-  overflow: hidden;
-  margin: 0.75rem 0;
-}
-
-.mode-option {
-  border: 0;
-  background: var(--ts-card);
-  color: var(--ts-ink);
-  padding: 0.4rem 0.9rem;
-  font: inherit;
-  cursor: pointer;
-}
-
-.mode-option.mode-active {
-  background: var(--ts-action);
-  color: #fff;
-}
-
-.why,
-.tip {
-  color: var(--ts-muted);
 }

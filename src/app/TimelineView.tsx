@@ -23,7 +23,7 @@ export default function TimelineView({ timeline }: { timeline: TimelineDefinitio
   const colors = laneDisplayColors(timeline.lanes);
 
   return (
-    <div>
+    <div className="card timeline">
       <p className="meta">About {sched.totalMinutes} minutes from prep to serving.</p>
       <div
         className="lanes"

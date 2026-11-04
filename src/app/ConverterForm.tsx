@@ -269,92 +269,97 @@ export default function ConverterForm({
   }
 
   return (
-    <section aria-label="Convert a recipe">
-      <div className="tabs" role="tablist" aria-label="Recipe source">
-        {(["url", "text", "photo"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tab === t}
-            className="tab"
-            onClick={() => {
-              setTab(t);
-              setError(null);
-            }}
-          >
-            {t === "url" ? "Recipe URL" : t === "text" ? "Pasted text" : "Photo"}
-          </button>
-        ))}
-      </div>
-
-      {tab === "photo" ? (
-        <form onSubmit={onTranscribe} onPaste={onPhotoPaste}>
-          <label className="field">
-            <span>Take or upload a photo of the recipe</span>
-            <input
-              type="file"
-              accept={PHOTO_MIME_TYPES.join(",")}
-              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
-          <p className="meta">
-            PNG, JPEG or WebP. Large photos are shrunk on your device before upload. The photo is
-            read in memory only.
-          </p>
-          <p className="meta">Tip: you can also paste a screenshot straight from your clipboard.</p>
-          {photoFile ? (
-            <p className="meta">
-              Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)} KB)
-            </p>
-          ) : null}
-          {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
-          <div className="btn-row">
+    <>
+      <section aria-label="Convert a recipe" className="card converter">
+        <div className="tabs" role="tablist" aria-label="Recipe source">
+          {(["url", "text", "photo"] as const).map((t) => (
             <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!photoFile || busy !== null}
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              className="tab"
+              onClick={() => {
+                setTab(t);
+                setError(null);
+              }}
             >
-              {busy === "transcribe" ? "Transcribing…" : "Transcribe photo"}
+              {t === "url" ? "Recipe URL" : t === "text" ? "Pasted text" : "Photo"}
             </button>
-          </div>
-          {busy === "transcribe" ? <ProgressNote kind="transcribe" /> : null}
-        </form>
-      ) : (
-        <form onSubmit={onConvert}>
-          {tab === "url" ? (
+          ))}
+        </div>
+
+        {tab === "photo" ? (
+          <form onSubmit={onTranscribe} onPaste={onPhotoPaste}>
             <label className="field">
-              <span>Recipe URL</span>
+              <span>Photo of the recipe</span>
               <input
-                type="url"
-                required
-                placeholder="https://example.com/recipe"
-                value={urlValue}
-                onChange={(e) => setUrlValue(e.target.value)}
+                type="file"
+                accept={PHOTO_MIME_TYPES.join(",")}
+                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
               />
             </label>
-          ) : (
-            <label className="field">
-              <span>Recipe text</span>
-              <textarea
-                ref={textRef}
-                required
-                placeholder="Paste the ingredients and steps here"
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-              />
-            </label>
-          )}
-          {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
-          <div className="btn-row">
-            <button type="submit" className="btn btn-primary" disabled={busy !== null}>
-              {busy === "convert" ? "Converting…" : "Convert"}
-            </button>
-          </div>
-          {busy === "convert" ? <ProgressNote kind="convert" /> : null}
-        </form>
-      )}
-      {busy === "load" ? <p className="meta">Loading the saved recipe…</p> : null}
-    </section>
+            <p className="meta">
+              Take a photo or upload one: PNG, JPEG or WebP. Large photos are shrunk on your device
+              before upload. The photo is read in memory only.
+            </p>
+            <p className="meta">Tip: you can also paste a screenshot straight from your clipboard.</p>
+            {photoFile ? (
+              <p className="meta">
+                Selected: {photoFile.name} ({Math.round(photoFile.size / 1024)} KB)
+              </p>
+            ) : null}
+            {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
+            <div className="btn-row">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!photoFile || busy !== null}
+              >
+                {busy === "transcribe" ? "Transcribing…" : "Transcribe photo"}
+              </button>
+            </div>
+            {busy === "transcribe" ? <ProgressNote kind="transcribe" /> : null}
+          </form>
+        ) : (
+          <form onSubmit={onConvert}>
+            {tab === "url" ? (
+              <label className="field">
+                <span>Link to the recipe page</span>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://example.com/recipe"
+                  value={urlValue}
+                  onChange={(e) => setUrlValue(e.target.value)}
+                />
+              </label>
+            ) : (
+              <label className="field">
+                <span>Recipe text</span>
+                <textarea
+                  ref={textRef}
+                  required
+                  placeholder="Paste the ingredients and steps here"
+                  value={textValue}
+                  onChange={(e) => setTextValue(e.target.value)}
+                />
+              </label>
+            )}
+            {error ? <ErrorBox error={error} onAction={switchToPaste} /> : null}
+            <div className="btn-row">
+              <button type="submit" className="btn btn-primary" disabled={busy !== null}>
+                {busy === "convert" ? "Converting…" : "Convert"}
+              </button>
+            </div>
+            {busy === "convert" ? <ProgressNote kind="convert" /> : null}
+          </form>
+        )}
+        {busy === "load" ? <p className="meta">Loading the saved recipe…</p> : null}
+      </section>
+      <p className="converter-more">
+        No recipe handy? <a href="/demo">Try a demo recipe</a>.
+      </p>
+    </>
   );
 }

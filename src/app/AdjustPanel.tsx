@@ -86,8 +86,8 @@ export default function AdjustPanel({
   }
 
   return (
-    <section aria-label="Adjust this recipe">
-      <h2>Adjust this recipe</h2>
+    <section aria-label="Adjust this recipe" className="card adjust-panel">
+      <h2 className="card-title">Adjust this recipe</h2>
       <form onSubmit={onSubmit}>
         <div className="adjust-grid">
           <label className="field">
@@ -138,7 +138,7 @@ export default function AdjustPanel({
               ))}
             </select>
           </label>
-          <label className="field">
+          <label className="field adjust-wide">
             <span>Cuisine style</span>
             <input
               type="text"
@@ -148,7 +148,7 @@ export default function AdjustPanel({
               onChange={(e) => setCuisine(e.target.value)}
             />
           </label>
-          <label className="check-row">
+          <label className="check-row adjust-wide">
             <input
               type="checkbox"
               checked={sousVoice}
@@ -172,7 +172,7 @@ export default function AdjustPanel({
         </div>
       </form>
       {summary ? (
-        <div className="card">
+        <div className="adjust-summary">
           <p>
             <strong>What changed:</strong> {summary}
           </p>
