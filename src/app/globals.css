@@ -413,7 +413,8 @@ select:focus {
 
 input::placeholder,
 textarea::placeholder {
-  color: #9A918B;
+  color: var(--ts-muted);
+  opacity: 1;
 }
 
 input[type="file"] {
@@ -798,11 +799,7 @@ details summary {
   color: var(--ts-ink);
 }
 
-/* Timeline: lane rows with task bars placed by the schedule. */
-.timeline {
-  padding-bottom: 10px;
-}
-
+/* Timeline (a .card): lane rows with task bars placed by the schedule. */
 .lanes {
   overflow-x: auto;
   padding: 4px 0 8px;
