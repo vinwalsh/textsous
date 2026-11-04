@@ -60,6 +60,17 @@ describe("embed demo page", () => {
     expect(html).toContain('data-autoopen=""');
   });
 
+  it("tells testers that plain /embed-demo converts only on production", () => {
+    const render = (origin: string, src: string | null) =>
+      renderToString(createElement(DemoPost, { origin, src, autoOpen: false }));
+    expect(render("http://localhost:3102", null)).toContain("data-demo-test-note");
+    expect(render("https://open-textsous-git-x.vercel.app", null)).toContain("autoopen=1");
+    expect(render("https://open.textsous.com", null)).not.toContain("data-demo-test-note");
+    expect(render("http://localhost:3102", "http://localhost:3102/api/artifact/a?sig=b")).not.toContain(
+      "data-demo-test-note",
+    );
+  });
+
   it("accepts only this site's artifact links as data-src", () => {
     const origin = "https://open.textsous.com";
     expect(demoSrc("/api/artifact/abc?sig=1", origin)).toBe(`${origin}/api/artifact/abc?sig=1`);

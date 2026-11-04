@@ -18,6 +18,9 @@ export function demoSrc(raw: string | undefined, origin: string): string | null 
   }
 }
 
+/** Plain /embed-demo converts its own address, which only works on production. */
+const PRODUCTION_ORIGIN = "https://open.textsous.com";
+
 /**
  * A plain recipe blog post with the Cook Along button, for demos and the
  * hackathon video. The page itself loads /embed.js from its own origin so a
@@ -47,6 +50,16 @@ export default function DemoPost({
       <p className={styles.banner} role="note">
         <strong>Demo page.</strong> A sample recipe blog post that shows the TextSous Cook Along
         button. The recipe is an original written for this project (CC0).
+        {src || origin === PRODUCTION_ORIGIN ? null : (
+          <>
+            {" "}
+            <span data-demo-test-note="">
+              On this build the button can&apos;t convert this page (it only converts on{" "}
+              {PRODUCTION_ORIGIN}). Add <code>?src=&lt;saved artifact link&gt;&amp;autoopen=1</code> to
+              test the overlay.
+            </span>
+          </>
+        )}
       </p>
       <header className={styles.blogHeader}>
         <span className={styles.blogName}>The Demo Kitchen</span>
