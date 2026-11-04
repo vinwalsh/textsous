@@ -13,6 +13,14 @@ interface AdjustOk {
   scaleFlags: ScaleFlag[];
 }
 
+/** One scale flag as a sentence with readable positions, never an id. Pure. */
+export function scaleFlagText(flag: ScaleFlag, steps: ReadonlyArray<{ id: string }>): string {
+  if (flag.card) return `“${flag.card}” card: “${flag.token}” was left as printed — check it yourself.`;
+  const index = steps.findIndex((s) => s.id === flag.stepId);
+  const where = index >= 0 ? `Step ${index + 1}` : "A step";
+  return `${where}: “${flag.token}” was left as printed — check it yourself.`;
+}
+
 function labelTarget(target: string): string {
   return target.charAt(0).toUpperCase() + target.slice(1);
 }
@@ -171,9 +179,7 @@ export default function AdjustPanel({
           {flags.length > 0 ? (
             <ul className="changes">
               {flags.map((f, i) => (
-                <li key={`${f.stepId}-${i}`}>
-                  Step {f.stepId}: “{f.token}” was left as printed — check it yourself.
-                </li>
+                <li key={`${f.stepId}-${i}`}>{scaleFlagText(f, artifact.recipe.steps)}</li>
               ))}
             </ul>
           ) : null}

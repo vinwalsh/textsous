@@ -197,3 +197,16 @@ describe("adjustArtifact", () => {
     expect(order).toEqual([]);
   });
 });
+
+describe("scaleFlagText", () => {
+  it("names a step by its position and a card by its label, never an id", async () => {
+    const { scaleFlagText } = await import("../src/app/AdjustPanel");
+    const steps = [{ id: "step-1" }, { id: "step-3" }];
+    expect(scaleFlagText({ stepId: "step-3", token: "2" }, steps)).toBe(
+      "Step 2: “2” was left as printed — check it yourself.",
+    );
+    expect(scaleFlagText({ stepId: "step-1", token: "1/2", card: "Season the batter" }, steps)).toBe(
+      "“Season the batter” card: “1/2” was left as printed — check it yourself.",
+    );
+  });
+});
