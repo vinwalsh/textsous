@@ -132,16 +132,14 @@ describe("artifact viewer layout", () => {
     expect(html).toContain("One minute more");
   });
 
-  it("shows the convert warnings above Before you start, and nothing when there are none", () => {
+  it("shows the convert warnings after the steps, above the timeline, and nothing when there are none", () => {
     const note = "The page text was 90,000 characters; only the first 60,000 were kept.";
     const html = renderToString(
       createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {}, notices: [note] }),
     );
     expect(html).toContain("Notes on this conversion");
-    expect(html.indexOf("only the first 60,000 were kept")).toBeGreaterThan(-1);
-    expect(html.indexOf("only the first 60,000 were kept")).toBeLessThan(
-      html.indexOf('aria-label="Before you start"'),
-    );
+    expect(html.indexOf("only the first 60,000 were kept")).toBeGreaterThan(html.indexOf(">Steps<"));
+    expect(html.indexOf("only the first 60,000 were kept")).toBeLessThan(html.indexOf(">Timeline<"));
     expect(renderViewer()).not.toContain("Notes on this conversion");
     expect(convertNotices([note, 3, "", null])).toEqual([note]);
     expect(convertNotices(undefined)).toEqual([]);
