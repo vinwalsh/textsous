@@ -552,6 +552,8 @@ export default function ArtifactViewer({
   // it (and follows Adjust Cooking Times), so the facts line carries the
   // total only above the fallback sections.
   const factsMinutes = pilotInput ? null : totalMinutes;
+  // Save sends the cook along as shown, so it waits while an adjustment applies.
+  const saveWaits = adjusting !== null;
   const traces = rollUpTraces(recipe.ingredients);
   const mayContain = traces.length > 0 ? ` May contain: ${traces.join(", ")}.` : "";
 
@@ -575,7 +577,7 @@ export default function ArtifactViewer({
   }
 
   async function saveToTextSous() {
-    if (saveBusy) return;
+    if (saveBusy || saveWaits) return;
     // Embedded: open the tab now, inside the click, so popup blockers allow it.
     const tab = embedded ? window.open("about:blank", "_blank") : null;
     if (tab) tab.opener = null;
@@ -721,7 +723,12 @@ export default function ArtifactViewer({
       {saveError ? <ErrorBox error={saveError} /> : null}
       <div className="btn-row save-row">
         {saveEnabled ? (
-          <button type="button" className="btn btn-primary" onClick={saveToTextSous} disabled={saveBusy}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={saveToTextSous}
+            disabled={saveBusy || saveWaits}
+          >
             {saveBusy ? "Saving…" : "Save to TextSous"}
           </button>
         ) : null}
@@ -735,6 +742,7 @@ export default function ArtifactViewer({
           </button>
         )}
       </div>
+      {saveEnabled && saveWaits ? <p className="meta">Saving waits until your changes apply.</p> : null}
       {importUrl ? (
         <p className="meta">
           TextSous opened in a new tab.{" "}

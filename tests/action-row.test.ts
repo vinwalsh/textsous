@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ArtifactViewer from "../src/app/ArtifactViewer";
+import type { AdjustChoices } from "../src/app/AdjustPanel";
 import type { CookAlongArtifact } from "../src/lib/schema/artifact";
 
 function makeArtifact(): CookAlongArtifact {
@@ -69,7 +70,9 @@ function makeArtifact(): CookAlongArtifact {
   };
 }
 
-function render(props: { saveEnabled?: boolean; embedded?: boolean; onClose?: () => void } = {}): string {
+function render(
+  props: { saveEnabled?: boolean; embedded?: boolean; onClose?: () => void; queuedAdjustments?: AdjustChoices } = {},
+): string {
   return renderToStaticMarkup(
     createElement(ArtifactViewer, { artifact: makeArtifact(), onStartOver: () => {}, ...props }),
   );
@@ -92,6 +95,25 @@ describe("cook along action row", () => {
     expect(buttons).toEqual(["btn btn-primary: Save to TextSous", "btn: Convert another recipe"]);
     // Nothing else sits in the row: the two buttons are its only children.
     expect(row).toMatch(/^<div class="btn-row save-row"><button [^>]*>[^<]*<\/button><button [^>]*>[^<]*<\/button><\/div>$/);
+  });
+
+  it("holds Save while an adjustment applies, with a note under the row, and keeps the row's shape", () => {
+    const waiting: AdjustChoices = { servings: 4, dietary: "", cuisine: "", sousVoice: false };
+    const html = render({ saveEnabled: true, queuedAdjustments: waiting });
+    const { row, buttons } = actionRow(html);
+    expect(buttons).toEqual(["btn btn-primary: Save to TextSous", "btn: Convert another recipe"]);
+    expect(row).toMatch(
+      /^<div class="btn-row save-row"><button [^>]*disabled=""[^>]*>Save to TextSous<\/button><button [^>]*>[^<]*<\/button><\/div>$/,
+    );
+    expect(row).not.toMatch(/<button [^>]*disabled=""[^>]*>Convert another recipe/);
+    const note = html.indexOf("Saving waits until your changes apply.");
+    expect(note).toBeGreaterThan(html.indexOf(row));
+    expect(note).toBeLessThan(html.indexOf("Saving keeps the recipe for 24 hours"));
+    // Without an adjustment nothing waits, and without the Save button there is no note.
+    const calm = render({ saveEnabled: true });
+    expect(actionRow(calm).row).not.toContain("disabled");
+    expect(calm).not.toContain("Saving waits");
+    expect(render({ saveEnabled: false, queuedAdjustments: waiting })).not.toContain("Saving waits");
   });
 
   it("leaves Convert another recipe alone in the row when saving is turned off", () => {
