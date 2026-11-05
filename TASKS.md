@@ -387,6 +387,50 @@ C4 MCP tools, C5 embed, C6 design tokens, C7 /assistants, C8 brand.
   and O14 are done.
   - 2026-11-04: shipped. A preview of the final branch converted a /demo recipe live in 275 s (canonicalize 67 s, procedure 161 s, review 46 s) and its artifact parsed in the TextSous app's Cookbook importer. main fast-forwarded from `3e56ebb` to `f92e0a1` at 04:17 ET; CI green. Production checks: `/api/health` ok on muse-spark-1.3 with `dailyCap` 300, `ratePerHour` 20, `skillsConfigured` false (O10) and `signingConfigured` true; /, /demo, /assistants, /embed-demo, /embed, /embed.js and /api/skills/format answer 200 and an unknown path 404; the headers above match exactly; a convert POST marked cross-site gets 403; the secret skills routes answer 503 `not_configured`. O12 done. Open until O13 and O14.
 
+## M8. Progressive conversion, speed, photos and quick fixes (Nov 4)
+
+- [x] **M8.1 Progressive conversion.** POST /api/convert streams NDJSON
+  events (facts, overview, recipe, procedure, done) to clients that ask;
+  the page fills in as each part arrives under the cooking line.
+  Done 2026-11-04 (`cf3fc28`, review fixes `9dfae4e`).
+- [x] **M8.2 Speed.** Per-stage reasoning effort (overview, procedure and
+  scaling minimal; the rest low; env overrides) and the overview stage; a
+  fresh conversion finishes in about 45-80 s instead of 4-5 minutes.
+- [x] **M8.3 Up to 3 photos of one recipe.** Resized in the browser, one
+  vision call, pages shown on the confirm screen.
+- [x] **M8.4 Quick fixes.** Servings up to 36 with free-text amounts
+  rescaled, header buttons, side-by-side action row.
+
+## M9. Adjust with SOUS, demo blogs, long cooks (Nov 4)
+
+- [x] **M9.1 Adjust with SOUS.** embed.js menu (servings, a diet, a style,
+  Build "Cook Along") opening the overlay on the host page; /embed applies
+  ?servings, ?dietary and ?cuisine through the queued-adjustment path.
+  Done 2026-11-04 (`7b9f56c`).
+- [x] **M9.2 Demo blogs and bookmarklet.** /demo-sites (four original CC0
+  recipes under "Demo" blog names) and the /embed-demo bookmarklet.
+- [x] **M9.3 Long cooks and id repair.** One task may run up to 12 hours;
+  mistyped ids are repaired before scheduling. Done 2026-11-04
+  (`19d9909`, `f513e4f`).
+
+## M10. The Cook Along view, progress states, glasses (Nov 4)
+
+- [x] **M10.1 Progress states.** Coming up / Working on it / Ready per
+  section, the cooking line stuck to the top, "Before your changes" and
+  Adjusting marks, "Cook Along" as the product name, "Queued ✓".
+  Done 2026-11-04 (`0d303ad`).
+- [x] **M10.2 /glasses.** Heads-up Cook Along for Meta Ray-Ban Display web
+  apps: guide clock, Details, per-task timers, Start over, install link.
+  Checked in headless Chrome at 600x600, not yet on the glasses.
+  Done 2026-11-04 (`0a26289`).
+- [x] **M10.3 The Cook Along view.** Ported from the TextSous app at the
+  owner's direction with an adapter from the open artifact (29 of 29 real
+  cook alongs adapt and schedule); /cook-along-demo. Done 2026-11-04
+  (`8d80f33`).
+- [ ] **M10.4 Simulations for the video.** /simulate pages that replay
+  recorded conversions through the real components at adjustable speed,
+  labeled as replays; docs/VIDEO.md shot list.
+
 ## Owner actions (not for the coding agent)
 Order for Nov 4: O10, O11, O13, O14, O8, O9 (the M7 deploy and O12 are done).
 - [x] O1 Re-add the Meta key in Vercel as MODEL_API_KEY (Production and
@@ -440,7 +484,7 @@ Order for Nov 4: O10, O11, O13, O14, O8, O9 (the M7 deploy and O12 are done).
   run it again later and it picks up where it stopped. Done when a second
   run prints "cache hit" for every URL.
   - 2026-11-04: done by the coding agent from 04:18 ET with three runs in parallel over split lists: 17 fresh conversions (169-276 s each), all 200 in the production logs, the rest cache hits. The script reported 7 of the 17 as failed after about 40 s each time it reused a kept-alive connection after a long conversion, while the server finished and cached them; it now opens a fresh connection per request. A second run printed "cache hit" for all 21 (20 /demo URLs and the /embed-demo post). One cached recipe carries an advisory review note.
-- [ ] O13 Muse end to end (after O10, O11 and the M7 deploy). Add the custom
+- [ ] O13 Muse end to end (O10 and O11 are done). Add the custom
   connector https://textsous.com/api/mcp in Muse (Settings > Connectors >
   Add custom connector, or ask Muse in a chat to create it, as /assistants
   says), sign in with a TextSous account, then send a recipe link and ask
