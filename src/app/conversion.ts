@@ -213,12 +213,21 @@ export function conversionStage(
   return CONVERSION_STAGES[conversionStageIndex(state)];
 }
 
+/**
+ * Where a conversion's events come from instead of POST /api/convert: a
+ * replay of a recording (/simulate). It paces itself, so the client wait
+ * does not apply, and it stops when `signal` aborts.
+ */
+export type ConversionEventSource = (body: ConvertBody, signal: AbortSignal) => AsyncIterable<ConvertEvent>;
+
 export interface RunConversionOptions {
   fetchImpl?: typeof fetch;
   /** Client wait for the whole conversion, stream included (default 430 s). */
   timeoutMs?: number;
   /** Stops reading (the page moved on); the server keeps converting. */
   signal?: AbortSignal;
+  /** Events from somewhere other than the server; the live path is untouched when absent. */
+  source?: ConversionEventSource;
 }
 
 /**
@@ -229,7 +238,7 @@ export interface RunConversionOptions {
 export async function runConversion(
   body: ConvertBody,
   dispatch: (action: ConversionAction) => void,
-  { fetchImpl = fetch, timeoutMs = API_TIMEOUT_MS, signal }: RunConversionOptions = {},
+  { fetchImpl = fetch, timeoutMs = API_TIMEOUT_MS, signal, source }: RunConversionOptions = {},
 ): Promise<ConversionState> {
   let state = initialConversionState;
   const apply = (action: ConversionAction): void => {
@@ -240,14 +249,29 @@ export async function runConversion(
   const recipeUrl = state.recipeUrl;
   const controller = new AbortController();
   let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, timeoutMs);
+  // A source paces itself: the client wait is for the server alone.
+  const timer = source
+    ? null
+    : setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, timeoutMs);
   const stop = (): void => controller.abort();
   if (signal?.aborted) controller.abort();
   signal?.addEventListener("abort", stop);
+  // Every event in order; events that end without done or error are a dropped connection.
+  const drain = async (events: AsyncIterable<ConvertEvent>): Promise<ConversionState> => {
+    for await (const event of events) {
+      apply(event);
+      if (state.status !== "working") break;
+    }
+    if (state.status === "working" && !controller.signal.aborted) {
+      apply({ type: "failed", error: conversionError(null, "", { recipeUrl }) });
+    }
+    return state;
+  };
   try {
+    if (source) return await drain(source(body, controller.signal));
     const response = await fetchImpl("/api/convert", {
       method: "POST",
       headers: { "content-type": "application/json", accept: CONVERT_EVENTS_MEDIA_TYPE },
@@ -256,15 +280,7 @@ export async function runConversion(
     });
     const type = response.headers.get("content-type") ?? "";
     if (response.ok && response.body && type.includes(CONVERT_EVENTS_MEDIA_TYPE)) {
-      for await (const event of readEvents(response.body)) {
-        apply(event);
-        if (state.status !== "working") break;
-      }
-      // The stream ended without done or error: the connection dropped.
-      if (state.status === "working" && !controller.signal.aborted) {
-        apply({ type: "failed", error: conversionError(null, "", { recipeUrl }) });
-      }
-      return state;
+      return await drain(readEvents(response.body));
     }
     // JSON: an error found before the stream started, or a server that does not stream.
     const data: unknown = await response.json().catch(() => null);
@@ -293,7 +309,7 @@ export async function runConversion(
     }
     return state;
   } finally {
-    clearTimeout(timer);
+    if (timer !== null) clearTimeout(timer);
     signal?.removeEventListener("abort", stop);
   }
 }
