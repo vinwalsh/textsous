@@ -3,6 +3,22 @@ import type { CookingScheduledTask } from "./plan";
 type Interval = Pick<CookingScheduledTask, "id" | "startMinute" | "endMinute">;
 const DEFAULT_TASK_HEIGHT = 220;
 const DEFAULT_PIXELS_PER_MINUTE = 12;
+/** Minutes of a span drawn at the full rate; the rest is compressed. */
+const FULL_RATE_MINUTES = 20;
+/** Height per minute past FULL_RATE_MINUTES, as a share of the baseline. */
+const LONG_SPAN_RATE = 0.05;
+
+/**
+ * Pixels for a span of minutes: the first 20 at the baseline, the rest at a
+ * twentieth of it, so a 4-hour simmer is a card you scroll past, not twelve
+ * screens of empty lane. Cards and the guide share position(), so the
+ * compression keeps them aligned. Pure.
+ */
+export function spanPixels(minutes: number, baseline = DEFAULT_PIXELS_PER_MINUTE): number {
+  if (!(minutes > 0)) return 0;
+  const full = Math.min(minutes, FULL_RATE_MINUTES);
+  return full * baseline + Math.max(0, minutes - FULL_RATE_MINUTES) * baseline * LONG_SPAN_RATE;
+}
 /** A check's label below its line on a card, with the card's bottom margin. */
 const CHECK_LABEL_HEIGHT = 36;
 
@@ -52,7 +68,7 @@ export function buildTimelineGeometry(plan: { tasks: readonly (Interval & Pick<C
   const yByMinute = new Map<number, number>([[0, 0]]);
   for (let index = 1; index < minutes.length; index++) {
     const minute = minutes[index], prior = minutes[index - 1];
-    let y = yByMinute.get(prior)! + (minute - prior) * baseline;
+    let y = yByMinute.get(prior)! + spanPixels(minute - prior, baseline);
     for (const constraint of constraints.filter(item => item.end === minute)) {
       y = Math.max(y, yByMinute.get(constraint.start)! + constraint.height);
     }
@@ -67,7 +83,7 @@ export function buildTimelineGeometry(plan: { tasks: readonly (Interval & Pick<C
   const position = (minute: number) => {
     if (!Number.isFinite(minute)) throw new Error("Invalid timeline minute");
     if (minute <= 0) return 0;
-    if (minute >= plan.totalMinutes) return totalHeight + (minute - plan.totalMinutes) * baseline;
+    if (minute >= plan.totalMinutes) return totalHeight + spanPixels(minute - plan.totalMinutes, baseline);
     const segment = segments.find(item => minute >= item.startMinute && minute < item.endMinute)!;
     return segment.top + (minute - segment.startMinute) / (segment.endMinute - segment.startMinute) * segment.height;
   };
