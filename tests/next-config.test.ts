@@ -35,9 +35,9 @@ describe("next.config headers()", () => {
     expect(nextConfig.agentRules).toBe(false);
   });
 
-  it("caches /embed.js briefly and allows any origin", async () => {
+  it("caches /embed.js a minute in the browser, an hour at the CDN, and allows any origin", async () => {
     const h = await headersFor("/embed.js");
-    expect(h["cache-control"]).toEqual(["public, max-age=300, s-maxage=3600"]);
+    expect(h["cache-control"]).toEqual(["public, max-age=60, s-maxage=3600"]);
     expect(h["access-control-allow-origin"]).toEqual(["*"]);
   });
 });

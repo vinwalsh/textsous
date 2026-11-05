@@ -280,8 +280,8 @@ link.
 - `next.config.ts`: `/embed` sends `Content-Security-Policy: frame-ancestors *`;
   every other route sends `frame-ancestors 'self'` and
   `X-Frame-Options: SAMEORIGIN`; `/embed.js` sends
-  `Cache-Control: public, max-age=300, s-maxage=3600` and
-  `Access-Control-Allow-Origin: *`.
+  `Cache-Control: public, max-age=60, s-maxage=3600` (a minute in the
+  browser, an hour at the CDN) and `Access-Control-Allow-Origin: *`.
 - `/api/convert`, `/api/adjust`, `/api/photo` and `/api/artifact` refuse a
   POST that the browser marks `Sec-Fetch-Site: cross-site` (403), so another
   site cannot call them directly from its readers' browsers (a hidden form

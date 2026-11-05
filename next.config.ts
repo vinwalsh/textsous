@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 /**
  * Framing (docs/EMBED.md): only /embed may be framed by other sites, because
  * embed.js shows it in an overlay on recipe pages. Every other route allows
- * same-origin framing only. /embed.js is cached briefly so fixes roll out fast.
+ * same-origin framing only. /embed.js is cached a minute in the browser (an
+ * hour at the CDN) so fixes roll out fast.
  */
 export const EMBED_HEADERS = [
   { key: "Content-Security-Policy", value: "frame-ancestors *" },
@@ -15,7 +16,7 @@ export const SITE_FRAME_HEADERS = [
 ];
 
 export const EMBED_SCRIPT_HEADERS = [
-  { key: "Cache-Control", value: "public, max-age=300, s-maxage=3600" },
+  { key: "Cache-Control", value: "public, max-age=60, s-maxage=3600" },
   { key: "Access-Control-Allow-Origin", value: "*" },
 ];
 

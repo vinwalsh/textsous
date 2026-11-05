@@ -382,7 +382,7 @@ C4 MCP tools, C5 embed, C6 design tokens, C7 /assistants, C8 brand.
   Check: production `/api/health` is ok on muse-spark-1.3 and reports
   `ratePerHour` and `skillsConfigured`; `curl -I` shows
   `frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN` on /, only
-  `frame-ancestors *` on /embed, and `Cache-Control: public, max-age=300,
+  `frame-ancestors *` on /embed, and `Cache-Control: public, max-age=60,
   s-maxage=3600` with `Access-Control-Allow-Origin: *` on /embed.js; O12, O13
   and O14 are done.
   - 2026-11-04: shipped. A preview of the final branch converted a /demo recipe live in 275 s (canonicalize 67 s, procedure 161 s, review 46 s) and its artifact parsed in the TextSous app's Cookbook importer. main fast-forwarded from `3e56ebb` to `f92e0a1` at 04:17 ET; CI green. Production checks: `/api/health` ok on muse-spark-1.3 with `dailyCap` 300, `ratePerHour` 20, `skillsConfigured` false (O10) and `signingConfigured` true; /, /demo, /assistants, /embed-demo, /embed, /embed.js and /api/skills/format answer 200 and an unknown path 404; the headers above match exactly; a convert POST marked cross-site gets 403; the secret skills routes answer 503 `not_configured`. O12 done. Open until O13 and O14.
