@@ -308,4 +308,40 @@ describe("applyScaling", () => {
       detail: 'Check "3" in step 1; it was not rescaled.',
     });
   });
+
+  it("rescales whole items in halves and wholes, and the steps say the number the list says", () => {
+    const base = makeArtifact();
+    base.recipe.servings = 5;
+    base.recipe.nativeServings = 5;
+    const stock = base.recipe.ingredients[0];
+    base.recipe.ingredients = [
+      { ...stock, id: "bay", name: "dried bay leaves", quantity: "2", unit: "" },
+      { ...stock, id: "garlic", name: "garlic", quantity: "2", unit: "cloves" },
+      { ...stock, id: "onion", name: "onion", quantity: "1", unit: "" },
+      { ...stock, id: "eggs", name: "eggs", quantity: "3", unit: "large" },
+      { ...stock, id: "stock", name: "stock", quantity: "2", unit: "cups" },
+    ];
+    base.recipe.steps = [
+      { id: "step-1", kind: "active", text: "Add 2 dried bay leaves, 2 cloves garlic and 2 cups stock." },
+      { id: "step-2", kind: "active", text: "Dice 1 onion. Beat 3 large eggs." },
+    ];
+    const rules: ScaleRuleAssignment[] = ["bay", "garlic", "onion", "eggs", "stock"].map((id) => ({
+      ingredientId: id,
+      rule: "linear",
+      reason: "linear",
+    }));
+    // 5 -> 3 servings (x0.6): items in halves below 2 and wholes from 2, bought whole; cups stay exact.
+    const { artifact, flags } = applyScaling(base, 3, rules);
+    expect(artifact.recipe.ingredients.map((i) => i.cookQuantity)).toEqual(["1", "1", "1/2", "2", "1 1/4"]);
+    expect(artifact.recipe.ingredients.map((i) => i.buyQuantity)).toEqual(["1", "1", "1", "2", "1 1/4"]);
+    expect(artifact.recipe.steps.map((s) => s.text)).toEqual([
+      "Add 1 dried bay leaves, 1 cloves garlic and 1 1/4 cups stock.",
+      "Dice 1/2 onion. Beat 2 large eggs.",
+    ]);
+    expect(flags).toEqual([]);
+    // Back up from the printed amounts: 5 -> 7.5 (x1.5) makes 3 bay leaves, 3 cloves, 1 1/2 onions, 5 eggs.
+    const up = applyScaling(artifact, 7.5, rules).artifact;
+    expect(up.recipe.ingredients.map((i) => i.cookQuantity)).toEqual(["3", "3", "1 1/2", "5", "3"]);
+    expect(up.recipe.steps[1].text).toBe("Dice 1 1/2 onion. Beat 5 large eggs.");
+  });
 });

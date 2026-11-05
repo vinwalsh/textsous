@@ -7,7 +7,7 @@ import {
   RANGE_SEPARATOR_SOURCE,
   type ParsedAmount,
 } from "./amounts";
-import { isCountable, isMeasureUnit, lookupUnit, metricStep } from "./units";
+import { isCountable, isMeasureUnit, isWholeItem, lookupUnit, metricStep } from "./units";
 
 export interface ScaledAmounts {
   cook: { quantity: string; unit: string };
@@ -100,7 +100,7 @@ export function ceilKitchenAmount(value: number): string {
 
 /** Buy text for a scaled cook value: whole items when countable, else the next kitchen fraction up. */
 function buyQuantityText(cookValue: number, unit: string): string {
-  if (isCountable(unit)) {
+  if (isCountable(unit) || isWholeItem(unit)) {
     if (!(cookValue > 0)) return "0";
     return String(Math.ceil(cookValue - 1e-9));
   }
@@ -140,10 +140,41 @@ function formatBuyAmount(value: number, unit: string): string {
   return step === null ? buyQuantityText(v, unit) : formatMetricAmount(v, step, true);
 }
 
+/**
+ * A whole-item amount a cook can count out: the nearest half below 2, the
+ * nearest whole from 2 up (halves round up), never under 1/2. Pure.
+ */
+export function roundWholeItems(value: number): number {
+  if (!(value > 0)) return value;
+  const rounded = value < 2 ? Math.round(value * 2) / 2 : Math.round(value);
+  return Math.max(0.5, rounded);
+}
+
+function onHalfGrid(value: number): boolean {
+  return Math.abs(value * 2 - Math.round(value * 2)) < 1e-9;
+}
+
+/**
+ * The cook amount for one printed amount (`base`) scaled by `eff`. Whole
+ * items (no unit, a size word, cloves, slices; see isWholeItem) round with
+ * roundWholeItems, so 2 bay leaves x0.6 is 1, not 1 1/4. An item printed in
+ * parts ("1/4" onion) keeps the exact amount, and so do measured units. The
+ * ingredient list and the step text both take their number from here. Pure.
+ */
+export function scaledCookValue(base: number, eff: number, unit: string): number {
+  const value = round2(base * eff);
+  return isWholeItem(unit) && onHalfGrid(base) ? roundWholeItems(value) : value;
+}
+
 function scaledAmountText(amount: ParsedAmount, eff: number, unit: string, buy: boolean): string {
-  const format = buy ? formatBuyAmount : formatCookAmount;
-  const low = format(amount.low * eff, unit);
-  return amount.low === amount.high ? low : `${low}-${format(amount.high * eff, unit)}`;
+  const end = (base: number): string => {
+    const cook = scaledCookValue(base, eff, unit);
+    if (!buy) return formatCookAmount(cook, unit);
+    // Whole items are bought whole, enough for the rounded cook amount.
+    return formatBuyAmount(isWholeItem(unit) ? cook : base * eff, unit);
+  };
+  const low = end(amount.low);
+  return amount.low === amount.high ? low : `${low}-${end(amount.high)}`;
 }
 
 /**
@@ -233,7 +264,8 @@ function scaleRestatedAmounts(rest: string, eff: number, countFirst: boolean): s
     if (CONTAINER_NEXT.test(rest.slice(end))) continue;
     const low = parseAmountToken(lowText);
     if (low === null) continue;
-    edits.push({ start, end: start + lowText.length, text: formatCookAmount(low * eff, unit) });
+    // A restated count ("(10 cloves)") rounds like a whole item; a measure stays exact.
+    edits.push({ start, end: start + lowText.length, text: formatCookAmount(scaledCookValue(low, eff, unit), unit) });
     if (highText !== undefined) {
       const high = parseAmountToken(highText);
       const highStart = start + lowText.length + separator.length;
@@ -244,7 +276,7 @@ function scaleRestatedAmounts(rest: string, eff: number, countFirst: boolean): s
       edits.push({
         start: highStart,
         end: highStart + highText.length,
-        text: formatCookAmount(high * eff, unit),
+        text: formatCookAmount(scaledCookValue(high, eff, unit), unit),
       });
     }
   }
@@ -258,8 +290,9 @@ function scaleRestatedAmounts(rest: string, eff: number, countFirst: boolean): s
 /**
  * Scale one ingredient by an effective factor. Cook amounts render as kitchen
  * fractions (metric weights and volumes as whole g and ml, tenths of kg and
- * l); buy amounts round up (whole items for countable units, next kitchen
- * fraction or metric step otherwise). A quantity that is more than an amount
+ * l; whole items in halves and wholes, see scaledCookValue); buy amounts
+ * round up (whole items for countable units, next kitchen fraction or metric
+ * step otherwise). A quantity that is more than an amount
  * ("1/2 cup (100g)", "500 grams or 12 oz", "1 (24-ounce)") scales its
  * leading amount and the other measures of the same amount, never a package
  * size. To-taste quantities and quantities with no amount ("Half a", "a

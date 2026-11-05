@@ -10,7 +10,7 @@ import {
   type StructuredChatClient,
   type TokenUsage,
 } from "../model";
-import { effectiveFactor, formatAmount, round2, scalableAmount, scaleIngredient } from "../scaling/scale";
+import { effectiveFactor, formatAmount, scalableAmount, scaledCookValue, scaleIngredient } from "../scaling/scale";
 import { nativeServingsOf } from "../scaling/native";
 import { MAX_SERVINGS, MIN_SERVINGS, servingsInRange } from "../scaling/servings";
 import { rescaleText, type AmountMapping } from "../scaling/text";
@@ -174,7 +174,9 @@ export function applyScaling(
       for (const [now, base] of ends) {
         mappings.push({
           current: now,
-          next: round2(base * eff),
+          // The list's rounded cook amount (whole items in halves and wholes),
+          // so the step text says what the list says.
+          next: scaledCookValue(base, eff, original.unit),
           unit: original.unit,
           name: ingredient.name,
         });

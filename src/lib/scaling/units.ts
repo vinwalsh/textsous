@@ -55,6 +55,30 @@ const ENTRIES: Array<[string, UnitInfo]> = [
   ["stalks", { standard: "stalk", kind: "count" }],
   ["piece", { standard: "piece", kind: "count" }],
   ["pieces", { standard: "piece", kind: "count" }],
+  ["sprig", { standard: "sprig", kind: "count" }],
+  ["sprigs", { standard: "sprig", kind: "count" }],
+  ["head", { standard: "head", kind: "count" }],
+  ["heads", { standard: "head", kind: "count" }],
+  ["ear", { standard: "ear", kind: "count" }],
+  ["ears", { standard: "ear", kind: "count" }],
+  ["leaf", { standard: "leaf", kind: "count" }],
+  ["leaves", { standard: "leaf", kind: "count" }],
+  ["cube", { standard: "cube", kind: "count" }],
+  ["cubes", { standard: "cube", kind: "count" }],
+  ["bunch", { standard: "bunch", kind: "count" }],
+  ["bunches", { standard: "bunch", kind: "count" }],
+  ["fillet", { standard: "fillet", kind: "count" }],
+  ["fillets", { standard: "fillet", kind: "count" }],
+  ["breast", { standard: "breast", kind: "count" }],
+  ["breasts", { standard: "breast", kind: "count" }],
+  ["thigh", { standard: "thigh", kind: "count" }],
+  ["thighs", { standard: "thigh", kind: "count" }],
+  ["link", { standard: "link", kind: "count" }],
+  ["links", { standard: "link", kind: "count" }],
+  ["strip", { standard: "strip", kind: "count" }],
+  ["strips", { standard: "strip", kind: "count" }],
+  ["wedge", { standard: "wedge", kind: "count" }],
+  ["wedges", { standard: "wedge", kind: "count" }],
   // Containers: bought whole, so buy amounts round up to whole items.
   ["jar", { standard: "jar", kind: "count" }],
   ["jars", { standard: "jar", kind: "count" }],
@@ -92,6 +116,30 @@ export function lookupUnit(raw: string): UnitInfo | null {
 /** Countable units (eggs, slices, cans) round up to whole items when buying. */
 export function isCountable(raw: string): boolean {
   return lookupUnit(raw)?.kind === "count";
+}
+
+/** Size words a counted ingredient can carry as its unit ("2" "large" eggs). */
+const SIZE_UNITS = new Set(["large", "medium", "small", "whole"]);
+
+/**
+ * Count units for single items. Containers (cans, jars) and sticks of
+ * butter are used in parts, so they keep kitchen fractions to cook.
+ */
+const ITEM_UNITS = new Set([
+  "each", "slice", "clove", "stalk", "piece", "sprig", "head", "ear", "leaf", "cube",
+  "bunch", "fillet", "breast", "thigh", "link", "strip", "wedge",
+]);
+
+/**
+ * Whole items: an ingredient counted with no unit ("2 dried bay leaves"),
+ * with a size word ("2 large" eggs) or with an item unit (cloves, slices).
+ * Their scaled amounts round to halves and wholes (see scaledCookValue). Pure.
+ */
+export function isWholeItem(raw: string): boolean {
+  const key = raw.trim().toLowerCase().replace(/\.+$/, "");
+  if (key === "" || SIZE_UNITS.has(key)) return true;
+  const info = lookupUnit(key);
+  return info !== null && ITEM_UNITS.has(info.standard);
 }
 
 /** Metric units, whose scaled amounts round to whole g and ml, tenths of kg and l. */
