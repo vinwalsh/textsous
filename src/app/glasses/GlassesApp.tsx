@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type Ref, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type Ref, type RefObject } from "react";
 import {
   arrowDirection,
   dueTasks,
@@ -15,6 +15,7 @@ import {
   guideDone,
   guideElapsedMs,
   guideLine,
+  guideNow,
   hudOrder,
   joinAnd,
   laneName,
@@ -219,16 +220,28 @@ function useSpatialKeys(onEscape: () => boolean): void {
 export default function GlassesApp({
   request: given,
   demos,
+  artifact,
+  clockMultiplier = 1,
+  banner,
 }: {
   /** What to show; read from the page's query string when left out. */
   request?: GlassesRequest;
   demos: readonly GlassesDemo[];
+  /** A cook along to show at once, with nothing to load (/simulate/glasses). */
+  artifact?: CookAlongArtifact;
+  /** How much faster than real time the guide clock runs; only /simulate/glasses sets it. */
+  clockMultiplier?: number;
+  /** A line above the screen (the simulation note). */
+  banner?: ReactNode;
 }) {
-  const [state, setState] = useState<LoadState>(() => (given ? initialGlassesState(given) : { kind: "boot" }));
+  const [state, setState] = useState<LoadState>(() =>
+    artifact ? { kind: "ready", artifact } : given ? initialGlassesState(given) : { kind: "boot" },
+  );
   const escapeRef = useRef<() => boolean>(() => false);
   useSpatialKeys(() => escapeRef.current());
 
   useEffect(() => {
+    if (artifact) return;
     let live = true;
     const id = setTimeout(() => {
       const request = given ?? glassesRequestFromSearch(window.location.search);
@@ -245,12 +258,13 @@ export default function GlassesApp({
       live = false;
       clearTimeout(id);
     };
-  }, [given]);
+  }, [given, artifact]);
 
   return (
     <div className="ts-glasses-root">
+      {banner}
       {state.kind === "ready" ? (
-        <GlassesCookAlong artifact={state.artifact} escapeRef={escapeRef} />
+        <GlassesCookAlong artifact={state.artifact} escapeRef={escapeRef} clockMultiplier={clockMultiplier} />
       ) : (
         <>
           <div className="g-screen">
@@ -338,6 +352,10 @@ export interface HudProps {
   totalMinutes: number;
   current: number;
   now: number;
+  /** The guide clock's own moment (ahead of `now` on a replay); `now` when left out. */
+  guideNow?: number;
+  /** A small badge beside the clock ("Replay ×20"). */
+  badge?: string;
   guide: GuideClock;
   timers: readonly TaskTimer[];
   voice: boolean;
@@ -369,6 +387,8 @@ export function GlassesHud({
   totalMinutes,
   current,
   now,
+  guideNow: guideMoment = now,
+  badge,
   guide,
   timers,
   voice,
@@ -394,7 +414,7 @@ export function GlassesHud({
   const next = order[current + 1];
   const timer = timers.find((t) => t.taskId === task.id) ?? null;
   const running = guide.startedAt !== null;
-  const done = !running && guideDone(guide, totalMinutes, now);
+  const done = !running && guideDone(guide, totalMinutes, guideMoment);
   const lane = laneName(task, artifact.timelineDefinition.lanes);
   const timerButton =
     timer === null
@@ -416,9 +436,10 @@ export function GlassesHud({
           Step {current + 1} of {order.length} · {PHASES[task.phase] ?? task.phase}
         </span>
         <span className={running ? "g-clock g-clock-on" : "g-clock"}>
-          {formatElapsed(guideElapsedMs(guide, now))}
+          {formatElapsed(guideElapsedMs(guide, guideMoment))}
           <span className="g-muted"> / {totalMinutes} min</span>
         </span>
+        {badge ? <span className="g-badge">{badge}</span> : null}
         <button type="button" className="g-voice" onClick={onToggleVoice}>
           {voice ? "Voice on" : "Voice off"}
         </button>
@@ -608,14 +629,22 @@ export function GlassesDetails({
   );
 }
 
-/** The cook along's state: task, guide clock, timers, voice; saved per artifact. */
+/**
+ * The cook along's state: task, guide clock, timers, voice; saved per
+ * artifact. At a `clockMultiplier` other than 1 (a replay) the guide clock
+ * runs that much faster, timers stay on real time, and nothing is saved or
+ * restored: a replay starts fresh and leaves the real cook along's state alone.
+ */
 function GlassesCookAlong({
   artifact,
   escapeRef,
+  clockMultiplier = 1,
 }: {
   artifact: CookAlongArtifact;
   escapeRef: RefObject<() => boolean>;
+  clockMultiplier?: number;
 }) {
+  const persist = clockMultiplier === 1;
   const { tasks: order, totalMinutes } = useMemo(() => hudOrder(artifact.timelineDefinition), [artifact]);
   const [current, setCurrent] = useState(0);
   const [guide, setGuide] = useState<GuideClock>(GUIDE_IDLE);
@@ -696,7 +725,7 @@ function GlassesCookAlong({
       const t = Date.now();
       let saved: GlassesSaved | null = null;
       try {
-        const raw = window.localStorage.getItem(glassesStorageKey(artifact.id));
+        const raw = persist ? window.localStorage.getItem(glassesStorageKey(artifact.id)) : null;
         saved = parseSaved(raw, ids, { now: t, totalMinutes });
       } catch {
         saved = null;
@@ -723,13 +752,13 @@ function GlassesCookAlong({
       restored.current = true;
     }, 0);
     return () => clearTimeout(id);
-  }, [artifact.id, order, totalMinutes]);
+  }, [artifact.id, order, totalMinutes, persist]);
 
   // Save after every change, once restored, and each minute while something
   // runs (saved state over 6 hours old is ignored).
   const beat = guide.startedAt !== null || timers.some((x) => x.status === "running") ? Math.floor(now / 60_000) : 0;
   useEffect(() => {
-    if (!restored.current) return;
+    if (!restored.current || !persist) return;
     const saved: GlassesSaved = {
       v: 1,
       savedAt: Date.now(),
@@ -743,7 +772,7 @@ function GlassesCookAlong({
     } catch {
       // Blocked storage: this visit still works, it just won't survive a reload.
     }
-  }, [artifact.id, order, current, guide, timers, announced, beat]);
+  }, [artifact.id, order, current, guide, timers, announced, beat, persist]);
 
   // When the guide moves on or a timer row goes away, focus would fall to the
   // page and the D-pad would have nothing to move from: put it on the main button.
@@ -772,7 +801,9 @@ function GlassesCookAlong({
     act({ type: "tick", now: t });
     const g = guideRef.current;
     if (g.startedAt === null) return;
-    if (guideDone(g, totalMinutes, t)) {
+    // The guide's own moment: ahead of the wall clock on a replay.
+    const gt = guideNow(g, t, clockMultiplier);
+    if (guideDone(g, totalMinutes, gt)) {
       // The schedule is over: the guide stops at its total, on the last step.
       const stopped: GuideClock = { elapsedMs: totalMinutes * 60_000, startedAt: null };
       guideRef.current = stopped;
@@ -787,9 +818,9 @@ function GlassesCookAlong({
     }
     // Every task whose start has passed, once each: two in one minute are both said.
     const marked = announcedRef.current;
-    const show = dueTasks(order, Math.floor(guideElapsedMs(g, t) / 60_000), marked);
+    const show = dueTasks(order, Math.floor(guideElapsedMs(g, gt) / 60_000), marked);
     if (show.length > 0) announce(show, new Set([...marked, ...show.map((i) => order[i].task.id)]));
-  }, [act, announce, order, say, totalMinutes]);
+  }, [act, announce, clockMultiplier, order, say, totalMinutes]);
   const tickRef = useRef(tick);
   useEffect(() => {
     tickRef.current = tick;
@@ -846,7 +877,7 @@ function GlassesCookAlong({
     const t = Date.now();
     setNow(t);
     if (guide.startedAt !== null) {
-      const paused = pauseGuide(guide, t);
+      const paused = pauseGuide(guide, guideNow(guide, t, clockMultiplier));
       guideRef.current = paused;
       setGuide(paused);
       return;
@@ -930,6 +961,8 @@ function GlassesCookAlong({
         totalMinutes={totalMinutes}
         current={current}
         now={now}
+        guideNow={guideNow(guide, now, clockMultiplier)}
+        badge={clockMultiplier === 1 ? undefined : `Replay ×${clockMultiplier}`}
         guide={guide}
         timers={timers}
         voice={voice}

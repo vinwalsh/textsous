@@ -102,6 +102,17 @@ export function guideElapsedMs(clock: GuideClock, now: number): number {
   return clock.elapsedMs + (clock.startedAt !== null ? Math.max(0, now - clock.startedAt) : 0);
 }
 
+/**
+ * The moment the guide clock reads at real time `now` when it runs
+ * `multiplier` times faster than the clock on the wall (a replay on
+ * /simulate/glasses): its start plus the time since, scaled. Paused, or at
+ * ×1, it is `now`. Timers never use this: they stay on real time. Pure.
+ */
+export function guideNow(clock: GuideClock, now: number, multiplier = 1): number {
+  if (clock.startedAt === null || multiplier === 1) return now;
+  return clock.startedAt + Math.max(0, now - clock.startedAt) * multiplier;
+}
+
 /** Start (or resume) the guide; `fromMinute` moves the clock to that minute first. */
 export function startGuide(clock: GuideClock, now: number, fromMinute?: number): GuideClock {
   if (clock.startedAt !== null) return clock;
