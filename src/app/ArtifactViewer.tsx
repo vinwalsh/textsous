@@ -477,6 +477,7 @@ export default function ArtifactViewer({
   onQueuedApplied,
   built = false,
   cookAlongView = true,
+  adjustNote = null,
 }: {
   artifact: CookAlongArtifact;
   onStartOver: () => void;
@@ -497,6 +498,8 @@ export default function ArtifactViewer({
   built?: boolean;
   /** false keeps the open sections in place of the Cook Along view (their tests). */
   cookAlongView?: boolean;
+  /** Set, the adjust panel's Apply button is off with this line (a replay on /simulate). */
+  adjustNote?: string | null;
 }) {
   // Allergen floor on display too, so artifacts saved before it existed
   // (cache, ?src=) show inferred tags; Save sends the floored artifact.
@@ -673,6 +676,7 @@ export default function ArtifactViewer({
         autoApply={queuedAdjustments}
         onAutoApplied={onQueuedApplied}
         onApplyingChange={setAdjusting}
+        disabledNote={adjustNote}
       />
 
       {pilotInput ? null : (<>
