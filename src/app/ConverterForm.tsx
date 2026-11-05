@@ -227,6 +227,11 @@ export default function ConverterForm({
     setError(null);
     setQueued(null);
     resetConversion();
+    // A reload or a shared link then opens the empty converter, not the
+    // recipe that was just closed.
+    if (typeof window !== "undefined" && window.location.search) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }
 
   if (artifact) {
