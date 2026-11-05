@@ -1545,3 +1545,78 @@ html:has(.cooking-line) {
     font-size: 14px;
   }
 }
+
+/* ---------- Simulations (/simulate): replays of recorded conversions ---------- */
+
+.sim-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.sim-list .card {
+  margin: 0;
+}
+
+.sim-list h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+/* Room under a replay for the bar fixed at the bottom of the screen. */
+.replay-page {
+  padding-bottom: 96px;
+}
+
+body:has(.replay-page) > .site-footer {
+  padding-bottom: 96px;
+}
+
+.replay-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--ts-card);
+  border-top: 1px solid var(--ts-border);
+  box-shadow: 0 -6px 14px -8px rgba(34, 32, 28, 0.35);
+}
+
+.replay-bar-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.replay-bar-label {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.replay-bar .btn {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+.replay-speeds {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.replay-photo-pages .photo-page-text {
+  flex: 1 1 auto;
+}
+
+.adjust-off {
+  margin: 8px 0 0;
+}
