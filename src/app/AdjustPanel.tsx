@@ -162,6 +162,7 @@ export default function AdjustPanel({
   autoApply,
   onAutoApplied,
   onApplyingChange,
+  disabledNote = null,
 }: {
   /** The finished cook along; null while it is being written (queued mode, see `pending`). */
   artifact: CookAlongArtifact | null;
@@ -175,6 +176,8 @@ export default function AdjustPanel({
   onAutoApplied?: () => void;
   /** The choices being applied while a request is out, then null (applied or failed). */
   onApplyingChange?: (choices: AdjustChoices | null) => void;
+  /** Set, the Apply button is off and this line says why (a replay on /simulate). */
+  disabledNote?: string | null;
 }) {
   const base = artifact ? artifact.recipe.servings : (pending?.servings ?? 1);
   const preset = artifact ? autoApply : pending?.queued;
@@ -241,7 +244,7 @@ export default function AdjustPanel({
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!hasChange || applying) return;
+    if (!hasChange || applying || disabledNote !== null) return;
     const choices: AdjustChoices = { servings, dietary, cuisine, sousVoice };
     // Checked here, not by the browser (the form is noValidate): the input's
     // own range would block every change on a recipe that serves over 36.
@@ -352,7 +355,7 @@ export default function AdjustPanel({
           <button
             type="submit"
             className={submitButtonClass(error)}
-            disabled={!hasChange || applying}
+            disabled={!hasChange || applying || disabledNote !== null}
           >
             {applying
               ? "Adjusting…"
@@ -375,6 +378,11 @@ export default function AdjustPanel({
             </button>
           ) : null}
         </div>
+        {disabledNote ? (
+          <p className="meta adjust-off" role="note">
+            {disabledNote}
+          </p>
+        ) : null}
       </form>
       {queued ? (
         <div className="adjust-summary" role="status">

@@ -138,11 +138,14 @@ export default function ProgressiveView({
   queued,
   onQueue,
   requested = null,
+  adjustNote = null,
 }: {
   state: ConversionState;
   queued: AdjustChoices | null;
   onQueue: (choices: AdjustChoices | null) => void;
   requested?: PendingChoices | null;
+  /** Set, the adjust panel's Apply button is off with this line (a replay on /simulate). */
+  adjustNote?: string | null;
 }) {
   const { facts, overview, recipe, timeline } = state;
   // Essentials first; the cook can switch to With tips once tips exist.
@@ -187,7 +190,11 @@ export default function ProgressiveView({
       )}
       {recipe ? (
         <div className="progressive-in">
-          <AdjustPanel artifact={null} pending={{ servings: recipe.nativeServings, queued, onQueue }} />
+          <AdjustPanel
+            artifact={null}
+            pending={{ servings: recipe.nativeServings, queued, onQueue }}
+            disabledNote={adjustNote}
+          />
         </div>
       ) : (
         placeholder("adjust", 2)

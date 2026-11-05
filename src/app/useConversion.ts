@@ -6,6 +6,7 @@ import {
   reduceConversion,
   runConversion,
   type ConversionAction,
+  type ConversionEventSource,
   type ConversionState,
   type ConvertBody,
 } from "./conversion";
@@ -22,8 +23,12 @@ export interface Conversion {
   reset: () => void;
 }
 
-/** The progressive conversion as React state (see conversion.ts). */
-export function useConversion(fetchImpl?: typeof fetch): Conversion {
+/**
+ * The progressive conversion as React state (see conversion.ts). `source`
+ * replaces the server with other events (a replay, /simulate); the live
+ * pages pass nothing.
+ */
+export function useConversion(fetchImpl?: typeof fetch, source?: ConversionEventSource): Conversion {
   const [state, dispatch] = useReducer(reduceConversion, initialConversionState);
   const runs = useRef({ latest: 0, live: new Set<AbortController>() });
 
@@ -51,14 +56,18 @@ export function useConversion(fetchImpl?: typeof fetch): Conversion {
       try {
         // Keep the phone's screen on: a lock drops the request.
         const final = await withScreenOn(() =>
-          runConversion(body, send, { signal: controller.signal, ...(fetchImpl ? { fetchImpl } : {}) }),
+          runConversion(body, send, {
+            signal: controller.signal,
+            ...(fetchImpl ? { fetchImpl } : {}),
+            ...(source ? { source } : {}),
+          }),
         );
         return current.latest === id ? final : null;
       } finally {
         current.live.delete(controller);
       }
     },
-    [fetchImpl],
+    [fetchImpl, source],
   );
 
   const reset = useCallback(() => {

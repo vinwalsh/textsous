@@ -65,6 +65,10 @@ export default function DemoPage() {
         Or try <Link href="/demo-sites">Adjust with SOUS on four demo recipe blogs</Link>.
       </p>
       <p className="meta">
+        Making a video? <Link href="/simulate">Replay a recorded conversion</Link> at any speed, with
+        no wait and no model call.
+      </p>
+      <p className="meta">
         <Link href="/">Back to the converter</Link>
       </p>
     </main>

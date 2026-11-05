@@ -1,0 +1,233 @@
+{
+ "recipe": {
+  "version": 1,
+  "id": "rcp-21584e94f294",
+  "title": "Skillet Cornbread with Honey Butter",
+  "source": {
+   "kind": "photo",
+   "url": null,
+   "site": null,
+   "author": null,
+   "book": null,
+   "page": null,
+   "license": null
+  },
+  "cuisine": null,
+  "nativeServings": 8,
+  "servingsLarge": null,
+  "scalingNotes": null,
+  "ingredients": [
+   {
+    "id": "ing-1",
+    "name": "yellow cornmeal",
+    "quantity": "1 1/2",
+    "unit": "cups",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": "(210 g)"
+   },
+   {
+    "id": "ing-2",
+    "name": "all-purpose flour",
+    "quantity": "1",
+    "unit": "cup",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [
+     "gluten"
+    ],
+    "allergenTraces": [],
+    "note": "(125 g)"
+   },
+   {
+    "id": "ing-3",
+    "name": "sugar",
+    "quantity": "2",
+    "unit": "tablespoons",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": null
+   },
+   {
+    "id": "ing-4",
+    "name": "baking powder",
+    "quantity": "1",
+    "unit": "tablespoon",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": null
+   },
+   {
+    "id": "ing-5",
+    "name": "salt",
+    "quantity": "1",
+    "unit": "teaspoon",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": "fine"
+   },
+   {
+    "id": "ing-6",
+    "name": "eggs",
+    "quantity": "2",
+    "unit": "",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [
+     "egg"
+    ],
+    "allergenTraces": [],
+    "note": "large"
+   },
+   {
+    "id": "ing-7",
+    "name": "buttermilk",
+    "quantity": "1 1/2",
+    "unit": "cups",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [
+     "milk"
+    ],
+    "allergenTraces": [],
+    "note": "(360 ml)"
+   },
+   {
+    "id": "ing-8",
+    "name": "butter",
+    "quantity": "6",
+    "unit": "tablespoons",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [
+     "milk"
+    ],
+    "allergenTraces": [],
+    "note": "unsalted, melted, divided"
+   },
+   {
+    "id": "ing-9",
+    "name": "butter",
+    "quantity": "1/2",
+    "unit": "cup",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [
+     "milk"
+    ],
+    "allergenTraces": [],
+    "note": "(113 g), unsalted, softened"
+   },
+   {
+    "id": "ing-10",
+    "name": "honey",
+    "quantity": "3",
+    "unit": "tablespoons",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": null
+   },
+   {
+    "id": "ing-11",
+    "name": "salt",
+    "quantity": "Pinch",
+    "unit": "of",
+    "quantity4": null,
+    "scaleRule": null,
+    "cookQuantity": null,
+    "buyQuantity": null,
+    "allergens": [],
+    "allergenTraces": [],
+    "note": "flaky"
+   }
+  ],
+  "steps": [
+   {
+    "id": "step-1",
+    "kind": "prep",
+    "text": "Whisk the cornmeal, flour, sugar, baking powder and salt in a large bowl."
+   },
+   {
+    "id": "step-2",
+    "kind": "prep",
+    "text": "In another bowl, whisk the eggs and buttermilk, then whisk in 4 tablespoons of the melted butter."
+   },
+   {
+    "id": "step-3",
+    "kind": "prep",
+    "text": "Beat the softened butter, honey and flaky salt until fluffy."
+   },
+   {
+    "id": "step-4",
+    "kind": "active",
+    "text": "Put a 10-inch cast-iron skillet in the oven and heat the oven to 425F with the skillet inside, about 15 minutes."
+   },
+   {
+    "id": "step-5",
+    "kind": "active",
+    "text": "Pour the wet ingredients into the dry and stir just until combined. Do not overmix; a few lumps are fine."
+   },
+   {
+    "id": "step-6",
+    "kind": "active",
+    "text": "Carefully take the hot skillet out, add the remaining 2 tablespoons of butter and swirl to coat. Pour in the batter; it should sizzle."
+   },
+   {
+    "id": "step-7",
+    "kind": "active",
+    "text": "Bake 20 to 25 minutes, until golden and a toothpick in the center comes out clean."
+   },
+   {
+    "id": "step-8",
+    "kind": "active",
+    "text": "Cool the cornbread 10 minutes in the skillet, then cut into wedges and serve with the honey butter."
+   }
+  ],
+  "equipment": [
+   "10-inch cast-iron skillet",
+   "oven",
+   "large bowl",
+   "bowl",
+   "whisk",
+   "toothpick"
+  ],
+  "sourceFingerprint": "sha256:bbba4b76a7a8065c3c2daebf46a31c9c31e7059897796aefe448fec022b0d61d"
+ },
+ "transcription": {
+  "text": "SKILLET CORNBREAD WITH HONEY BUTTER\nServes 8\n\nThis is our Sunday cornbread. It goes in a screaming-hot\ncast-iron skillet so the edges come out crisp.\n\nINGREDIENTS\n\nFor the cornbread\n1 1/2 cups (210 g) yellow cornmeal\n1 cup (125 g) all-purpose flour\n2 tablespoons sugar\n1 tablespoon baking powder\n1 teaspoon fine salt\n2 large eggs\n1 1/2 cups (360 ml) buttermilk\n6 tablespoons unsalted butter, melted, divided\n\nFor the honey butter\n1/2 cup (113 g) unsalted butter, softened\n3 tablespoons honey\nPinch of flaky salt\n\nMETHOD\n\n1. Put a 10-inch cast-iron skillet in the oven and heat\nthe oven to 425F with the skillet inside, about 15 minutes.\n\n2. Whisk the cornmeal, flour, sugar, baking powder and\nsalt in a large bowl.\n\n3. In another bowl, whisk the eggs and buttermilk, then\nwhisk in 4 tablespoons of the melted butter.\n\n4. Pour the wet ingredients into the dry and stir just\nuntil combined. Do not overmix; a few lumps are fine.\n\n5. Carefully take the hot skillet out, add the remaining\n2 tablespoons of butter and swirl to coat. Pour in the\nbatter; it should sizzle.\n\n6. Bake 20 to 25 minutes, until golden and a toothpick\nin the center comes out clean.\n\n7. While it bakes, beat the softened butter, honey and\nflaky salt until fluffy.\n\n8. Cool the cornbread 10 minutes in the skillet, then\ncut into wedges and serve with the honey butter.",
+  "book": null,
+  "author": null,
+  "page": null
+ },
+ "warnings": []
+}

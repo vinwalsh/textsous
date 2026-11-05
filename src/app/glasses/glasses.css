@@ -410,3 +410,26 @@ body:has(.ts-glasses-root) > main {
     display: none;
   }
 }
+
+/* A replay (/simulate/glasses): the badge beside the clock and the line above the screen. */
+.g-badge {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--g-accent);
+  border-radius: 999px;
+  color: var(--g-accent);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.g-replay {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 8px 16px 0;
+  font-size: 15px;
+  color: var(--g-muted);
+}
+
+.g-replay a {
+  color: var(--g-accent);
+}
