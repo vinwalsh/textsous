@@ -353,7 +353,8 @@ Node 22, Next.js 16 App Router, TypeScript, ESM.
 - src/app/ (Next.js routes and UI): / (converter and viewer), /demo,
   /assistants, /embed (chrome-less, the only route other sites may frame),
   /embed-demo, /glasses (heads-up cook along for Meta Ray-Ban Display;
-  logic in src/lib/glasses.ts), api/convert, api/adjust, api/photo, api/artifact, api/health,
+  logic in src/lib/glasses.ts), /simulate (replays of recorded conversions
+  for the demo video, no model calls; docs/VIDEO.md), api/convert, api/adjust, api/photo, api/artifact, api/health,
   api/skills/{format,source,cook-along}, api/helpers.ts.
 - public/embed.js: the host-page script for recipe sites (plain JS, no build
   step).
