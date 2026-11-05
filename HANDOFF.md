@@ -1,13 +1,22 @@
 # Handoff: TextSous Open converter
 
 For the next agent picking up this repo, and for whoever works on the
-TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
+TextSous app's side of the handoff. Last updated: 2026-11-04 (M10).
 
 ## Where things stand
 
-- **M1–M8** are on main and deployed at https://open.textsous.com. M6.1,
+- **M1–M10** are on main and deployed at https://open.textsous.com. M6.1,
   M6.3, M6.4 and M6.6 still wait for the owner's phone re-checks (TASKS.md
   O14).
+- **M10** went live on Nov 4 evening (`8d80f33`): the TextSous Cook Along
+  view is the finished page's body (ported from the TextSous app at the
+  owner's direction; adapter in src/lib/cooking-pilot/from-artifact.ts; the
+  open sections remain as the fallback), /cook-along-demo, per-section
+  progress states and the sticky cooking line, "Before your changes" and
+  Adjusting marks, and /glasses for Meta Ray-Ban Display.
+- **M9** went live on Nov 4 afternoon (`7b9f56c`): Adjust with SOUS in
+  embed.js and /embed, the /demo-sites blogs, the bookmarklet, 12-hour
+  tasks and id repair before scheduling.
 - **M8** went live on Nov 4 (`cf3fc28` at 15:05 ET, review fixes and
   free-text rescaling in `9dfae4e` at 15:55 ET): progressive conversion,
   per-stage reasoning effort, up to 3 photos, servings up to 36. A fresh
@@ -17,13 +26,14 @@ TextSous app's side of the handoff. Last updated: 2026-11-04 (M7).
   fast-forwarded from `3e56ebb` to `f92e0a1`, 93 commits, docs included.
   The production checks passed and the demo cache is warm (O12). M7.10 stays
   open for the owner's Muse and phone checks (O13, O14).
-- Gates on main: 880/880 offline in 81 files with `MODEL_API_KEY` unset,
+- Gates on main: 1102/1102 offline in 90 files with `MODEL_API_KEY` unset,
   typecheck, lint, build, and `npm run schema && npm run docs` with no diff;
   CI green.
 - Other open items: M5.3 (owner review of the NEW-WORK.md summary), M5.5
-  (final state), and owner actions O3, O4 and O6–O14. The order for Nov 4 is
-  at the top of TASKS.md "Owner actions"; submission is due Nov 4,
-  9:00 PM ET.
+  (final state), and owner actions O3, O4, O8, O9, O13 and O14 (O6, O7,
+  O10, O11 and O12 are done). Submission is due Nov 4, 9:00 PM ET.
+- The TextSous app's side (private repo) is merged and deployed: Cookbook
+  import (/open, /import), the MCP recipe tools, and the 12-hour task cap.
 - Sources of truth: TASKS.md (status), NEW-WORK.md (dated log), AGENTS.md
   (rules), README.md (users), docs/SKILLS.md and docs/EMBED.md
   (integrators), docs/FORMAT.md and docs/schema/ (the format).

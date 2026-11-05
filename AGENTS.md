@@ -17,9 +17,27 @@ Oct 27 to Nov 4, 2026 is hackathon work; NEW-WORK.md records it.
 Updated 2026-11-04. Keep this section current: when something ships, say so
 here with the date. Check the code before trusting any doc line about it.
 
-- Live: M1-M8 (TASKS.md) on main. Vercel project `open-textsous` deploys
+- Live: M1-M10 (TASKS.md) on main. Vercel project `open-textsous` deploys
   main to https://open.textsous.com on every push. CI runs typecheck, lint,
   the offline tests and the schema/docs diff gate.
+- M10 went live on Nov 4 (evening, `8d80f33`): the finished page's body is
+  the TextSous Cook Along view, ported from the TextSous app at the owner's
+  direction (component swimlanes, Mise en Place / Cooking / Finish bands, a
+  guided timeline with a Cook button, step cards that open with details and
+  timers, Adjust Cooking Times; src/components/cooking-pilot/ and
+  src/lib/cooking-pilot/, with src/lib/cooking-pilot/from-artifact.ts
+  adapting the open artifact; the open sections stay as the fallback).
+  /cook-along-demo opens a finished Cook Along with no model call. Also:
+  per-section progress states (Coming up / Working on it / Ready), the
+  cooking line stuck to the top, "Before your changes" marks and an
+  Adjusting state for queued adjustments, "Cook Along" as the product name,
+  and the /glasses heads-up view for Meta Ray-Ban Display web apps.
+- M9 went live on Nov 4 (afternoon, `7b9f56c`): "Adjust with SOUS" in
+  embed.js (servings, a diet, a style, or Build "Cook Along", all on the
+  host page), /embed adjustment parameters, the /demo-sites pretend recipe
+  blogs (original CC0 recipes), the /embed-demo bookmarklet; one task may
+  run up to 12 hours (MAX_TASK_MINUTES 720) and the procedure stage repairs
+  mistyped ids before scheduling.
 - M8 went live on Nov 4: `cf3fc28` at 15:05 ET, then its review fixes and
   the free-text rescaling at 15:55 ET (`9dfae4e`). It brought progressive
   conversion (NDJSON events: facts, overview, recipe, procedure, done; see
@@ -50,29 +68,29 @@ here with the date. Check the code before trusting any doc line about it.
   - The code defaults are 300 live conversions a day and 20 an hour per IP
     per route (before M7 the default was 100 a day). Neither
     DAILY_CONVERSION_CAP nor RATE_LIMIT_PER_HOUR is set in Vercel.
-  - The secret skills routes answer 503 `not_configured` until
-    SKILLS_API_SECRET is set; `GET /api/skills/format` works regardless.
-  - "Save to TextSous" opens textsous.com/import, which is 404 until the
-    TextSous app's Cookbook import PR ships. A build with
-    NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off hides the button.
+  - The secret skills routes answered 503 `not_configured` until
+    SKILLS_API_SECRET was set (done Nov 4, 14:40 ET); `GET /api/skills/format`
+    works regardless.
+  - "Save to TextSous" opens textsous.com/import, live since Nov 4 (the
+    TextSous app's Cookbook import shipped). A build with
+    NEXT_PUBLIC_SAVE_TO_TEXTSOUS=off would hide the button.
 - Vercel env today: MODEL_API_KEY, MODEL_BASE_URL, MODEL_ID,
   ARTIFACT_SIGNING_SECRET, UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN;
-  Baseten values on Preview and Development only. Not set: SKILLS_API_SECRET,
-  DAILY_CONVERSION_CAP, RATE_LIMIT_PER_HOUR, PUBLIC_ORIGIN. Preview and
+  Baseten values on Preview and Development only; SKILLS_API_SECRET on
+  Production and Preview since Nov 4. Not set: DAILY_CONVERSION_CAP,
+  RATE_LIMIT_PER_HOUR, PUBLIC_ORIGIN, REASONING_EFFORT_<STAGE>. Preview and
   production share one Upstash database (cache, limits, daily counter).
 - The rest of the TextSous platform lives in private repos: accounts,
   households, weekly meal plans, grocery lists, SOUS over text, and the
   TextSous MCP server at https://textsous.com/api/mcp (OAuth sign-in, live).
-  Its side of the handoff is written but not merged: a Cookbook import PR
-  (the /open redirect, the /import funnel, the imported-recipes privacy line)
-  and an MCP recipe-tools change stacked on it (get_cook_along_format,
-  get_recipe_source and save_cook_along, which call the skills API). Until
-  they ship, textsous.com/open and /import return 404: test the handoff
-  against a local stub or a preview, never against textsous.com.
-- Pending on the owner (TASKS.md owner actions, in order): the skills secret
-  on both projects, the TextSous app merges, one Muse end-to-end test, phone
-  checks, the demo video, and the submission by Nov 4, 9:00 PM ET. The M7
-  deploy and the demo warm are done.
+  Its side of the handoff is merged and deployed as of Nov 4: the Cookbook
+  import (the /open redirect, the /import funnel, the imported-recipes
+  privacy line) and the MCP recipe tools (get_cook_along_format,
+  get_recipe_source and save_cook_along, which call the skills API with the
+  shared secret); the Cookbook accepts tasks up to 12 hours.
+- Pending on the owner (TASKS.md owner actions): one Muse end-to-end test
+  (O13), phone checks (O14), the demo video (O8) and the submission by
+  Nov 4, 9:00 PM ET (O9).
 - Open decisions (HANDOFF.md, "Open loops"): /embed starts an uncached
   conversion without a tap; closing the overlay does not stop the server's
   conversion, so reopening too soon starts a second one; the skills secret
