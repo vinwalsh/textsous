@@ -337,18 +337,29 @@ describe("the finished page's Cook Along body", () => {
     expect(html).toContain("Convert another recipe");
   });
 
-  it("shows one total time: the view's time to serve in the facts line", () => {
+  it("shows one time to serve: the view's own header, not the facts line", () => {
     const artifact = clone(fixtureArtifact("toasted-oat-porridge"));
     // A range the open schedule counts low and the view counts high.
     const task = artifact.timelineDefinition.tasks.find((t) => t.phase === "cook") ?? artifact.timelineDefinition.tasks[0];
     task.range = { low: task.minutes, high: task.minutes + 20 };
     const serve = cookingPilotInput(artifact)?.serveMinute;
+    const total = schedule(artifact.timelineDefinition).totalMinutes;
     expect(serve).toBeDefined();
-    expect(serve).not.toBe(schedule(artifact.timelineDefinition).totalMinutes);
+    expect(serve).not.toBe(total);
     const html = renderToStaticMarkup(createElement(ArtifactViewer, { artifact, onStartOver: noop }));
-    expect(html).toContain(` · About ${serve} minutes`);
+    const facts = html.slice(html.indexOf('class="recipe-head"'), html.indexOf('aria-label="Recipe credit"'));
+    expect(facts).toContain(`Serves ${artifact.recipe.servings}`);
+    expect(facts).not.toContain("About");
+    expect(facts).not.toContain("minutes");
+    // The view's header carries it, and follows Adjust Cooking Times from there.
     expect(html).toContain(`<strong>About ${serve} min</strong>`);
-    expect(html).not.toContain(`About ${schedule(artifact.timelineDefinition).totalMinutes} min`);
+    expect(html).not.toContain(`About ${total} min`);
+    // The fallback sections have no header of their own, so the facts line keeps the total.
+    const fallback = renderToStaticMarkup(
+      createElement(ArtifactViewer, { artifact, onStartOver: noop, cookAlongView: false }),
+    );
+    expect(fallback).toContain(` · About ${total} minutes`);
+    expect(fallback).toContain(`About ${total} min to serve`);
   });
 
   it("keeps the header parts and notes above the Cook Along view, and Save below it", () => {
